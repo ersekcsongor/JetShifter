@@ -5,25 +5,21 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
   FlatList,
   ActivityIndicator,
 } from "react-native";
 import styles from "~/styles/CalculationScreen.styles";
 
-
-const AVIATIONSTACK_API_KEY = "220126b4f004b2c683896245c2982880"; // Replace with your API Key
-const AVIATIONSTACK_AIRPORTS_URL = "http://api.aviationstack.com/v1/airports";
-
+const AVIATIONSTACK_API_KEY = "5cec04c272d58e4aa4a08a1fbf3f1bff"; 
+const AVIATIONSTACK_FLIGHTS_URL = "http://api.aviationstack.com/v1/flights";
 
 const CalculationScreen = ({ navigation }: { navigation: any }) => {
   const [fromCity, setFromCity] = useState<string>("");
   const [toCity, setToCity] = useState<string>("");
-  const [suggestions, setSuggestions] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
 
-  const fetchAirportSuggestions = async (query: string) => {
+  const fetchFlightSuggestions = async (query: string) => {
     if (!query) {
       setSuggestions([]);
       return;
@@ -31,129 +27,83 @@ const CalculationScreen = ({ navigation }: { navigation: any }) => {
   
     setLoading(true);
     try {
-      const response = await axios.get(AVIATIONSTACK_AIRPORTS_URL, {
+      const response = await axios.get(AVIATIONSTACK_FLIGHTS_URL, {
         params: {
-          access_key: AVIATIONSTACK_API_KEY, // ✅ Correct API Key Usage
-          search: query, // ✅ Enables autocomplete search (only available on Basic Plan and higher)
-          limit: 5, // ✅ Restricts the number of results
+          access_key: AVIATIONSTACK_API_KEY,
+          flight_status: "scheduled",
+          limit: 5, // Fetch more data to filter
         },
       });
   
-      console.log("API Response:", response.data); // ✅ Debugging API response
-  
       if (response.data && response.data.data) {
-        setSuggestions(response.data.data);
+        const flights = response.data.data.filter((flight: any) => {
+          const departureAirport = flight.departure.airport?.toLowerCase();
+          const arrivalAirport = flight.arrival.airport?.toLowerCase();
+          const lowerQuery = query.toLowerCase();
+  
+          // Check if either the departure or arrival airport contains the search query
+          return departureAirport?.includes(lowerQuery) || arrivalAirport?.includes(lowerQuery);
+        });
+  
+        const formattedFlights = flights.map((flight: any) => ({
+          flightDate: flight.flight_date,
+          departureAirport: flight.departure.airport,
+          arrivalAirport: flight.arrival.airport,
+        }));
+  
+        setSuggestions(formattedFlights);
       } else {
         setSuggestions([]);
       }
     } catch (error) {
-      console.error("Error fetching airport data:", error);
+      console.error("Error fetching flight data:", error);
     } finally {
       setLoading(false);
     }
   };
   
   
-  
 
-  
-
-  const selectCity = (city: any, setCity: (value: string) => void) => {
-    setCity(city.name);
-    setSuggestions([]);
-  };
-
-
-
-  const calculateTimeZonesCrossed = () => {
-    if (!fromCity || !toCity) {
-      setResult("Please select both departure and destination airports.");
-      return;
-    }
-  
-    const fromAirport = suggestions.find((airport) => airport.airport_name === fromCity);
-    const toAirport = suggestions.find((airport) => airport.airport_name === toCity);
-  
-    if (!fromAirport || !toAirport) {
-      setResult("Error fetching airport data. Please try again.");
-      return;
-    }
-  
-    const fromTimezone = fromAirport.timezone;
-    const toTimezone = toAirport.timezone;
-  
-    setResult(`Flying from ${fromAirport.airport_name} (${fromTimezone}) to ${toAirport.airport_name} (${toTimezone}).`);
-  };
-  
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Jet Lag Adjustment Calculator</Text>
 
       {/* From City Input */}
-      <Text style={styles.label}>From (City):</Text>
       <TextInput
         style={styles.input}
-        placeholder="Enter airport name or code (e.g., JFK, LAX)"
+        placeholder="Enter departure flights airport name"
         value={fromCity}
         onChangeText={(query) => {
-        setFromCity(query);
-        fetchAirportSuggestions(query);
-     }}
-      />
-      {loading && <ActivityIndicator size="small" color="#007AFF" />}
-      <FlatList
-        data={suggestions}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.suggestion}
-            onPress={() => selectCity(item, setFromCity)}
-          >
-            <Text style={styles.suggestionText}>
-              {item.airport_name} ({item.iata_code}) - {item.timezone}
-            </Text>
-          </TouchableOpacity>
-        )}
-      />
-
-      {/* To City Input */}
-      <Text style={styles.label}>To (City):</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g., San Francisco"
-        value={toCity}
-        onChangeText={(query) => {
-        setToCity(query);
-        fetchAirportSuggestions(query);
+          setFromCity(query);
+          fetchFlightSuggestions(query);
         }}
       />
+
+
+   
+      {/* Loading Indicator */}
       {loading && <ActivityIndicator size="small" color="#007AFF" />}
+
       <FlatList
         data={suggestions}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.suggestion}
-            onPress={() => selectCity(item, setToCity)}
+            onPress={() => {
+              setFromCity(item.departureAirport);
+              setToCity(item.arrivalAirport);
+              setSuggestions([]);
+            }}
           >
             <Text style={styles.suggestionText}>
-              {item.name} ({item.timezone})
+              {item.flightDate} - {item.departureAirport} → {item.arrivalAirport}
             </Text>
-          </TouchableOpacity>
-        )}
-      />
+    </TouchableOpacity>
+  )}
+/>
 
-      {/* Calculate Button */}
-      <TouchableOpacity style={styles.button} onPress={calculateTimeZonesCrossed}>
-        <Text style={styles.buttonText}>Calculate</Text>
-      </TouchableOpacity>
 
-      {/* Result */}
-      {result && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.result}>{result}</Text>
-        </View>
-      )}
 
       {/* Back Button */}
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
