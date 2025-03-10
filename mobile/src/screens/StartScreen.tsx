@@ -10,7 +10,7 @@ const StartScreen = ({ navigation }: { navigation: any }) => {
       {/* Buttons */}
       <TouchableOpacity 
         style={styles.button} 
-        onPress={() => navigation.navigate("CalculationScreen")}
+        onPress={() => navigation.navigate("SelectAirportScreen")}
       >
         <Text style={styles.buttonText}>Get Started</Text>
       </TouchableOpacity>
