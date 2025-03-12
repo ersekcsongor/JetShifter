@@ -14,7 +14,7 @@ export class CountryModel extends Document {
   @Prop({ required: true })
   isSchengen: boolean;
 
-  @Prop({ required: true })
+  @Prop({default: ''})
   phonePrefix: string;
 }
 
