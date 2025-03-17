@@ -3,19 +3,25 @@ import { Document } from 'mongoose';
 @Schema()
 export class CountryModel extends Document {
   @Prop({ required: true })
-  code: string;
+  iataCode: string;
 
   @Prop({ required: true })
   name: string;
   
   @Prop({ required: true })
-  isEu: boolean;
+  countryCode: string;
 
   @Prop({ required: true })
-  isSchengen: boolean;
+  cityCode: string;
 
-  @Prop({default: ''})
-  phonePrefix: string;
+  @Prop({required: true})
+  timeZone: string;
+
+  @Prop({required: true})
+  latitude: number;
+
+  @Prop({required: true})
+  longitude: number;
 }
 
 export const CountrySchema = SchemaFactory.createForClass(CountryModel);

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, Get } from '@nestjs/common';
 import { CountriesService } from './countries.service';
 import { CountryInputDto } from './dto/input/country.input.dto';
 
@@ -8,11 +8,16 @@ export class CountriesController {
 
 @Post('insert')
 async insertCountries(@Body() countriesData: CountryInputDto[]) {
-  console.log('Received payload:', countriesData); // Debugging
+  console.log('Received payload:', countriesData);
   if (!Array.isArray(countriesData)) {
     throw new BadRequestException('Invalid payload: Expected an array of countries');
   }
-  console.log(countriesData.filter((country) => country.phonePrefix));
-  return await this.countriesService.insertCountries(countriesData.filter((country) => country.phonePrefix));
+  console.log(countriesData.filter((country) => country));
+  return await this.countriesService.insertCountries(countriesData.filter((country) => country));
+}
+
+@Get('getAll')
+async getAllCountries() {
+  return await this.countriesService.getAllCountries();
 }
 }

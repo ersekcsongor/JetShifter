@@ -1,8 +1,24 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import styles from "~/styles/AboutScreen.styles";
+import axios from 'axios';
+
+const fetchCountries = async () => {
+  try {
+    // Replace with your backend URL
+    const response = await axios.get('http://172.20.10.11:3000/countries/getAll');
+    
+    // Log the response data to the console
+    console.log('Countries:', response.data);
+  } catch (error) {
+    console.error('Error fetching countries:', error);
+  }
+};
 
 const AboutScreen = ({ navigation }: { navigation: any }) => {
+  useEffect(() => {
+    fetchCountries();
+  })
   return (
     <View style={styles.container}>
       {/* Title */}

@@ -1,14 +1,18 @@
-import { IsBoolean, IsString } from 'class-validator';
+import { IsNumber, IsString } from 'class-validator';
 
 export class CountryInputDto {
     @IsString()
-    code: string;
+    iataCode: string;
     @IsString()
     name: string;
-    @IsBoolean()
-    isEu: boolean;
-    @IsBoolean() 
-    isSchengen: boolean;
     @IsString()
-    phonePrefix: string;
+    countryCode: string;
+    @IsString()
+    cityCode: string;
+    @IsString()
+    timeZone: string;
+    @IsNumber()
+    latitude: number;
+    @IsNumber()
+    longitude: number;
 }
