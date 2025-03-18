@@ -1,7 +1,7 @@
 import { Prop ,Schema, SchemaFactory} from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 @Schema()
-export class CountryModel extends Document {
+export class AirportsModel extends Document {
   @Prop({ required: true })
   iataCode: string;
 
@@ -27,4 +27,4 @@ export class CountryModel extends Document {
   routes: string[];
 }
 
-export const CountrySchema = SchemaFactory.createForClass(CountryModel);
+export const AirportsSchema = SchemaFactory.createForClass(AirportsModel);
