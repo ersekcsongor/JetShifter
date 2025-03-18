@@ -6,7 +6,7 @@ import axios from 'axios';
 const fetchCountries = async () => {
   try {
     // Replace with your backend URL
-    const response = await axios.get('http://172.20.10.11:3000/countries/getAll');
+    const response = await axios.get('http://192.168.56.1:3000/countries/getAll');
     
     // Log the response data to the console
     console.log('Countries:', response.data);

@@ -50,9 +50,18 @@ const FlightListScreen = () => {
         console.log("Headers:", response.headers);
         console.log("Response data:", JSON.stringify(response.data, null, 2));
 
-        // Extract relevant flight data from the response
-        const flightsData = response.data.trips[0]?.dates[0]?.flights || [];
-        setFlights(flightsData);
+        // Extract relevant flight data for the given date
+        const trips = response.data.trips;
+        if (trips && trips.length > 0) {
+          const dates = trips[0].dates;
+          const matchingDate = dates.find(
+            (date: any) => date.dateOut.startsWith(startDate)
+          );
+          const flightsData = matchingDate ? matchingDate.flights : [];
+          setFlights(flightsData);
+        } else {
+          setFlights([]);
+        }
         setLoading(false);
       } catch (err) {
         // TypeScript-safe error handling
@@ -66,11 +75,11 @@ const FlightListScreen = () => {
           });
           setError(`Axios error: ${err.message}`);
         } else if (err instanceof Error) {
-          // Generic error
+          
           console.error("Generic error:", err.message);
           setError(`Error: ${err.message}`);
         } else {
-          // Unknown error
+
           console.error("Unknown error:", err);
           setError("An unknown error occurred");
         }
@@ -101,7 +110,6 @@ const FlightListScreen = () => {
               <Text>Departure: {item.time[0]}</Text>
               <Text>Arrival: {item.time[1]}</Text>
               <Text>Duration: {item.duration}</Text>
-              <Text>Fare: {item.faresLeft} seats available</Text>
             </View>
           )}
         />

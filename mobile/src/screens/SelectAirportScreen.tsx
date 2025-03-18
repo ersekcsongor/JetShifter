@@ -7,35 +7,42 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "~/navigation";
 import axios from "axios";
 
+interface Airport {
+  _id: string;
+  iataCode: string;
+  name: string;
+  countryCode: string;
+  cityCode: string;
+  timeZone: string;
+  latitude: number;
+  longitude: number;
+  routes: string[];
+  __v: number;
+}
+
 const SelectAirportScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const [departure, setDeparture] = useState("");
-  const [arrival, setArrival] = useState("");
+  const [departure, setDeparture] = useState<string>("");
+  const [arrival, setArrival] = useState<string>("");
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [airportData, setAirportData] = useState<{ [key: string]: string }>({});
+  const [airports, setAirports] = useState<Airport[]>([]);
+  const [filteredArrivalAirports, setFilteredArrivalAirports] = useState<Airport[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch airport data from the API
   useEffect(() => {
     const fetchAirportData = async () => {
       try {
-        const response = await axios.get("http://172.20.10.11:3000/countries/getAll");
+        const response = await axios.get("http://172.20.10.11:3000/airports/getAll");
         const data = response.data;
 
-        // Transform the API response into the required format
-        const airportMapping: { [key: string]: string } = {};
-        data.forEach((country: { id: string; name: string; iataCode: string }) => {
-          airportMapping[`${country.name} (${country.iataCode})`] = country.iataCode;
-        });
-
-        setAirportData(airportMapping);
+        setAirports(data);
 
         // Set default values for departure and arrival
-        const airportKeys = Object.keys(airportMapping);
-        if (airportKeys.length > 0) {
-          setDeparture(airportKeys[0]);
-          setArrival(airportKeys[1] || airportKeys[0]);
+        if (data.length > 0) {
+          setDeparture(data[0].iataCode);
+          updateArrivalAirports(data[0].routes);
         }
       } catch (error) {
         console.error("Error fetching airport data:", error);
@@ -47,15 +54,31 @@ const SelectAirportScreen = () => {
     fetchAirportData();
   }, []);
 
+  // Update the arrival airports based on the selected departure airport's routes
+  const updateArrivalAirports = (routes: string[]) => {
+    const airportRoutes = routes
+      .filter((route) => route.startsWith("airport:"))
+      .map((route) => route.replace("airport:", ""));
+
+    const arrivalAirports = airports.filter((airport) =>
+      airportRoutes.includes(airport.iataCode)
+    );
+
+    setFilteredArrivalAirports(arrivalAirports);
+
+    // Set the default arrival airport
+    if (arrivalAirports.length > 0) {
+      setArrival(arrivalAirports[0].iataCode);
+    }
+  };
+
   const handleSearch = () => {
-    const departureCode = airportData[departure];
-    const arrivalCode = airportData[arrival];
     const formattedDate = date.toISOString().split("T")[0];
 
-    if (departureCode && arrivalCode) {
+    if (departure && arrival) {
       navigation.navigate("FlightListScreen", {
-        departure: departureCode,
-        arrival: arrivalCode,
+        departure,
+        arrival,
         startDate: formattedDate,
       });
     } else {
@@ -75,20 +98,37 @@ const SelectAirportScreen = () => {
   return (
     <View style={{ padding: 20 }}>
       <Text style={{ marginTop: 10, fontSize: 20, fontWeight: "bold", textAlign: "center" }}>
-        Select Departure Country:
+        Select Departure Airport:
       </Text>
-      <Picker selectedValue={departure} onValueChange={setDeparture}>
-        {Object.keys(airportData).map((country) => (
-          <Picker.Item key={country} label={country} value={country} />
+      <Picker
+        selectedValue={departure}
+        onValueChange={(value) => {
+          setDeparture(value);
+          const selectedAirport = airports.find((airport) => airport.iataCode === value);
+          if (selectedAirport) {
+            updateArrivalAirports(selectedAirport.routes);
+          }
+        }}
+      >
+        {airports.map((airport) => (
+          <Picker.Item
+            key={airport._id}
+            label={`${airport.name} (${airport.iataCode})`}
+            value={airport.iataCode}
+          />
         ))}
       </Picker>
 
       <Text style={{ marginTop: 10, fontWeight: "bold", fontSize: 20, textAlign: "center" }}>
-        Select Arrival Country:
+        Select Arrival Airport:
       </Text>
       <Picker selectedValue={arrival} onValueChange={setArrival}>
-        {Object.keys(airportData).map((country) => (
-          <Picker.Item key={country} label={country} value={country} />
+        {filteredArrivalAirports.map((airport) => (
+          <Picker.Item
+            key={airport._id}
+            label={`${airport.name} (${airport.iataCode})`}
+            value={airport.iataCode}
+          />
         ))}
       </Picker>
 

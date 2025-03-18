@@ -1,6 +1,6 @@
 import { IsNumber, IsString,IsArray,IsOptional } from 'class-validator';
 
-export class CountryInputDto {
+export class AirportsInputDto {
     @IsString()
     iataCode: string;
     @IsString()
