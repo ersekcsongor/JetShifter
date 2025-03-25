@@ -34,7 +34,7 @@ const SelectAirportScreen = () => {
   useEffect(() => {
     const fetchAirportData = async () => {
       try {
-        const response = await axios.get("http://172.20.10.11:3000/airports/getAll");
+        const response = await axios.get("http://172.20.10.2:3000/airports/getAll");
         const data = response.data;
 
         setAirports(data);
