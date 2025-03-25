@@ -4,20 +4,21 @@ import { AirportsInputDto } from './dto/input/airports.input.dto';
 
 @Controller('airports')
 export class AirportsController {
-  constructor(private readonly countriesService: AirportsService) {}
+  constructor(private readonly airportsService: AirportsService) {}
 
 @Post('insert')
-async insertCountries(@Body() airportsData: AirportsInputDto[]) {
+async insertAirports(@Body() airportsData: AirportsInputDto[]) {
   console.log('Received payload:', airportsData);
   if (!Array.isArray(airportsData)) {
     throw new BadRequestException('Invalid payload: Expected an array of countries');
   }
   console.log(airportsData.filter((country) => country));
-  return await this.countriesService.insertCountries(airportsData.filter((country) => country));
+  return await this.airportsService.insertAirports(airportsData.filter((country) => country));
 }
 
 @Get('getAll')
-async getAllCountries() {
-  return await this.countriesService.getAllCountries();
+async getAllAirports() {
+  return await this.airportsService.getAllAirports();
 }
+
 }
