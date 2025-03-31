@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator, FlatList, StyleSheet } from "react-native";
+import { View, Text, ActivityIndicator, FlatList, StyleSheet, TouchableOpacity } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import axios, { AxiosError } from "axios";
+import { useNavigation } from "@react-navigation/native";
+import Flight from "~/types/Flight";
+import { RootStackParamList } from "~/navigation";
+import { StackNavigationProp } from "@react-navigation/stack";
 
 // Configure API client with better defaults
 const apiClient = axios.create({
-  baseURL: "http://172.20.10.2:3000",
+  baseURL: "http://172.20.10.2:3000",//192.168.56.1:3000,172.20.10.2:3000
   timeout: 15000, // Increased timeout to 15 seconds
   headers: {
     "Content-Type": "application/json",
@@ -13,20 +17,14 @@ const apiClient = axios.create({
   },
 });
 
-// Type definitions for our flight data
-type Flight = {
-  flightNumber: string;
-  origin: string;
-  destination: string;
-  time: [string, string];
-  duration: string;
-};
+
 
 type FlightResponse = {
   flights: Flight[];
 }[];
 
 const FlightListScreen = () => {
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const route = useRoute();
   const { departure, arrival, startDate } = route.params as {
     departure: string;
@@ -101,6 +99,10 @@ const FlightListScreen = () => {
     const arrivalTime = formatDateTime(item.time[1]);
 
     return (
+      <TouchableOpacity 
+        style={styles.flightItem}
+        onPress={() => navigation.navigate('FlightDetailsScreen', { flight: item })}
+      >
       <View style={styles.flightItem}>
         <View style={styles.flightHeader}>
           <Text style={styles.flightNumber}>{item.flightNumber}</Text>
@@ -128,6 +130,7 @@ const FlightListScreen = () => {
           </View>
         </View>
       </View>
+      </TouchableOpacity>
     );
   };
 
