@@ -61,7 +61,7 @@ export class FlightsService {
       });
       console.log(`Saved flights for ${flightData.origin} -> ${flightData.destination} on ${flightData.date}`);
     } else {
-      console.log(`No flights found for ${flightData.origin} -> ${flightData.destination} on ${flightData.date}. Skipping save.`);
+      // console.log(`No flights found for ${flightData.origin} -> ${flightData.destination} on ${flightData.date}. Skipping save.`);
     }
   }
 

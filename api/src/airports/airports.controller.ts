@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException, Get } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, Get, Param } from '@nestjs/common';
 import { AirportsService } from './airports.service';
 import { AirportsInputDto } from './dto/input/airports.input.dto';
 
@@ -19,6 +19,12 @@ async insertAirports(@Body() airportsData: AirportsInputDto[]) {
 @Get('getAll')
 async getAllAirports() {
   return await this.airportsService.getAllAirports();
+}
+
+@Get('getTimezoneByIataCode/:iataCode')
+async getTimezoneByIataCode(@Param('iataCode') iataCode: string) {
+  const timeZone = await this.airportsService.getTimezoneByIataCode(iataCode);
+  return { timeZone };
 }
 
 }
