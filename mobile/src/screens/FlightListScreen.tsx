@@ -48,7 +48,6 @@ const FlightListScreen = () => {
       
       console.log("API Response:", response.data);
 
-      // Handle empty or invalid responses
       if (!response.data || response.data.length === 0 || !response.data[0].flights) {
         setFlights([]);
         return;

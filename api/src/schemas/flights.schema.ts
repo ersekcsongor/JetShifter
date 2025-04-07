@@ -12,8 +12,15 @@ export class FlightDataModel extends Document {
   @Prop({ required: true })
   date: string;
 
-  @Prop({ type: Object, required: true }) // Store the raw API response
-  flights: Record<string, any>;
+  @Prop({ type: [{
+    origin: String,
+    destination: String,
+    flightNumber: String,
+    time: [String],
+    timeUTC: [String],
+    duration: String
+  }], required: true })
+  flights: Array<Record<string, any>>;
 
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;
