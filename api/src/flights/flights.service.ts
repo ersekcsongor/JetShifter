@@ -150,4 +150,15 @@ export class FlightsService {
       .select('origin destination date flights')
       .exec();
   }
+
+  async createFlight(flightData: {
+    origin: string;
+    destination: string;
+    date: string;
+    flights: Record<string, any>;
+  }) {
+    const newFlight = new this.flightDataModel(flightData);
+    return await newFlight.save();
+  }
+
 }
