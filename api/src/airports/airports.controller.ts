@@ -27,4 +27,10 @@ async getTimezoneByIataCode(@Param('iataCode') iataCode: string) {
   return { timeZone };
 }
 
+@Get('getNameByIataCode/:iataCode')
+async getNameByIataCode(@Param('iataCode') iataCode: string) {
+  const name = await this.airportsService.getNameByIataCode(iataCode);
+  return { name };
+}
+
 }

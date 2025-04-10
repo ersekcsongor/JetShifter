@@ -32,14 +32,20 @@ export class AirportsService {
     return airport.timeZone;
   }
   
-  async getTimezonesForAirports(iataCodes: string[]): Promise<Record<string, string>> {
-    const airports = await this.airportModel.find({
-      iataCode: { $in: iataCodes }
-    }).exec();
+ 
+  async getNameByIataCode(iataCode: string): Promise<string> {
+    if (!iataCode || typeof iataCode !== 'string') {
+        throw new HttpException('Invalid IATA code provided', 400);
+    }
     
-    return airports.reduce((acc, airport) => {
-      acc[airport.iataCode] = airport.timeZone;
-      return acc;
-    }, {});
-  }
+    const airport = await this.airportModel.findOne({ iataCode }).exec();
+    
+    if (!airport) {
+        throw new HttpException(`Airport with IATA code ${iataCode} not found`, 404);
+    }
+    
+    return airport.name;
+}
+  
+
 }

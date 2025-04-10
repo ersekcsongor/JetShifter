@@ -67,6 +67,31 @@ export const styles = StyleSheet.create({
     marginBottom: 5,
     color: '#555',
   },
+ 
+  calculateButton: {
+    backgroundColor: '#f5f5f5', 
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.23,
+    shadowRadius: 2.62,
+    elevation: 4,
+  },
+  disabledButton: {
+    backgroundColor: '#a8b5c8', 
+  },
+  buttonText: {
+    color: 'black',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 export default styles

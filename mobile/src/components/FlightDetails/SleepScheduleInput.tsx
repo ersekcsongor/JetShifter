@@ -62,6 +62,9 @@ export const SleepScheduleInput = ({ schedule, onChange }: SleepScheduleInputPro
             onPress={() => showPicker('bedtime')}
           >
             <Text style={styles.timeText}>{schedule.bedtime}</Text>
+            <View style={styles.iconContainer}>
+              <Text style={styles.icon}>🛏️</Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -73,48 +76,51 @@ export const SleepScheduleInput = ({ schedule, onChange }: SleepScheduleInputPro
             onPress={() => showPicker('wakeup')}
           >
             <Text style={styles.timeText}>{schedule.wakeupTime}</Text>
+            <View style={styles.iconContainer}>
+              <Text style={styles.icon}>⏰</Text>
+            </View>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Modal Picker for iOS */}
       {Platform.OS === 'ios' && activePicker && (
-    <Modal
-        transparent={true}
-        animationType="slide"
-        visible={!!activePicker}
-        onRequestClose={() => setActivePicker(null)}
+        <Modal
+          transparent={true}
+          animationType="slide"
+          visible={!!activePicker}
+          onRequestClose={() => setActivePicker(null)}
         >
-        <View style={styles.modalContainer}>
-        <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setActivePicker(null)}>
-                <Text style={styles.modalButton}>Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>
-                {activePicker === 'bedtime' ? 'Select Bedtime' : 'Select Wakeup Time'}
-            </Text>
-            <TouchableOpacity onPress={confirmTime}>
-                <Text style={styles.modalButton}>Done</Text>
-            </TouchableOpacity>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <TouchableOpacity onPress={() => setActivePicker(null)}>
+                  <Text style={styles.modalButton}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.modalTitle}>
+                  {activePicker === 'bedtime' ? 'Select Bedtime' : 'Select Wakeup Time'}
+                </Text>
+                <TouchableOpacity onPress={confirmTime}>
+                  <Text style={[styles.modalButton, styles.doneButton]}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <View style={styles.pickerContainer}>
+                <DateTimePicker
+                  value={tempDate}
+                  mode="time"
+                  display="spinner"
+                  onChange={onPickerChange}
+                  style={styles.picker}
+                  textColor="#000000"
+                  themeVariant="light"
+                />
+              </View>
             </View>
-            <View style={styles.pickerContainer}>
-            <DateTimePicker
-                value={tempDate}
-                mode="time"
-                display="spinner"
-                onChange={onPickerChange}
-                style={styles.picker}
-                textColor="#000000" // This is crucial for iOS spinner text color
-                themeVariant="light" // Ensures light mode
-            />
-            </View>
-        </View>
-        </View>
-    </Modal>
+          </View>
+        </Modal>
       )}
 
-      {/* Android Picker */}
+      {/* Android Picker - keep existing implementation */}
       {Platform.OS === 'android' && activePicker && (
         <DateTimePicker
           value={tempDate}
@@ -138,46 +144,74 @@ export const SleepScheduleInput = ({ schedule, onChange }: SleepScheduleInputPro
 const styles = StyleSheet.create({
   container: {
     marginVertical: 16,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   label: {
     fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '600',
+    color: '#2d3436',
+    marginBottom: 12,
   },
   inputRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 12,
   },
   timeContainer: {
-    width: '48%',
+    flex: 1,
   },
   timeLabel: {
     fontSize: 14,
-    color: '#00000',
-    marginBottom: 4,
+    color: '#636e72',
+    marginBottom: 8,
+    fontWeight: '500',
   },
   timeDisplay: {
     borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 4,
-    padding: 12,
+    borderColor: '#dfe6e9',
+    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#f8f9fa',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
   timeText: {
     fontSize: 16,
-    color: '#000000',
+    fontWeight: '500',
+    color: '#2d3436',
   },
+  iconContainer: {
+    backgroundColor: '#e3f2fd',
+    borderRadius: 20,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  icon: {
+    fontSize: 16,
+  },
+  // Modal styles
   modalContainer: {
     flex: 1,
     justifyContent: 'flex-end',
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 12,
-    borderTopRightRadius: 12,
-    padding: 16,
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    padding: 20,
+    paddingBottom: 24,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -186,21 +220,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2d3436',
   },
   modalButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: '#636e72',
+    fontWeight: '500',
+  },
+  doneButton: {
+    color: '#0984e3',
+    fontWeight: '600',
+  },
+  pickerContainer: {
+    backgroundColor: 'white',
   },
   picker: {
     width: '100%',
-  },
-  pickerItem: {
-    color: '#000000', // Black text color
-    fontSize: 20,     // Slightly larger font
-  },
-  pickerContainer: {
-    backgroundColor: 'white', // Ensure white background
   },
 });

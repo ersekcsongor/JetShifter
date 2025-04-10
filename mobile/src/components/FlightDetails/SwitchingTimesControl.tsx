@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Button, ActivityIndicator } from 'react-native';
+import { View, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
 import { styles } from './styles';
 
 type SwitchingTimesControlProps = {
@@ -14,11 +14,20 @@ export const SwitchingTimesControl = ({
   timezonesReady 
 }: SwitchingTimesControlProps) => (
   <View style={styles.controlContainer}>
-    <Button 
-      title="Calculate Switching Times" 
-      onPress={onCalculate} 
+    <TouchableOpacity
+      style={[
+        styles.calculateButton,
+        (!timezonesReady || loading) && styles.disabledButton
+      ]}
+      onPress={onCalculate}
       disabled={loading || !timezonesReady}
-    />
-    {loading && <ActivityIndicator size="small" color="#0000ff" />}
+      activeOpacity={0.7}
+    >
+      {loading ? (
+        <ActivityIndicator size="small" color="#ffffff" />
+      ) : (
+        <Text style={styles.buttonText}>Calculate Switching Times</Text>
+      )}
+    </TouchableOpacity>
   </View>
 );

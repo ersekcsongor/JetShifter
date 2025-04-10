@@ -137,6 +137,7 @@ const SelectAirportScreen = () => {
       </Text>
       <Button title={date.toDateString()} onPress={() => setShowDatePicker(true)} />
       {showDatePicker && (
+        <View style={{ justifyContent: "center", alignItems: "center" }}>
         <DateTimePicker
           value={date}
           mode="date"
@@ -148,6 +149,7 @@ const SelectAirportScreen = () => {
             setShowDatePicker(false);
           }}
         />
+        </View>
       )}
 
       <Button title="Find Flights" onPress={handleSearch} />
