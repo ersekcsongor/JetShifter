@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Button, ActivityIndicator } from 'react-native';
+import { Text,View, Button, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { styles } from './styles';
 
 type OptimizationControlProps = {
@@ -16,11 +16,12 @@ export const OptimizationControl = ({
   timezonesReady
 }: OptimizationControlProps) => (
   <View style={styles.controlContainer}>
-    <Button
-      title={isOptimizing ? "Optimizing..." : "Run Full Optimization"}
+    <TouchableOpacity style ={styles.calculateButton}
       onPress={onOptimize}
       disabled={isOptimizing || !timezonesReady || !switchingPointsAvailable}
-    />
+    >
     {isOptimizing && <ActivityIndicator size="small" color="#0000ff" />}
+    <Text style={styles.buttonText}>Circadian Statistics</Text>
+    </TouchableOpacity>
   </View>
 );

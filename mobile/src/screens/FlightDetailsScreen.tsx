@@ -101,8 +101,7 @@ const FlightDetailsScreen = ({ route }: Props) => {
       sleepSchedule
     );
     
-    console.log('Calculated switching times:', newSwitchingTimes); // Add debug log
-
+    console.log('Calculated switching times:', newSwitchingTimes); 
     updateState({ 
       switchingTimes: newSwitchingTimes,
       activeSwitchingCount: newSwitchingTimes.switchingPoints.length,
@@ -116,15 +115,16 @@ const FlightDetailsScreen = ({ route }: Props) => {
     });
   }, [flight, timezones]);
 
-  const handleSimulateDynamics = useCallback(async () => {
+  
+const handleSimulateDynamics = useCallback(async () => {
     if (!switchingTimes) return;
     
     updateState({ simulationLoading: true });
     try {
       const trajectory = simulateCircadianDynamics(switchingTimes);
       updateState({ 
-        stateTrajectory: trajectory,
-        costHistory: [...costHistory, calculateCost(trajectory)]
+        stateTrajectory: trajectory.trajectory,
+        costHistory: [...costHistory, calculateCost(trajectory.trajectory)]
       });
     } catch (error) {
       console.error('Simulation error:', error);
@@ -132,6 +132,7 @@ const FlightDetailsScreen = ({ route }: Props) => {
       updateState({ simulationLoading: false });
     }
   }, [switchingTimes, costHistory]);
+
 
   const handleIntegrateCoState = useCallback(async () => {
     if (!switchingTimes || stateTrajectory.length === 0) return;
@@ -204,18 +205,18 @@ const FlightDetailsScreen = ({ route }: Props) => {
       while (shouldContinue && currentIteration < maxIterations) {
         // Simulate dynamics
         const trajectory = simulateCircadianDynamics(currentSwitchingTimes);
-        const currentCost = calculateCost(trajectory);
+        const currentCost = calculateCost(trajectory.trajectory);
         
         // Integrate co-state
         const [coStateTraj, coStateSwitching] = integrateCoStateEquations(
           currentSwitchingTimes,
-          trajectory
+          trajectory.trajectory
         );
         
         // Calculate perturbations
         const perturbations = calculateOptimalPerturbations(
           currentSwitchingTimes,
-          trajectory,
+          trajectory.trajectory,
           coStateSwitching
         );
         
@@ -227,7 +228,7 @@ const FlightDetailsScreen = ({ route }: Props) => {
         );
         
         updateState({
-          stateTrajectory: trajectory,
+          stateTrajectory: trajectory.trajectory,
           coStateTrajectory: coStateTraj,
           coStateAtSwitchingPoints: coStateSwitching,
           controlPerturbations: perturbations,
@@ -283,18 +284,14 @@ const FlightDetailsScreen = ({ route }: Props) => {
       
       <FlightHeader flight={flight} />
       
-      <TimezoneInfo 
-        originTz={timezones.originTz} 
-        destTz={timezones.destTz} 
-        loading={loading} 
-      />
-      
       <SleepScheduleInput 
           schedule={sleepSchedule}
            onChange={setSleepSchedule}
       />
 
-      <SwitchingTimesControl 
+      
+
+      <SwitchingTimesControl
         onCalculate={handleCalculateSwitchingTimes} 
         loading={loading} 
         timezonesReady={!!timezones.originTz && !!timezones.destTz}
@@ -302,12 +299,6 @@ const FlightDetailsScreen = ({ route }: Props) => {
       
       {switchingTimes && (
       <>
-        <SimulationControl 
-          onSimulate={handleSimulateDynamics} 
-          loading={simulationLoading} 
-          switchingTimesReady={!!switchingTimes}
-        />
-        
         <OptimizationControl 
           onOptimize={handleRunOptimization} 
           isOptimizing={isOptimizing} 
@@ -315,6 +306,8 @@ const FlightDetailsScreen = ({ route }: Props) => {
           timezonesReady={!!timezones.originTz && !!timezones.destTz}
         />
         
+        
+
         {/* Always show results when switchingTimes exist */}
         <ResultsDisplay
         switchingTimes={switchingTimes}

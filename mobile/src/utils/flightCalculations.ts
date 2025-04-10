@@ -30,11 +30,11 @@ export const optimizeCircadianSchedule = (
 
   while (!isComplete && iteration < PERTURBATION_CONSTANTS.MAX_ITERATIONS) {
     const stateTrajectory = simulateCircadianDynamics(switchingTimes);
-    const currentCost = calculateCost(stateTrajectory);
+    const currentCost = calculateCost(stateTrajectory.trajectory);
     costHistory.push(currentCost);
 
-    const [coStateTraj, coStateAtPoints] = integrateCoStateEquations(switchingTimes, stateTrajectory);
-    const perturbations = calculateOptimalPerturbations(switchingTimes, stateTrajectory, coStateAtPoints);
+    const [coStateTraj, coStateAtPoints] = integrateCoStateEquations(switchingTimes, stateTrajectory.trajectory);
+    const perturbations = calculateOptimalPerturbations(switchingTimes, stateTrajectory.trajectory, coStateAtPoints);
     
     const updateResult = updateSwitchingTimes(switchingTimes, perturbations, costHistory);
     
@@ -57,7 +57,7 @@ export const optimizeCircadianSchedule = (
 
   return {
     switchingTimes,
-    trajectory: simulateCircadianDynamics(switchingTimes),
+    trajectory: simulateCircadianDynamics(switchingTimes).trajectory,
     costHistory
   };
 };
@@ -69,7 +69,6 @@ export const optimizeCircadianSchedule = (
     destTz: string,
     sleepSchedule: SleepSchedule
   ): SwitchingTimes => {
-    // Validate input flight data
     if (!flight?.time[0] || !flight?.time[1]) {
       console.error('Invalid flight times:', flight);
       return {
@@ -89,12 +88,15 @@ export const optimizeCircadianSchedule = (
       // Parse dates with timezones
       const departure = moment.tz(flight.time[0], originTz);
       const arrival = moment.tz(flight.time[1], destTz);
-  
+      const endDate = arrival.clone().add(1, 'day'); // Add one day after arrival
+
       if (!departure.isValid() || !arrival.isValid()) {
         throw new Error('Invalid date format');
       }
   
       const flightDurationHours = arrival.diff(departure, 'hours', true);
+      const totalDurationHours = endDate.diff(departure, 'hours', true); // Total duration including next day
+
       const timezoneDiff = arrival.utcOffset() - departure.utcOffset();
       const direction = timezoneDiff > 0 ? 'eastbound' : 'westbound';
   
@@ -102,21 +104,34 @@ export const optimizeCircadianSchedule = (
       const [bedHour, bedMinute] = sleepSchedule.bedtime.split(':').map(Number);
       const [wakeHour, wakeMinute] = sleepSchedule.wakeupTime.split(':').map(Number);
       
-      const bedtime = departure.clone()
-        .set({ hour: bedHour, minute: bedMinute, second: 0 });
-      const wakeTime = departure.clone()
+
+      console.log(sleepSchedule.bedtime.split(':').map(Number))
+      console.log(sleepSchedule.wakeupTime.split(':').map(Number))
+
+      const sleepPeriods = [];
+
+      // First day sleep
+      const flightDayBedtime = arrival.clone()
+      .set({ hour: bedHour, minute: bedMinute, second: 0 });
+      const flightDayWakeTime = arrival.clone()
         .set({ hour: wakeHour, minute: wakeMinute, second: 0 });
-  
-      // Adjust for overnight sleep
-      if (wakeTime.isBefore(bedtime)) {
-        wakeTime.add(1, 'day');
+
+      if (flightDayWakeTime.isBefore(flightDayBedtime)) {
+        flightDayWakeTime.add(1, 'day');
       }
-  
+      sleepPeriods.push({ bedtime: flightDayBedtime, wakeTime: flightDayWakeTime });
+    
+      // Next day sleep
+      const nextDayBedtime = flightDayBedtime.clone().add(1, 'day');
+      const nextDayWakeTime = flightDayWakeTime.clone().add(1, 'day');
+      sleepPeriods.push({ bedtime: nextDayBedtime, wakeTime: nextDayWakeTime });
+
+
       // Calculate switching points with sleep protection
       const minInterval = 1.5;
       const maxSwitchingPoints = Math.floor(flightDurationHours / minInterval);
       const baseIntervals = Math.min(
-        Math.ceil(Math.abs(timezoneDiff/60) * 1.5),
+        Math.ceil(Math.abs(timezoneDiff/60) * 3),
         maxSwitchingPoints
       );
   
@@ -129,73 +144,113 @@ export const optimizeCircadianSchedule = (
       const switchingPoints: Array<{ time: string; type: 'light'|'dark' }> = [];
       let currentTime = departure.clone();
       let remainingDuration = flightDurationHours;
-      let phaseCounter = 0;
+      let currentPhase: 'light' | 'dark' = 'light'; // Start with light phase
+      
+      // Add first switching point at departure for initial light phase
+      switchingPoints.push({
+        time: currentTime.format('YYYY-MM-DD HH:mm'),
+        type: currentPhase
+      });
   
-      while (remainingDuration > intervalSize * 0.5) {
-        const phaseType = phaseCounter % 2 === 0 ? 'light' : 'dark';
+      while (remainingDuration > minInterval * 0.5 && currentTime.isBefore(endDate)) {
+        // Calculate next phase duration
         let phaseDuration = Math.min(
-          intervalSize * (phaseType === 'light' ? 1.2 : 0.8),
+          intervalSize * (currentPhase === 'light' ? 1.2 : 0.8),
           remainingDuration
         );
+        
+        // Check if next phase will overlap with sleep time
+        const nextPhaseEnd = currentTime.clone().add(phaseDuration, 'hours');
+        
+        const activeSleepPeriod = sleepPeriods.find(period => 
+          currentTime.isBetween(period.bedtime, period.wakeTime, null, '[)') ||
+          nextPhaseEnd.isBetween(period.bedtime, period.wakeTime, null, '[)') ||
+          (currentTime.isBefore(period.bedtime) && nextPhaseEnd.isAfter(period.wakeTime))
+        );
   
-        const nextTime = currentTime.clone().add(phaseDuration, 'hours');
-  
-        // Check for sleep period overlap
-        if (currentTime.isBefore(bedtime) && nextTime.isAfter(bedtime)) {
-          // Split phase at bedtime
-          const preSleepDuration = bedtime.diff(currentTime, 'hours', true);
-          
-          if (preSleepDuration > 0.1) { // Minimum meaningful duration
-            switchingPoints.push({
-              time: bedtime.format('YYYY-MM-DD HH:mm'),
-              type: phaseType
-            });
-            remainingDuration -= preSleepDuration;
-            phaseCounter++;
+        if (activeSleepPeriod) {
+          if (currentPhase === 'light' && currentTime.isBefore(activeSleepPeriod.bedtime)) {
+            // Transition to sleep time
+            const timeUntilBedtime = activeSleepPeriod.bedtime.diff(currentTime, 'hours', true);
+            
+            if (timeUntilBedtime > 0.5) {
+              currentTime = activeSleepPeriod.bedtime.clone();
+              remainingDuration -= timeUntilBedtime;
+              
+              switchingPoints.push({
+                time: currentTime.format('YYYY-MM-DD HH:mm'),
+                type: currentPhase
+              });
+              
+              currentPhase = 'dark';
+            }
           }
   
-          // Add sleep period as dark phase
-          switchingPoints.push({
-            time: bedtime.format('YYYY-MM-DD HH:mm'),
-            type: 'dark'
-          });
+          // Handle sleep period
+          const sleepEnd = activeSleepPeriod.wakeTime.isBefore(endDate) 
+            ? activeSleepPeriod.wakeTime 
+            : endDate;
+          const sleepDuration = sleepEnd.diff(currentTime, 'hours', true);
           
-          const sleepEnd = wakeTime.isBefore(arrival) ? wakeTime : arrival;
-          switchingPoints.push({
-            time: sleepEnd.format('YYYY-MM-DD HH:mm'),
-            type: 'dark'
-          });
-  
-          // Adjust tracking variables
-          const sleepDuration = sleepEnd.diff(bedtime, 'hours', true);
-          remainingDuration -= sleepDuration;
-          currentTime = sleepEnd.clone();
-          phaseCounter++; // Force phase change after sleep
+          if (sleepDuration > 0.5) {
+            remainingDuration -= sleepDuration;
+            currentTime = sleepEnd.clone();
+            
+            switchingPoints.push({
+              time: currentTime.format('YYYY-MM-DD HH:mm'),
+              type: currentPhase
+            });
+            
+            currentPhase = 'light';
+          }
+          
           continue;
         }
-  
-        // Normal phase addition
+        
+        // Regular phase processing
         currentTime.add(phaseDuration, 'hours');
+        remainingDuration -= phaseDuration;
+        
         switchingPoints.push({
           time: currentTime.format('YYYY-MM-DD HH:mm'),
-          type: phaseType
+          type: currentPhase
         });
-  
-        remainingDuration -= phaseDuration;
-        phaseCounter++;
+        
+        currentPhase = currentPhase === 'light' ? 'dark' : 'light';
       }
   
-      // Ensure last point matches arrival time
-      if (switchingPoints.length > 0) {
-        switchingPoints[switchingPoints.length - 1].time = arrival.format('YYYY-MM-DD HH:mm');
+      // Ensure we cover the entire period
+      if (currentTime.isBefore(endDate)) {
+        switchingPoints.push({
+          time: endDate.format('YYYY-MM-DD HH:mm'),
+          type: currentPhase
+        });
       }
   
+      // // Add extra points in the next day if too few exist
+      // const postArrivalPoints = switchingPoints.filter(
+      //   point => moment(point.time).isAfter(arrival)
+      // );
+
+      // if (postArrivalPoints.length < 3) {
+      //   const nextDayInterval = endDate.diff(arrival, 'hours') / 4; // Divide next day into 4 phases
+      //   let current = arrival.clone();
+        
+      //   for (let i = 1; i <= 3; i++) {
+      //     current = current.add(nextDayInterval, 'hours');
+      //     switchingPoints.push({
+      //       time: current.format('YYYY-MM-DD HH:mm'),
+      //       type: i % 2 === 0 ? 'dark' : 'light' // Alternate
+      //     });
+      //   }
+      //  }
+
       return {
         direction,
         flightDurationHours,
         switchingPoints,
         t0: departure.format('YYYY-MM-DD HH:mm'),
-        tf: arrival.format('YYYY-MM-DD HH:mm'),
+        tf: endDate.format('YYYY-MM-DD HH:mm'), // Now shows end of next day
         timezoneDiff: timezoneDiff/60,
         sleepSchedule,
         u0: 0,
@@ -217,10 +272,18 @@ export const optimizeCircadianSchedule = (
     }
   };
 
+  function calculateCircadianCost(trajectory: StateTrajectory, switchingTimes: SwitchingTimes): number {
+    // Implement your cost calculation logic here
+    // For example:
+    const discomfort = trajectory.reduce((sum, state) => sum + Math.abs(state.x), 0);
+    const sleepDisruption = trajectory.reduce((sum, state) => sum + (1 - state.n), 0);
+    return discomfort + sleepDisruption;
+  }
+
 // Updated simulation with phase-type awareness
 export const simulateCircadianDynamics = (
   switchingTimes: SwitchingTimes
-): StateTrajectory => {
+): { trajectory: StateTrajectory, cost: number } => {
   let currentState: CircadianState = { 
     x: 0, 
     n: switchingTimes.sleepSchedule.bedtime === '22:00' ? 0.4 : 0.6 
@@ -284,7 +347,9 @@ export const simulateCircadianDynamics = (
     });
   }
 
-  return trajectory;
+  const cost = calculateCircadianCost(trajectory, switchingTimes);
+  
+  return { trajectory, cost };
 };
   
   export const integrateCoStateEquations = (
