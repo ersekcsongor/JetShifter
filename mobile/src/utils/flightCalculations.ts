@@ -27,6 +27,7 @@ export const optimizeCircadianSchedule = (
   const costHistory: number[] = [];
   let iteration = 0;
   let isComplete = false;
+  
 
   while (!isComplete && iteration < PERTURBATION_CONSTANTS.MAX_ITERATIONS) {
     const stateTrajectory = simulateCircadianDynamics(switchingTimes);
