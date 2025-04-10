@@ -289,8 +289,6 @@ const handleSimulateDynamics = useCallback(async () => {
            onChange={setSleepSchedule}
       />
 
-      
-
       <SwitchingTimesControl
         onCalculate={handleCalculateSwitchingTimes} 
         loading={loading} 
@@ -306,9 +304,7 @@ const handleSimulateDynamics = useCallback(async () => {
           timezonesReady={!!timezones.originTz && !!timezones.destTz}
         />
         
-        
 
-        {/* Always show results when switchingTimes exist */}
         <ResultsDisplay
         switchingTimes={switchingTimes}
         stateTrajectory={stateTrajectory}
@@ -322,6 +318,7 @@ const handleSimulateDynamics = useCallback(async () => {
         costHistory={costHistory}
         flightDuration={switchingTimes?.flightDurationHours || 0}
         timezoneDiff={switchingTimes?.timezoneDiff || 0}
+        sleepSchedule={sleepSchedule}
       />
       </>
     )}

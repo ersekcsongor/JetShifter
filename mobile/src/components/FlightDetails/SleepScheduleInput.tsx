@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { SleepSchedule } from '~/utils/types';
+import { MaterialIcons } from '@expo/vector-icons';
 
 type SleepScheduleInputProps = {
   schedule: SleepSchedule;
@@ -63,7 +64,12 @@ export const SleepScheduleInput = ({ schedule, onChange }: SleepScheduleInputPro
           >
             <Text style={styles.timeText}>{schedule.bedtime}</Text>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>🛏️</Text>
+              {/* <Text style={styles.icon}>🛏️</Text> */}
+              <MaterialIcons 
+                name="bed" 
+                size={24} 
+                color="black" 
+               />
             </View>
           </TouchableOpacity>
         </View>
@@ -77,7 +83,12 @@ export const SleepScheduleInput = ({ schedule, onChange }: SleepScheduleInputPro
           >
             <Text style={styles.timeText}>{schedule.wakeupTime}</Text>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>⏰</Text>
+              {/* <Text style={styles.icon}>⏰</Text> */}
+              <MaterialIcons 
+               name="alarm" 
+              size={24} 
+              color="black" 
+              />
             </View>
           </TouchableOpacity>
         </View>
@@ -155,9 +166,10 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2d3436',
+    fontWeight: 'bold',
+    color: '#black',
     marginBottom: 12,
+    textAlign: 'center',
   },
   inputRow: {
     flexDirection: 'row',
@@ -165,13 +177,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   timeContainer: {
+    color: '#black',
     flex: 1,
   },
   timeLabel: {
     fontSize: 14,
-    color: '#636e72',
+    color: '#black',
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    
   },
   timeDisplay: {
     borderWidth: 1,

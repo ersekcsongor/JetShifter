@@ -34,8 +34,10 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
   // Helper function to fetch country by IATA code
   const fetchCountryByIata = async (iataCode: string) => {
     try {
-      const response = await fetch(`http://172.20.10.2:3000/airports/getNameByIataCode=${iataCode}`);
+
+      const response = await fetch(`http://172.20.10.2:3000/airports/getNameByIataCode/${iataCode}`);
       
+
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
@@ -60,8 +62,6 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
     (async () => {
       const originRes = await fetchCountryByIata(flight.origin);
       const destinationRes = await fetchCountryByIata(flight.destination);
-      console.log('Origin Country:', originRes);
-      console.log('Destination Country:', destinationRes);
       setOriginCountry(originRes);
       setDestinationCountry(destinationRes);
     })();
@@ -78,26 +78,27 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
       <View style={styles.routeContainer}>
         {/* Origin */}
         <View style={styles.airportColumn}>
-          <Text style={styles.timeText}>
+          {/* <Text style={styles.timeText}>
             {formatTime(flight.time[0])}
             {!sameDay && (
               <Text style={styles.dateSmall}>
                 {'\n'}{formatDate(flight.time[0])}
               </Text>
             )}
-          </Text>
+          </Text> */}
 
           <Text style={styles.airportCode}>{flight.origin}</Text>
-          {!!originCountry && <Text style={styles.countryText}>{originCountry}</Text>}
-          {/* <MaterialIcons 
+          <MaterialIcons 
             name="location-pin" 
             size={24} 
             color="black" 
           />
+          {!!originCountry && <Text style={styles.countryText}>{originCountry}</Text>}
 
           
-          <Text>{originCountry}asdasds</Text> */}
         </View>
+
+        <View>
 
         <View style={styles.planeContainer}>    
           <MaterialIcons 
@@ -108,37 +109,55 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
           />
           <Text style={styles.infoValue}>{flight.duration}</Text>
         </View>
+          
+        <View style={styles.timeContainer}>
 
+          {/* Show date only once if same day */}
+          {sameDay && (
+            <Text style={styles.dateText}>
+              {formatDate(flight.time[0])}
+            </Text>
+          )}
         
+        </View>
+
+        </View>
+
         {/* Destination */}
         <View style={styles.airportColumn}>
-          <Text style={styles.timeText}>
+          {/* <Text style={styles.timeText}>
             {formatTime(flight.time[1])}
             {!sameDay && (
               <Text style={styles.dateSmall}>
                 {'\n'}{formatDate(flight.time[1])}
               </Text>
             )}
-          </Text>
+          </Text> */}
 
           <Text style={styles.airportCode}>{flight.destination}</Text>
+          <MaterialIcons 
+            name="location-pin" 
+            size={24} 
+            color="black" 
+          />
           {!!destinationCountry && <Text style={styles.countryText}>{destinationCountry}</Text>}
+
         </View>
+        
 
       
       </View>
 
-      {/* Show date only once if same day */}
-      {sameDay && (
-        <Text style={styles.dateText}>
-          {formatDate(flight.time[0])}
-        </Text>
-      )}
+      
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  timeContainer: {
+    alignItems: 'center',
+    marginTop: 16,
+  },
   headerContainer: {
     backgroundColor: '#f5f5f5',
     padding: 16,
@@ -159,7 +178,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     textAlign: 'center',
-    color: '#555',
+    color: '#black',
     marginBottom: 8,
     fontSize: 14,
   },
@@ -182,8 +201,9 @@ const styles = StyleSheet.create({
   // This is for the country name
   countryText: {
     fontSize: 14,
-    color: '#555',
+    color: '#black',
     marginBottom: 4,
+    textAlign: 'center',
   },
   timeText: {
     fontSize: 16,
