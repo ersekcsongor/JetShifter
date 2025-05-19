@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { SharedModule } from './shared/shared.module';
 import { AirportsModule } from './airports/airports.module';
 import { FlightsModule } from './flights/flights.module';
+import { AuthModule } from './auth/auth.module';
 
 const YAML_CONFIG_FILENAME = '.env.yml';
 
@@ -15,7 +16,7 @@ const yamlConfig = yaml.parse(fs.readFileSync(YAML_CONFIG_FILENAME, 'utf8'));
 
 @Module({
   imports: [
-    SharedModule,AirportsModule,FlightsModule,
+    SharedModule,AirportsModule,FlightsModule,AuthModule,
   ]
 
 })

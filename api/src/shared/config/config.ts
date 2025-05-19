@@ -12,6 +12,7 @@ interface Config {
   db: {
     url: string;
   };
+  jwt_secret: string;
 }
 
 export const config = convict<Config>({
@@ -23,6 +24,12 @@ export const config = convict<Config>({
       env: 'MONGO_DB_ACCESS_URL',
     },
   },
+  jwt_secret: {
+      doc: 'JWT signing key',
+      format: String,
+      default: 'your-default-secret-here', // For development only
+      env: 'JWT_SECRET'
+  }
 });
 
 convict.addParser({ extension: ['yml', 'yaml'], parse: yaml.load });
