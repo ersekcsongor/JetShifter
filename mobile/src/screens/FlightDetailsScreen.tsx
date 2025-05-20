@@ -26,13 +26,13 @@ import {
 } from '~/utils/flightCalculations';
 import styles from '~/styles/FlightDetailsScreen.styles';
 import Flight from '~/types/Flight';
-import { RootStackParamList } from '~/navigation';
+import { AppStackParamList, RootStackParamList } from '~/navigation';
 import { SleepSchedule } from '~/utils/types';
 import { SleepScheduleInput } from '~/components/FlightDetails/SleepScheduleInput';
 
 type Props = {
-  route: RouteProp<RootStackParamList, 'FlightDetailsScreen'>;
-  navigation: StackNavigationProp<RootStackParamList, 'FlightDetailsScreen'>;
+  route: RouteProp<AppStackParamList, 'FlightDetailsScreen'>;
+  navigation: StackNavigationProp<AppStackParamList, 'FlightDetailsScreen'>;
 };
 
 const FlightDetailsScreen = ({ route }: Props) => {

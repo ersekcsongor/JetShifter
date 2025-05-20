@@ -136,7 +136,8 @@ export class FlightsService {
 
   // Updated to return the simplified flight data
   async getAllFlights() {
-    return this.flightDataModel.find().select('origin destination date flights');
+    const v = await this.flightDataModel.find().exec();
+    return v;
   }
 
   // Updated to return the simplified flight data
@@ -148,6 +149,7 @@ export class FlightsService {
         date: date,
       })
       .select('origin destination date flights')
+      .lean()  // <-- Add this
       .exec();
   }
 

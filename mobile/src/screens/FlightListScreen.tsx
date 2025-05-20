@@ -4,7 +4,7 @@ import { useRoute } from "@react-navigation/native";
 import axios, { AxiosError } from "axios";
 import { useNavigation } from "@react-navigation/native";
 import Flight from "~/types/Flight";
-import { RootStackParamList } from "~/navigation";
+import { AppStackParamList, RootStackParamList } from "~/navigation";
 import { StackNavigationProp } from "@react-navigation/stack";
 
 // Configure API client with better defaults
@@ -24,7 +24,7 @@ type FlightResponse = {
 }[];
 
 const FlightListScreen = () => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   const route = useRoute();
   const { departure, arrival, startDate } = route.params as {
     departure: string;

@@ -1,45 +1,37 @@
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '~/contexts/AuthContext';
-import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from "~/navigation";
+import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
+import { AuthStackParamList, RootStackParamList } from "~/navigation";
 import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { CompositeNavigationProp } from '@react-navigation/native';
 
-type LoginScreenProps = StackScreenProps<RootStackParamList, 'Login'>;
-
+type LoginScreenNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<AuthStackParamList, 'Login'>,
+  StackNavigationProp<RootStackParamList>
+>;
 interface LoginFormData {
   email: string;
   password: string;
 }
-
+type LoginScreenProps = {
+  navigation: LoginScreenNavigationProp;
+};
 export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { login } = useAuth();
 
   const handleLogin = async (data: LoginFormData) => {
     try {
       setIsSubmitting(true);
-      const response = await fetch('http://172.20.10.2:3000/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: data.email,
-          password: data.password
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Login failed');
-      }
-
-      // Handle successful login
-      const responseData = await response.json();
-      // Store your token here using AuthContext or async storage
-      // Example: await AsyncStorage.setItem('userToken', responseData.token);
+      const result = await login(data.email, data.password);
       
-      navigation.navigate('StartScreen'); // Replace with your post-login screen
-      alert('Login successful!');
+      if (!result.success) {
+        throw new Error(result.error || 'Login failed');
+      }
+      
+      navigation.navigate('App', { screen: 'StartScreen' });
     } catch (error) {
       alert((error as Error).message || 'Login failed. Please try again.');
     } finally {
@@ -59,6 +51,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
     <View style={styles.container}>
       <Text style={styles.title}>Jetlag Calculator Login</Text>
 
+      {/* Email Input */}
       <Controller
         control={control}
         name="email"
@@ -83,6 +76,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       />
       {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
+      {/* Password Input */}
       <Controller
         control={control}
         name="password"
@@ -106,13 +100,19 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       />
       {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
 
-      <Button title="Login" onPress={handleSubmit(handleLogin)} disabled={isSubmitting} />
+      {/* Login Button */}
+      <Button 
+        title="Login" 
+        onPress={handleSubmit(handleLogin)} 
+        disabled={isSubmitting} 
+      />
 
+      {/* Registration Link */}
       <View style={styles.linkContainer}>
         <Text style={styles.linkText}>Don't have an account? </Text>
         <Button
           title="Register here"
-          onPress={() => navigation.navigate('Register')}
+          onPress={() => navigation.navigate('Auth', { screen: 'Register' })}
         />
       </View>
     </View>

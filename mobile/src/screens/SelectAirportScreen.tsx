@@ -4,8 +4,9 @@ import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { RootStackParamList } from "~/navigation";
+import { AppStackParamList, RootStackParamList } from "~/navigation";
 import axios from "axios";
+import { AxiosError } from 'axios';
 
 interface Airport {
   _id: string;
@@ -21,7 +22,7 @@ interface Airport {
 }
 
 const SelectAirportScreen = () => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   const [departure, setDeparture] = useState<string>("");
   const [arrival, setArrival] = useState<string>("");
   const [date, setDate] = useState(new Date());
@@ -34,23 +35,42 @@ const SelectAirportScreen = () => {
   useEffect(() => {
     const fetchAirportData = async () => {
       try {
-        const response = await axios.get("http://172.20.10.2:3000/airports/getAll");//http://192.168.1.9:3000 or http://170.20.10.2:3000
+        const response = await axios.get("http://172.20.10.2:3000/airports/getAll");
+        
+        // Check if response data exists
+        if (!response.data) {
+          throw new Error('No data received');
+        }
+  
         const data = response.data;
-
         setAirports(data);
-
-        // Set default values for departure and arrival
+  
+        // Check if data has items before accessing
         if (data.length > 0) {
           setDeparture(data[0].iataCode);
-          updateArrivalAirports(data[0].routes);
+          // Ensure routes exist before using them
+          if (data[0].routes) {
+            updateArrivalAirports(data[0].routes);
+          }
         }
-      } catch (error) {
-        console.error("Error fetching airport data:", error);
+      }catch (error) {
+        const axiosError = error as AxiosError;
+        
+        if (axiosError.response) {
+          // The request was made and server responded with status code
+          console.error("Server error:", axiosError.response.status);
+        } else if (axiosError.request) {
+          // The request was made but no response received
+          console.error("Network error:", axiosError.request);
+        } else {
+          // Something happened in setting up the request
+          console.error("Request error:", axiosError.message);
+        }
       } finally {
         setLoading(false);
       }
     };
-
+  
     fetchAirportData();
   }, []);
 
@@ -100,6 +120,7 @@ const SelectAirportScreen = () => {
       <Text style={{ marginTop: 10, fontSize: 20, fontWeight: "bold", textAlign: "center" }}>
         Select Departure Airport:
       </Text>
+            {/* Departure Airport Picker */}
       <Picker
         selectedValue={departure}
         onValueChange={(value) => {
@@ -112,20 +133,18 @@ const SelectAirportScreen = () => {
       >
         {airports.map((airport) => (
           <Picker.Item
-            key={airport._id}
+            key={`departure-${airport._id}-${airport.iataCode}`}
             label={`${airport.name} (${airport.iataCode})`}
             value={airport.iataCode}
           />
         ))}
       </Picker>
 
-      <Text style={{ marginTop: 10, fontWeight: "bold", fontSize: 20, textAlign: "center" }}>
-        Select Arrival Airport:
-      </Text>
+      {/* Arrival Airport Picker */}
       <Picker selectedValue={arrival} onValueChange={setArrival}>
         {filteredArrivalAirports.map((airport) => (
           <Picker.Item
-            key={airport._id}
+            key={`arrival-${airport._id}-${airport.iataCode}`}
             label={`${airport.name} (${airport.iataCode})`}
             value={airport.iataCode}
           />

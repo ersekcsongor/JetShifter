@@ -4,17 +4,17 @@ import axios from 'axios';
 
 interface AuthContextType {
   authState: { token: string | null; authenticated: boolean | null };
-  onRegister: (email: string, password: string) => Promise<any>;
-  onLogin: (email: string, password: string) => Promise<any>;
-  onLogout: () => Promise<void>;
+  register: (email: string, password: string) => Promise<any>;
+  login: (email: string, password: string) => Promise<any>;
+  logout: () => Promise<void>;
   isLoading: boolean;
 }
-
 interface AuthProviderProps {
   children: ReactNode;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
+
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [authState, setAuthState] = useState<{
@@ -43,7 +43,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const register = async (email: string, password: string) => {
     try {
-      const response = await axios.post('YOUR_BACKEND_URL/auth/register', {
+      const response = await axios.post('http://172.20.10.2:3000/auth/register', {
         email,
         password,
       });
@@ -58,7 +58,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post('YOUR_BACKEND_URL/auth/login', {
+      const response = await axios.post('http://172.20.10.2:3000/auth/login', {
         email,
         password,
       });
@@ -86,12 +86,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     <AuthContext.Provider
       value={{
         authState,
-        onRegister: register,
-        onLogin: login,
-        onLogout: logout,
+        register: register,
+        login: login,
+        logout: logout,
         isLoading,
-      }}
-    >
+   }}
+>
       {children}
     </AuthContext.Provider>
   );

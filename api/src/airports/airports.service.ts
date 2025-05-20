@@ -19,7 +19,10 @@ export class AirportsService {
   }
 
   async getAllAirports(): Promise<AirportsModel[]> {
-    return await this.airportModel.find().exec();
+    return this.airportModel.find()
+      .select('iataCode name countryCode cityCode timeZone latitude longitude routes -_id')
+      .lean()
+      .exec();
   }
 
   async getTimezoneByIataCode(iataCode: string): Promise<string> {

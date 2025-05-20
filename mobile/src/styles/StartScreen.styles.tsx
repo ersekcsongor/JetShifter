@@ -34,6 +34,18 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: '#007AFF',
   },
+  logoutButton: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#ff4444',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
 export default styles;

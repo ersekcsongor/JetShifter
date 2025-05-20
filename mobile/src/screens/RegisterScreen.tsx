@@ -2,10 +2,16 @@ import React from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '~/contexts/AuthContext';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '~/navigation';
+import { AuthStackParamList, RootStackParamList } from '~/navigation';
 import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useState } from 'react';
-type RegisterScreenProps = StackScreenProps<RootStackParamList, 'Register'>;
+import { CompositeNavigationProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type LoginScreenNavigationProp = CompositeNavigationProp<
+  StackNavigationProp<AuthStackParamList, 'Register'>,
+  StackNavigationProp<RootStackParamList>
+>;
 
 type FormValues = {
   email: string;
@@ -13,8 +19,12 @@ type FormValues = {
   confirmPassword: string;
 };
 
+type RegisterScreenProps = {
+  navigation: LoginScreenNavigationProp;
+};
+
 export default function RegisterScreen({ navigation }: RegisterScreenProps) {
-  const { control, handleSubmit, watch, formState: { errors } } = useForm<FormValues>();  const { onRegister, isLoading } = useAuth();
+  const { control, handleSubmit, watch, formState: { errors } } = useForm<FormValues>();  const { register, isLoading } = useAuth();
   const password = watch('password');
   const [isSubmitting, setIsSubmitting] = useState(false);
   // In your RegisterScreen component
@@ -36,8 +46,9 @@ const handleRegister = async (data: FormValues) => {
       throw new Error(errorData.message || 'Registration failed');
     }
 
-    navigation.navigate('Login');
-    alert('Registration successful! Please login.');
+// In RegisterScreen's success handler
+  navigation.navigate('Auth', { screen: 'Login' });
+  alert('Registration successful! Please login.');
 
   } catch (error) {
     alert((error as Error).message || 'Registration failed. Please try again.');

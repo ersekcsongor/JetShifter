@@ -3,49 +3,52 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '~/contexts/AuthContext';
 
-// Existing imports
+// Screens
 import StartScreen from '~/screens/StartScreen';
 import AboutScreen from '~/screens/AboutScreen';
 import FlightListScreen from '~/screens/FlightListScreen';
 import SelectAirportScreen from '~/screens/SelectAirportScreen';
 import FlightDetailsScreen from '~/screens/FlightDetailsScreen';
-import Flight from '~/types/Flight';
-
-// Auth screens
 import LoginScreen from '~/screens/LoginScreen';
 import RegisterScreen from '~/screens/RegisterScreen';
+import Flight from '~/types/Flight';
 
-export type RootStackParamList = {
-  Auth: undefined;
-  App: undefined;
-  StartScreen: undefined;
-  AboutScreen: undefined;
-  CalculationScreen: undefined;
-  SelectAirportScreen: { departure: string; arrival: string; startDate: string };
-  FlightListScreen: { departure: string; arrival: string; startDate: string };
-  FlightDetailsScreen: { flight: Flight };
+// Define nested navigator types
+export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
 };
 
-const Stack = createStackNavigator<RootStackParamList>();
-const AuthStack = createStackNavigator<RootStackParamList>();
-const AppStack = createStackNavigator<RootStackParamList>();
+export type AppStackParamList = {
+  StartScreen: undefined;
+  AboutScreen: undefined;
+  SelectAirportScreen: undefined;
+  FlightListScreen: { departure: string; arrival: string; startDate: string };
+  FlightDetailsScreen: { flight: Flight };
+};
 
-const AuthScreens = () => (
+export type RootStackParamList = {
+  Auth: { screen: keyof AuthStackParamList };
+  App: { screen: keyof AppStackParamList };
+};
+
+// Create navigators
+const RootStack = createStackNavigator<RootStackParamList>();
+const AuthStack = createStackNavigator<AuthStackParamList>();
+const AppStack = createStackNavigator<AppStackParamList>();
+
+// Auth Stack Navigator
+const AuthNavigator = () => (
   <AuthStack.Navigator screenOptions={{ headerShown: false }}>
     <AuthStack.Screen name="Login" component={LoginScreen} />
     <AuthStack.Screen name="Register" component={RegisterScreen} />
   </AuthStack.Navigator>
 );
 
-const AppScreens = () => (
-  <AppStack.Navigator>
-    <AppStack.Screen 
-      name="StartScreen" 
-      component={StartScreen} 
-      options={{ headerShown: false }} 
-    />
+// App Stack Navigator
+const AppNavigator = () => (
+  <AppStack.Navigator screenOptions={{ headerShown: false }}>
+    <AppStack.Screen name="StartScreen" component={StartScreen} />
     <AppStack.Screen name="AboutScreen" component={AboutScreen} />
     <AppStack.Screen name="SelectAirportScreen" component={SelectAirportScreen} />
     <AppStack.Screen name="FlightListScreen" component={FlightListScreen} />
@@ -53,20 +56,21 @@ const AppScreens = () => (
   </AppStack.Navigator>
 );
 
-const RootStack = () => {
+// Main Navigator
+const MainNavigator = () => {
   const { authState } = useAuth();
 
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <RootStack.Navigator screenOptions={{ headerShown: false }}>
         {authState?.authenticated ? (
-          <Stack.Screen name="App" component={AppScreens} />
+          <RootStack.Screen name="App" component={AppNavigator} />
         ) : (
-          <Stack.Screen name="Auth" component={AuthScreens} />
+          <RootStack.Screen name="Auth" component={AuthNavigator} />
         )}
-      </Stack.Navigator>
+      </RootStack.Navigator>
     </NavigationContainer>
   );
 };
 
-export default RootStack;
+export default MainNavigator;

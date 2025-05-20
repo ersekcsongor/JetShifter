@@ -1,7 +1,29 @@
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
+import { AppStackParamList, RootStackParamList } from "~/navigation";
 import styles from "~/styles/StartScreen.styles";
-const StartScreen = ({ navigation }: { navigation: any }) => {
+import { useAuth } from "~/contexts/AuthContext";
+
+type StartScreenNavigationProp = StackNavigationProp<AppStackParamList, 'StartScreen'>;
+type RootNavigationProp = StackNavigationProp<RootStackParamList>;
+
+const StartScreen = () => {
+  const navigation = useNavigation<StartScreenNavigationProp>();
+  const rootNavigation = useNavigation<RootNavigationProp>();
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      
+    } catch (error) {
+      console.error("Logout failed:", error);
+      alert("Logout failed. Please try again.");
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Tagline */}
@@ -19,6 +41,14 @@ const StartScreen = ({ navigation }: { navigation: any }) => {
         onPress={() => navigation.navigate("AboutScreen")}
       >
         <Text style={[styles.buttonText, styles.secondaryButtonText]}>Learn More</Text>
+      </TouchableOpacity>
+
+      {/* Logout Button */}
+      <TouchableOpacity 
+        style={styles.logoutButton}
+        onPress={handleLogout}
+      >
+        <Text style={styles.logoutButtonText}>Log Out</Text>
       </TouchableOpacity>
     </View>
   );
