@@ -5,6 +5,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { AppStackParamList, RootStackParamList } from "~/navigation";
 import styles from "~/styles/StartScreen.styles";
 import { useAuth } from "~/contexts/AuthContext";
+import { Ionicons } from '@expo/vector-icons'; // Install if needed
 
 type StartScreenNavigationProp = StackNavigationProp<AppStackParamList, 'StartScreen'>;
 type RootNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -26,6 +27,12 @@ const StartScreen = () => {
 
   return (
     <View style={styles.container}>
+       <TouchableOpacity
+        style={styles.accountButton}
+        onPress={() => navigation.navigate('UserDetailsScreen')}
+      >
+        <Ionicons name="person-circle" size={32} color="#333" />
+      </TouchableOpacity>
       {/* Tagline */}
       <Text style={styles.tagline}>Conquer Jet Lag with Ease</Text>
 

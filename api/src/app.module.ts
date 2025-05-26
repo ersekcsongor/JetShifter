@@ -16,7 +16,7 @@ const yamlConfig = yaml.parse(fs.readFileSync(YAML_CONFIG_FILENAME, 'utf8'));
 
 @Module({
   imports: [
-    SharedModule,AirportsModule,FlightsModule,AuthModule,
+    SharedModule,AirportsModule,FlightsModule,AuthModule,UsersModule
   ]
 
 })

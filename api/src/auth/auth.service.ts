@@ -4,6 +4,9 @@ import * as bcrypt from 'bcrypt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { UserModel } from 'src/schemas/user.schema';
+import { LoginRequestDto } from './dto/input/login-request.dto';
+import { AccessTokenDto } from './dto/output/access-token.dto';
+import { CreateUserDto } from './dto/input/create-user.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -11,43 +14,43 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async login(email: string, password: string): Promise<{ access_token: string }> {
-    const user = await this.userModel.findOne({ email }).exec();
-    if (!user) {
+   async login(loginDto: LoginRequestDto): Promise<AccessTokenDto> {
+    const user = await this.userModel.findOne({ email: loginDto.email }).exec();
+    
+    if (!user || !(await bcrypt.compare(loginDto.password, user.hashedPassword))) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isMatch = await bcrypt.compare(password, user.hashedPassword);
-    if (!isMatch) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    return {
-      access_token: await this.jwtService.signAsync({
-        email: user.email,
-        sub: user.id
-      }),
-    };
+    return this.generateToken(user);
   }
 
-  async register(email: string, password: string): Promise<{ access_token: string }> {
-    const existingUser = await this.userModel.findOne({ email });
-    if (existingUser) {
-      throw new ConflictException('Email already exists');
+  async register(registerDto: CreateUserDto): Promise<AccessTokenDto> {
+    if (await this.userModel.findOne({ email: registerDto.email })) {
+      throw new ConflictException('Email already registered');
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     const newUser = await this.userModel.create({
-      email,
+      email: registerDto.email,
       hashedPassword,
       createdAt: new Date(),
     });
 
+    return this.generateToken(newUser);
+  }
+
+  private async generateToken(user: UserModel): Promise<AccessTokenDto> {
+    const payload = { 
+      email: user.email,
+      sub: user._id,
+    };
+
     return {
-      access_token: await this.jwtService.signAsync({
-        email: newUser.email,
-        sub: newUser.id
+      access_token: await this.jwtService.signAsync(payload, {
+        expiresIn: '1h',
+        secret: process.env.JWT_SECRET,
       }),
+      token_type: 'Bearer'
     };
   }
 }

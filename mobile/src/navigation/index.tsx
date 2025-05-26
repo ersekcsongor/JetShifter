@@ -12,6 +12,7 @@ import FlightDetailsScreen from '~/screens/FlightDetailsScreen';
 import LoginScreen from '~/screens/LoginScreen';
 import RegisterScreen from '~/screens/RegisterScreen';
 import Flight from '~/types/Flight';
+import UserDetailsScreen from '~/screens/UserDetailsScreen';
 
 // Define nested navigator types
 export type AuthStackParamList = {
@@ -25,6 +26,7 @@ export type AppStackParamList = {
   SelectAirportScreen: undefined;
   FlightListScreen: { departure: string; arrival: string; startDate: string };
   FlightDetailsScreen: { flight: Flight };
+  UserDetailsScreen: undefined;
 };
 
 export type RootStackParamList = {
@@ -53,6 +55,7 @@ const AppNavigator = () => (
     <AppStack.Screen name="SelectAirportScreen" component={SelectAirportScreen} />
     <AppStack.Screen name="FlightListScreen" component={FlightListScreen} />
     <AppStack.Screen name="FlightDetailsScreen" component={FlightDetailsScreen} />
+    <AppStack.Screen name="UserDetailsScreen" component={UserDetailsScreen} options={{ title: 'Profile' }} />
   </AppStack.Navigator>
 );
 

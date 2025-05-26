@@ -46,6 +46,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  accountButton: {
+    marginTop: 20,
+    padding: 15,
+    backgroundColor: '#ff4444',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
 });
 
 export default styles;

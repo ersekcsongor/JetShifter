@@ -3,7 +3,11 @@ import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
 
 interface AuthContextType {
-  authState: { token: string | null; authenticated: boolean | null };
+  authState: { 
+    token: string | null; 
+    authenticated: boolean | null;
+    user: { email: string } | null; // Add user field
+  };
   register: (email: string, password: string) => Promise<any>;
   login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
@@ -18,9 +22,14 @@ const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [authState, setAuthState] = useState<{
-    token: string | null;
-    authenticated: boolean | null;
-  }>({ token: null, authenticated: null });
+  token: string | null;
+  authenticated: boolean | null;
+  user: { email: string } | null;
+}>({ 
+  token: null, 
+  authenticated: null,
+  user: null
+});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,8 +38,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const token = await SecureStore.getItemAsync('JWT_TOKEN');
         if (token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          setAuthState({ token, authenticated: true });
-        }
+        setAuthState({ token, authenticated: true, user: null });        }
       } catch (error) {
         console.error('Error loading token:', error);
       } finally {
@@ -57,30 +65,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   };
 
   const login = async (email: string, password: string) => {
-    try {
-      const response = await axios.post('http://172.20.10.2:3000/auth/login', {
-        email,
-        password,
-      });
+  try {
+    const response = await axios.post('http://172.20.10.2:3000/auth/login', {
+      email,
+      password,
+    });
+    console.log(response.data);
+    // Get user data after successful login
+    const userResponse = await axios.get('http://172.20.10.2:3000/users/me', {
+      headers: {
+        Authorization: `Bearer ${response.data.access_token}`
+      }
+    });
 
-      setAuthState({ token: response.data.access_token, authenticated: true });
-      axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`;
-      
-      await SecureStore.setItemAsync('JWT_TOKEN', response.data.access_token);
-      return { success: true };
-    } catch (error: any) {
-      return { 
-        success: false, 
-        error: error.response?.data?.message || 'Login failed' 
-      };
-    }
-  };
+    setAuthState({ 
+      token: response.data.access_token, 
+      authenticated: true,
+      user: userResponse.data
+    });
+    
+    await SecureStore.setItemAsync('JWT_TOKEN', response.data.access_token);
+    return { success: true };
+  } catch (error: any) {
+    return { 
+      success: false, 
+      error: error.response?.data?.message || 'Login failed' 
+    };
+  }
+};
 
   const logout = async () => {
-    await SecureStore.deleteItemAsync('JWT_TOKEN');
-    axios.defaults.headers.common['Authorization'] = '';
-    setAuthState({ token: null, authenticated: false });
-  };
+  await SecureStore.deleteItemAsync('JWT_TOKEN');
+  axios.defaults.headers.common['Authorization'] = '';
+  setAuthState({ 
+    token: null, 
+    authenticated: false,
+    user: null
+  });
+};
 
   return (
     <AuthContext.Provider
