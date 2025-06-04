@@ -24,9 +24,9 @@ export default StyleSheet.create({
     borderWidth: 5,  
   },
   uploadButton: {
-    position: 'absolute',     // take out of normal flow
-    bottom: 8,                // 8px up from the bottom edge
-    right: 8,                 // 8px in from the right edge
+    position: 'absolute',
+    bottom: 8,                
+    right: 8,                 
     backgroundColor: 'rgba(0,0,0,0.5)', 
     padding: 6,
     borderRadius: 20,

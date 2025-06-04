@@ -20,6 +20,7 @@ import { AppStackParamList } from '~/navigation';
 import styles from '~/styles/UserDetails.styles';
 import { useFocusEffect } from '@react-navigation/native';
 import ENV from '~/utils/constants';
+import localStyles from '~/styles/UserDetailsScreen.styles';
 
 type UserData = {
   email: string;
@@ -113,7 +114,7 @@ const UserDetailsScreen = ({ navigation }: Props) => {
       } as any);
 
       const uploadResp = await axios.patch(
-        'http://172.20.10.2:3000/users/upload-profile',
+        `${ENV.API_BASE_URL}/users/upload-profile`,
         formData,
         {
           headers: {
@@ -150,7 +151,7 @@ const UserDetailsScreen = ({ navigation }: Props) => {
 
   try {
     await axios.patch(
-      'http://172.20.10.2:3000/users/change-password',
+      `${ENV.API_BASE_URL}/users/change-password`,
       { currentPassword, newPassword },
       { headers: { Authorization: `Bearer ${authState.token}` } }
     );
@@ -186,7 +187,7 @@ const UserDetailsScreen = ({ navigation }: Props) => {
         {userData.profileImage ? (
           (() => {
             // Construct the URI with cache buster
-            const imageUri = `http://172.20.10.2:3000${userData.profileImage}?v=${imageVersion}`;
+            const imageUri = `${ENV.API_BASE_URL}${userData.profileImage}?v=${imageVersion}`;
             
             // Log the URI to console for debugging
             console.log('Profile Image URI:', imageUri);
@@ -316,83 +317,5 @@ const UserDetailsScreen = ({ navigation }: Props) => {
   );
 };
 
-const localStyles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: '#00000066',
-  },
-  modal: {
-    backgroundColor: '#fff',
-    paddingVertical: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-  },
-  iconButton: {
-    alignItems: 'center',
-  },
-  iconLabel: {
-    marginTop: 8,
-    fontSize: 14,
-  },
-  centeredView: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0,0,0,0.5)',
-},
-modalView: {
-  backgroundColor: 'white',
-  borderRadius: 20,
-  padding: 25,
-  width: '85%',
-},
-modalTitle: {
-  fontSize: 20,
-  fontWeight: 'bold',
-  marginBottom: 20,
-  textAlign: 'center',
-},
-input: {
-  height: 45,
-  borderColor: '#ddd',
-  borderWidth: 1,
-  borderRadius: 8,
-  paddingHorizontal: 15,
-  marginBottom: 15,
-},
-buttonRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: 10,
-},
-button: {
-  borderRadius: 8,
-  paddingVertical: 12,
-  paddingHorizontal: 20,
-},
-cancelButton: {
-  backgroundColor: '#e0e0e0',
-},
-submitButton: {
-  backgroundColor: '#4CAF50',
-},
-buttonText: {
-  color: 'white',
-  fontWeight: 'bold',
-},
-errorText: {
-  color: 'red',
-  marginBottom: 15,
-  textAlign: 'center',
-},
-inputLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 6,
-    color: '#333',
-  },
-});
 
 export default UserDetailsScreen;

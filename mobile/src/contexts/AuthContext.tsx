@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import axios from 'axios';
+import ENV from '~/utils/constants';
 
 interface AuthContextType {
   authState: { 
@@ -51,7 +52,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const register = async (email: string, password: string) => {
     try {
-      const response = await axios.post('http://172.20.10.2:3000/auth/register', {
+      const response = await axios.post(`${ENV.API_BASE_URL}/auth/register`, {
         email,
         password,
       });
@@ -66,13 +67,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const login = async (email: string, password: string) => {
   try {
-    const response = await axios.post('http://172.20.10.2:3000/auth/login', {
+    const response = await axios.post(`${ENV.API_BASE_URL}/auth/login`, {
       email,
       password,
     });
     console.log(response.data);
     // Get user data after successful login
-    const userResponse = await axios.get('http://172.20.10.2:3000/users/me', {
+    const userResponse = await axios.get(`${ENV.API_BASE_URL}/users/me`, {
       headers: {
         Authorization: `Bearer ${response.data.access_token}`
       }

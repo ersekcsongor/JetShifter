@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { format, parseISO, isSameDay } from 'date-fns';
+import ENV from '~/utils/constants';
 
 type FlightHeaderProps = {
   flight: {
@@ -35,7 +36,7 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
   const fetchCountryByIata = async (iataCode: string) => {
     try {
 
-      const response = await fetch(`http://172.20.10.2:3000/airports/getNameByIataCode/${iataCode}`);
+      const response = await fetch(`${ENV.API_BASE_URL}/airports/getNameByIataCode/${iataCode}`);
       
 
       if (!response.ok) {
