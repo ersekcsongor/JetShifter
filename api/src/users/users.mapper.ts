@@ -7,4 +7,6 @@ export class UserMapper {
   toUserProfileDto(user: UserModel): UserProfileDto {
     return new UserProfileDto(user);
   }
+
+  
 }

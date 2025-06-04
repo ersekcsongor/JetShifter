@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   accountButton: {
     marginTop: 20,
     padding: 15,
-    backgroundColor: '#ff4444',
+    backgroundColor: '#white',
     borderRadius: 8,
     alignItems: 'center',
   },

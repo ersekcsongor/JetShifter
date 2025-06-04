@@ -7,7 +7,7 @@ import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator } from 're
 import { useState } from 'react';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-
+import ENV from '~/utils/constants';
 type LoginScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<AuthStackParamList, 'Register'>,
   StackNavigationProp<RootStackParamList>
@@ -31,8 +31,7 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
 const handleRegister = async (data: FormValues) => {
   try {
     setIsSubmitting(true);
-    
-    const response = await fetch('http://172.20.10.2:3000/auth/register', {
+    const response = await fetch(`${ENV.API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

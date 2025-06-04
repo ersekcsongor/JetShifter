@@ -16,3 +16,10 @@ export const MODEL_CONSTANTS = {
     COST_TOLERANCE: 1E-4,
     MAX_ITERATIONS: 50
   };
+
+  const ENV = {
+  API_BASE_URL: 'http://172.20.10.2:3000',
+  //192.168.56.1:3000,172.20.10.2:3000
+};
+
+export default ENV;

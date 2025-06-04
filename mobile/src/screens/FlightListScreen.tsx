@@ -6,10 +6,10 @@ import { useNavigation } from "@react-navigation/native";
 import Flight from "~/types/Flight";
 import { AppStackParamList, RootStackParamList } from "~/navigation";
 import { StackNavigationProp } from "@react-navigation/stack";
-
+import ENV from "~/utils/constants";
 // Configure API client with better defaults
 const apiClient = axios.create({
-  baseURL: "http://172.20.10.2:3000",//192.168.56.1:3000,172.20.10.2:3000
+  baseURL: ENV.API_BASE_URL,//192.168.56.1:3000,172.20.10.2:3000
   timeout: 15000, // Increased timeout to 15 seconds
   headers: {
     "Content-Type": "application/json",

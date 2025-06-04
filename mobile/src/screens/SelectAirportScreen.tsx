@@ -7,6 +7,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { AppStackParamList, RootStackParamList } from "~/navigation";
 import axios from "axios";
 import { AxiosError } from 'axios';
+import ENV from "~/utils/constants";
 
 interface Airport {
   _id: string;
@@ -35,7 +36,7 @@ const SelectAirportScreen = () => {
   useEffect(() => {
     const fetchAirportData = async () => {
       try {
-        const response = await axios.get("http://172.20.10.2:3000/airports/getAll");
+        const response = await axios.get(`${ENV.API_BASE_URL}/airports/getAll`);
         
         // Check if response data exists
         if (!response.data) {

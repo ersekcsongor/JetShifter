@@ -29,6 +29,7 @@ import Flight from '~/types/Flight';
 import { AppStackParamList, RootStackParamList } from '~/navigation';
 import { SleepSchedule } from '~/utils/types';
 import { SleepScheduleInput } from '~/components/FlightDetails/SleepScheduleInput';
+import ENV from '~/utils/constants';
 
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreen'>;
@@ -68,8 +69,8 @@ const FlightDetailsScreen = ({ route }: Props) => {
       try {
         updateState({ loading: true });
         const [originRes, destRes] = await Promise.all([
-          fetch(`http://172.20.10.2:3000/airports/getTimezoneByIataCode/${flight.origin}`),
-          fetch(`http://172.20.10.2:3000/airports/getTimezoneByIataCode/${flight.destination}`)
+          fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${flight.origin}`),
+          fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${flight.destination}`)
         ]);
         
         const originData = await originRes.json();

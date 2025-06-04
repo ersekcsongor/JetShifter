@@ -13,6 +13,9 @@ export class UserModel extends Document{
 
   @Prop({ default: Date.now })
   createdAt: Date;
+
+  @Prop({ default: '' })
+  profileImage?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserModel);
