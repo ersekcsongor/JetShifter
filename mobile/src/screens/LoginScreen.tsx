@@ -3,10 +3,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '~/contexts/AuthContext';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList, RootStackParamList } from "~/navigation";
-import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ImageBackground } from 'react-native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import styles from '~/styles/LoginScreen.styles';
-
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'react-native';
 type LoginScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<AuthStackParamList, 'Login'>,
   StackNavigationProp<RootStackParamList>
@@ -18,6 +19,7 @@ interface LoginFormData {
 type LoginScreenProps = {
   navigation: LoginScreenNavigationProp;
 };
+
 export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,80 +45,99 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   if (isSubmitting) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#1e90ff" />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Jetlag Calculator Login</Text>
+    <ImageBackground
+      source={require('~/assets/background.png')} // <-- your background image path
+      style={styles.container}
+      resizeMode="cover"
+    >
+      <Image style={styles.logo} source={require('~/assets/jet-lag.png')}></Image>
+
+      <Text style={styles.title}>JetShifter</Text>
 
       {/* Email Input */}
-      <Controller
-        control={control}
-        name="email"
-        rules={{
-          required: 'Email is required',
-          pattern: {
-            value: /^\S+@\S+$/i,
-            message: 'Invalid email format',
-          },
-        }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
-      />
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail-outline" size={20} color="black" style={styles.icon} />
+        <Controller
+          control={control}
+          name="email"
+          rules={{
+            required: 'Email is required',
+            pattern: {
+              value: /^\S+@\S+$/i,
+              message: 'Invalid email format',
+            },
+          }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#888"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+            />
+          )}
+        />
+      </View>
       {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
       {/* Password Input */}
-      <Controller
-        control={control}
-        name="password"
-        rules={{ 
-          required: 'Password is required', 
-          minLength: {
-            value: 6,
-            message: 'Password must be at least 6 characters'
-          }
-        }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            secureTextEntry
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-          />
-        )}
-      />
-      {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
-
-      {/* Login Button */}
-      <Button 
-        title="Login" 
-        onPress={handleSubmit(handleLogin)} 
-        disabled={isSubmitting} 
-      />
-
-      {/* Registration Link */}
-      <View style={styles.linkContainer}>
-        <Text style={styles.linkText}>Don't have an account? </Text>
-        <Button
-          title="Register here"
-          onPress={() => navigation.navigate('Auth', { screen: 'Register' })}
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={20} color="black" style={styles.icon} />
+        <Controller
+          control={control}
+          name="password"
+          rules={{ 
+            required: 'Password is required', 
+            minLength: {
+              value: 6,
+              message: 'Password must be at least 6 characters'
+            }
+          }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#888"
+              secureTextEntry
+              onBlur={onBlur}
+              onChangeText={onChange}
+              value={value}
+            />
+          )}
         />
       </View>
-    </View>
+      {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
+
+      <TouchableOpacity 
+        style={styles.loginButton}
+        onPress={handleSubmit(handleLogin)}
+        disabled={isSubmitting}
+      >
+        <Text style={styles.loginButtonText}>Login</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity 
+        style={styles.forgotPassword}
+        onPress={() => console.log('Forgot password pressed')}
+      >
+        <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+      </TouchableOpacity>
+
+      <View style={styles.signupContainer}>
+        <Text style={styles.signupText}>Don't you have an account? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Auth', { screen: 'Register' })}>
+          <Text style={styles.signupLink}>Sign Up</Text>
+        </TouchableOpacity>
+      </View>
+    </ImageBackground>
   );
 }
-

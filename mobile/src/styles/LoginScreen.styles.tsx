@@ -1,37 +1,88 @@
 import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
-  container: {
+    logo:{
+        alignSelf: 'center',
+        width: 100,
+        height: 100,
+        marginBottom: 20
+    },
+   container: {
     flex: 1,
-    justifyContent: 'center',
+    backgroundColor: '#fff',
     padding: 20,
+    justifyContent: 'center',
   },
   title: {
+    color: '#423B3B',
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 40,
     textAlign: 'center',
   },
-  input: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 8,
-    borderRadius: 4,
-  },
-  error: {
-    color: 'red',
-    marginBottom: 10,
-  },
-  linkContainer: {
-    marginTop: 20,
+  inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    marginBottom: 10,
+    backgroundColor: '#f5f5f5',
   },
-  linkText: {
+  icon: {
+    marginRight: 5,
+    marginLeft: 10,
+  },
+  input: {
+    flex: 1,
+    color: '#333',
+    height: 50,
     fontSize: 16,
+    paddingHorizontal: 10,
+  },
+  error: {
+    color: '#ff5252',
+    marginBottom: 15,
+    paddingHorizontal: 10,
+    fontSize: 12,
+  },
+  loginButton: {
+    backgroundColor: '#1e90ff',
+    borderRadius: 8,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  loginButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  forgotPassword: {
+    alignSelf: 'center',
+    marginTop: 15,
+    padding: 10,
+  },
+  forgotPasswordText: {
+    color: '#1e90ff',
+    fontSize: 14,
+  },
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 30,
+  },
+  signupText: {
+    color: '#666',
+    fontSize: 14,
+  },
+  signupLink: {
+    color: '#1e90ff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
 

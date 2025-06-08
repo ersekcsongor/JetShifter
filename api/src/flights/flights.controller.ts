@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Param, Query, Req, BadRequestException } from '@nestjs/common';
 import { FlightsService } from './flights.service';
 import { Request } from 'express';
 @Controller('flights')
@@ -39,5 +39,23 @@ export class FlightsController {
     },
   ) {
     return await this.flightsService.createFlight(flightData);
+  }
+
+  @Post('save')
+  async saveFlight(@Body() body: { email: string; flightNumber: string }) {
+    if (!body.email || !body.flightNumber) {
+      throw new BadRequestException('Missing email or flightNumber');
+    }
+    return this.flightsService.saveFlightForUser(body.email, body.flightNumber);
+  }
+
+  @Post('unsave')
+  async unsaveFlight(@Body() body: { email: string; flightNumber: string }) {
+    return this.flightsService.unsaveFlightForUser(body.email, body.flightNumber);
+  }
+
+  @Get('saved/:email')
+  async getSavedFlights(@Param('email') email: string) {
+    return this.flightsService.getSavedFlightsForUser(email);
   }
 }

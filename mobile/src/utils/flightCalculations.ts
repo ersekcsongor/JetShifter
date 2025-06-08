@@ -292,7 +292,7 @@ export const simulateCircadianDynamics = (
   const trajectory: StateTrajectory = [];
   const departure = moment(switchingTimes.t0);
   const totalDuration = switchingTimes.flightDurationHours;
-  const timeSteps = Math.min(200, Math.ceil(totalDuration * 4)); // Adaptive resolution
+  const timeSteps = Math.min(200, Math.ceil(totalDuration * 4));
   const dt = totalDuration / timeSteps;
 
   // Pre-calculate control sequence
@@ -308,37 +308,47 @@ export const simulateCircadianDynamics = (
     prevTime = pointTime;
   });
 
-  // Adaptive simulation loop
+  function getControl(hour: number) {
+    return controlSequence.find(c => hour >= c.start && hour < c.end)?.type === 'light' ? 1 : 0;
+  }
+
   for (let i = 0; i <= timeSteps; i++) {
     const currentHour = i * dt;
-    const currentControl = controlSequence.find(c => 
-      currentHour >= c.start && currentHour < c.end
-    )?.type === 'light' ? 1 : 0;
+    const control = getControl(currentHour);
+    const I = control === 0 ? MODEL_CONSTANTS.I0 : MODEL_CONSTANTS.I1;
 
-    const I = currentControl === 0 ? MODEL_CONSTANTS.I0 : MODEL_CONSTANTS.I1;
-    
-    // Improved differential equations with sleep schedule modulation
+    // RK4 integration
     const sleepModulator = Math.sin(
       (currentHour % 24) * (Math.PI / 12) - 
       parseInt(switchingTimes.sleepSchedule.bedtime.split(':')[0]) * (Math.PI / 12)
     );
-    
-    const dxdt = MODEL_CONSTANTS.PI_12 * (currentState.x + MODEL_CONSTANTS.B) * (1 + 0.2 * sleepModulator);
-    const dndt = 60 * (
-      MODEL_CONSTANTS.ALPHA * I * (1 - currentState.n) - 
-      MODEL_CONSTANTS.BETA * currentState.n * (1 + 0.15 * sleepModulator)
-    );
 
-    // Adaptive step integration
-    const k1 = { x: dxdt * dt, n: dndt * dt };
-    const k2 = {
-      x: (dxdt + 0.5 * k1.x) * dt,
-      n: (dndt + 0.5 * k1.n) * dt
-    };
-    
+    function dxdt(x: number, n: number) {
+      return MODEL_CONSTANTS.PI_12 * (x + MODEL_CONSTANTS.B) * (1 + 0.2 * sleepModulator);
+    }
+    function dndt(x: number, n: number) {
+      return 60 * (
+        MODEL_CONSTANTS.ALPHA * I * (1 - n) - 
+        MODEL_CONSTANTS.BETA * n * (1 + 0.15 * sleepModulator)
+      );
+    }
+
+    // RK4 steps
+    const k1x = dxdt(currentState.x, currentState.n);
+    const k1n = dndt(currentState.x, currentState.n);
+
+    const k2x = dxdt(currentState.x + 0.5 * dt * k1x, currentState.n + 0.5 * dt * k1n);
+    const k2n = dndt(currentState.x + 0.5 * dt * k1x, currentState.n + 0.5 * dt * k1n);
+
+    const k3x = dxdt(currentState.x + 0.5 * dt * k2x, currentState.n + 0.5 * dt * k2n);
+    const k3n = dndt(currentState.x + 0.5 * dt * k2x, currentState.n + 0.5 * dt * k2n);
+
+    const k4x = dxdt(currentState.x + dt * k3x, currentState.n + dt * k3n);
+    const k4n = dndt(currentState.x + dt * k3x, currentState.n + dt * k3n);
+
     currentState = {
-      x: currentState.x + k2.x,
-      n: Math.max(0, Math.min(1, currentState.n + k2.n))
+      x: currentState.x + (dt / 6) * (k1x + 2 * k2x + 2 * k3x + k4x),
+      n: Math.max(0, Math.min(1, currentState.n + (dt / 6) * (k1n + 2 * k2n + 2 * k3n + k4n)))
     };
 
     trajectory.push({
@@ -349,7 +359,6 @@ export const simulateCircadianDynamics = (
   }
 
   const cost = calculateCircadianCost(trajectory, switchingTimes);
-  
   return { trajectory, cost };
 };
   

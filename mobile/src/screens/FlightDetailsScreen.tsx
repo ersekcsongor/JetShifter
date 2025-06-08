@@ -1,17 +1,15 @@
 // screens/FlightDetailsScreen.tsx
 import React, { useEffect, useCallback, useState } from 'react';
-import { View, ScrollView, Text, ActivityIndicator } from 'react-native';
+import { View, ScrollView, Text, ActivityIndicator, Button, Alert, TouchableOpacity } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import moment from 'moment-timezone';
-
+import axios from 'axios';
 
 // Components
 import { FlightHeader } from '~/components/FlightDetails/FlightHeader';
 import { TimezoneInfo } from '~/components/FlightDetails/TimezoneInfo';
 import { SwitchingTimesControl } from '~/components/FlightDetails/SwitchingTimesControl';
-import { SimulationControl } from '~/components/FlightDetails/SimulationControl';
-import { OptimizationControl } from '~/components/FlightDetails/OptimizationControl';
 import { ResultsDisplay } from '~/components/FlightDetails/ResultsDisplay';
 
 // Hooks and utilities
@@ -30,6 +28,7 @@ import { AppStackParamList, RootStackParamList } from '~/navigation';
 import { SleepSchedule } from '~/utils/types';
 import { SleepScheduleInput } from '~/components/FlightDetails/SleepScheduleInput';
 import ENV from '~/utils/constants';
+import { useAuth } from '~/contexts/AuthContext';
 
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreen'>;
@@ -62,7 +61,9 @@ const FlightDetailsScreen = ({ route }: Props) => {
     updateState
   } = useFlightDetailsState();
   
-
+  const API_URL = `${ENV.API_BASE_URL}/flights`;
+  const { authState } = useAuth();
+  const userEmail = authState?.user?.email || ''; // Use user._id if available
 
   useEffect(() => {
     const fetchTimezones = async () => {
@@ -262,6 +263,28 @@ const handleSimulateDynamics = useCallback(async () => {
     }
   }, [switchingTimes, costHistory, optimizationHistory]);
 
+  const handleSaveFlight = async () => {
+    try {
+      if (!userEmail) {
+        Alert.alert('Error', 'You must be logged in to save flights.');
+        return;
+      }
+      if (!flight.flightNumber) {
+        Alert.alert('Error', 'Flight number not found.');
+        return;
+      }
+      await axios.post(`${API_URL}/save`, { email: userEmail, flightNumber: flight.flightNumber });
+      Alert.alert('Success', 'Flight saved!');
+    } catch (error: any) {
+      if (axios.isAxiosError(error) && error.response?.status === 409) {
+        Alert.alert('Already saved', 'You have already saved this flight.');
+      } else {
+        Alert.alert('Error', 'Failed to save flight.');
+        console.error('Save flight error:', error);
+      }
+    }
+  };
+
   // Error handling
   if (!route.params?.flight) {
     return (
@@ -285,6 +308,12 @@ const handleSimulateDynamics = useCallback(async () => {
       
       <FlightHeader flight={flight} />
       
+      <View style={styles.saveButton}>
+        <TouchableOpacity  onPress={handleSaveFlight}>
+          <Text style={styles.saveButtonText}>Save Flight</Text>
+        </TouchableOpacity>
+      </View>
+
       <SleepScheduleInput 
           schedule={sleepSchedule}
            onChange={setSleepSchedule}
@@ -298,12 +327,7 @@ const handleSimulateDynamics = useCallback(async () => {
       
       {switchingTimes && (
       <>
-        <OptimizationControl 
-          onOptimize={handleRunOptimization} 
-          isOptimizing={isOptimizing} 
-          switchingPointsAvailable={!!switchingTimes.switchingPoints?.length}
-          timezonesReady={!!timezones.originTz && !!timezones.destTz}
-        />
+       
         
 
         <ResultsDisplay

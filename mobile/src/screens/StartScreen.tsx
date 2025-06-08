@@ -5,7 +5,7 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { AppStackParamList, RootStackParamList } from "~/navigation";
 import styles from "~/styles/StartScreen.styles";
 import { useAuth } from "~/contexts/AuthContext";
-import { Ionicons } from '@expo/vector-icons'; // Install if needed
+import { Ionicons, MaterialIcons } from '@expo/vector-icons'; // Install if needed
 
 type StartScreenNavigationProp = StackNavigationProp<AppStackParamList, 'StartScreen'>;
 type RootNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -13,50 +13,38 @@ type RootNavigationProp = StackNavigationProp<RootStackParamList>;
 const StartScreen = () => {
   const navigation = useNavigation<StartScreenNavigationProp>();
   const rootNavigation = useNavigation<RootNavigationProp>();
-  const { logout } = useAuth();
-
-  const handleLogout = async () => {
-    try {
-      await logout();
-      
-    } catch (error) {
-      console.error("Logout failed:", error);
-      alert("Logout failed. Please try again.");
-    }
-  };
+  
 
   return (
     <View style={styles.container}>
-       <TouchableOpacity
-        style={styles.accountButton}
-        onPress={() => navigation.navigate('UserDetailsScreen')}
-      >
-        <Ionicons name="person-circle" size={32} color="#333" />
-      </TouchableOpacity>
-      {/* Tagline */}
-      <Text style={styles.tagline}>Conquer Jet Lag with Ease</Text>
+       
 
       {/* Buttons */}
       <TouchableOpacity 
-        style={styles.button} 
-        onPress={() => navigation.navigate("SelectAirportScreen")}
-      >
-        <Text style={styles.buttonText}>Get Started</Text>
-      </TouchableOpacity>
-      <TouchableOpacity 
-        style={[styles.button, styles.secondaryButton]} 
+      style={styles.yellowCircleButton} 
+      onPress={() => navigation.navigate("SelectAirportScreen")}
+    >
+      <View style={styles.buttonContent}>
+        <View style={styles.dashedLine} />
+        <MaterialIcons name="flight-land" size={36} color="#6B5B00" />
+        <Text style={styles.yellowButtonText}>Add trip</Text>
+      </View>
+    </TouchableOpacity>
+
+    <View style={{ alignItems: 'center' }}>
+      <TouchableOpacity
+        style={styles.yellowCircleButton}
         onPress={() => navigation.navigate("AboutScreen")}
       >
-        <Text style={[styles.buttonText, styles.secondaryButtonText]}>Learn More</Text>
+        <View style={styles.buttonContent}>
+          <View style={styles.dashedLine} />
+          <MaterialIcons name="info" size={36} color="#6B5B00" />
+          <Text style={styles.yellowButtonText}>How to timeshift</Text>
+        </View>
       </TouchableOpacity>
+    </View>
 
-      {/* Logout Button */}
-      <TouchableOpacity 
-        style={styles.logoutButton}
-        onPress={handleLogout}
-      >
-        <Text style={styles.logoutButtonText}>Log Out</Text>
-      </TouchableOpacity>
+    
     </View>
   );
 };

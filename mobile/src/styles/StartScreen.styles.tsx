@@ -14,11 +14,13 @@ const styles = StyleSheet.create({
     marginBottom: 40,
     fontWeight: 'bold',
   },
-  button: {
+  circleButton: {
     backgroundColor: '#007AFF',
-    paddingVertical: 15,
-    paddingHorizontal: 40,
-    borderRadius: 25,
+    width: 150,           // fixed width
+    height: 150,          // same as width
+    borderRadius: 100,    // half of width/height
+    justifyContent: 'center',
+    alignItems: 'center',
     marginVertical: 10,
   },
   secondaryButton: {
@@ -53,6 +55,44 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
+  yellowCircleButton: {
+    backgroundColor: '#FFC700',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5, // for Android
+  },
+  yellowButtonText: {
+    color: '#6B5B00',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  dashedLine: {
+    width: 60,
+    borderBottomWidth: 2,
+    borderBottomColor: '#6B5B00',
+    borderStyle: 'dashed',
+    marginBottom: 8,
+  },
+  buttonContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  helperText: {
+    color: '#6B5B00',
+    fontSize: 15,
+    marginTop: 8,
+    textAlign: 'center',
+  }
 });
 
 export default styles;

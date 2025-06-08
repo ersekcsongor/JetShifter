@@ -3,13 +3,14 @@ import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '~/contexts/AuthContext';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList, RootStackParamList } from '~/navigation';
-import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import ENV from '~/utils/constants';
 import styles from '~/styles/RegisterScreen.styles';
-
+import { Image } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 type LoginScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<AuthStackParamList, 'Register'>,
   StackNavigationProp<RootStackParamList>
@@ -65,88 +66,122 @@ const handleRegister = async (data: FormValues) => {
       </View>
     );
   }
+ if (isSubmitting) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#1e90ff" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
+      {/* Add logo */}
+      <Image 
+        style={styles.logo} 
+        source={require('~/assets/jet-lag.png')} 
+      />
+
       <Text style={styles.title}>Create Account</Text>
 
-      <Controller
-        control={control}
-        name="email"
-        rules={{
-          required: 'Email is required',
-          pattern: {
-            value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-            message: 'Invalid email address'
-          }
-        }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Email"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
+      {/* Email Input */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="mail-outline" size={20} color="black" style={styles.icon} />
+        <Controller
+          control={control}
+          name="email"
+          rules={{
+            required: 'Email is required',
+            pattern: {
+              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+              message: 'Invalid email address'
+            }
+          }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Email"
+              placeholderTextColor="#888"
+              autoCapitalize="none"
+              keyboardType="email-address"
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+      </View>
       {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
-      <Controller
-        control={control}
-        name="password"
-        rules={{
-          required: 'Password is required',
-          minLength: {
-            value: 6,
-            message: 'Password must be at least 6 characters'
-          }
-        }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Password"
-            secureTextEntry
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
+      {/* Password Input */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={20} color="black" style={styles.icon} />
+        <Controller
+          control={control}
+          name="password"
+          rules={{
+            required: 'Password is required',
+            minLength: {
+              value: 6,
+              message: 'Password must be at least 6 characters'
+            }
+          }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              placeholderTextColor="#888"
+              secureTextEntry
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+      </View>
       {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
 
-      <Controller
-        control={control}
-        name="confirmPassword"
-        rules={{
-          required: 'Confirm your password',
-          validate: value => value === password || 'Passwords do not match'
-        }}
-        render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={styles.input}
-            placeholder="Confirm Password"
-            secureTextEntry
-            value={value}
-            onBlur={onBlur}
-            onChangeText={onChange}
-          />
-        )}
-      />
+      {/* Confirm Password Input */}
+      <View style={styles.inputContainer}>
+        <Ionicons name="lock-closed-outline" size={20} color="black" style={styles.icon} />
+        <Controller
+          control={control}
+          name="confirmPassword"
+          rules={{
+            required: 'Confirm your password',
+            validate: value => value === password || 'Passwords do not match'
+          }}
+          render={({ field: { onChange, onBlur, value } }) => (
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm Password"
+              placeholderTextColor="#888"
+              secureTextEntry
+              value={value}
+              onBlur={onBlur}
+              onChangeText={onChange}
+            />
+          )}
+        />
+      </View>
       {errors.confirmPassword && <Text style={styles.error}>{errors.confirmPassword.message}</Text>}
 
-      <Button title="Register" onPress={handleSubmit(handleRegister)} />
+      {/* Register Button */}
+      <TouchableOpacity 
+        style={styles.registerButton}
+        onPress={handleSubmit(handleRegister)}
+        disabled={isSubmitting}
+      >
+        <Text style={styles.registerButtonText}>Register</Text>
+      </TouchableOpacity>
 
-      <View style={styles.linkContainer}>
-        <Text style={styles.linkText}>Already have an account? </Text>
-        <Button
-          title="Login here"
-          onPress={() => navigation.navigate('Login')}
-        />
+      {/* Login Link */}
+      <View style={styles.loginContainer}>
+        <Text style={styles.loginText}>Already have an account? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+          <Text style={styles.loginLink}>Login</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
 }
-

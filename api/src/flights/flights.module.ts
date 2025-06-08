@@ -4,11 +4,17 @@ import { HttpModule } from '@nestjs/axios';
 import { FlightsController } from './flights.controller';
 import { FlightsService } from './flights.service';
 import { AirportsService } from 'src/airports/airports.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { SavedFlight, SavedFlightSchema } from 'src/schemas/saved-flight.schema';
 @Module({
   imports: [
-    SharedModule,HttpModule
+    SharedModule,
+    HttpModule,
+    MongooseModule.forFeature([
+      { name: 'SavedFlight', schema: SavedFlightSchema },
+    ]),
   ],
   controllers: [FlightsController],
-  providers: [FlightsService,AirportsService],
+  providers: [FlightsService, AirportsService],
 })
 export class FlightsModule {}

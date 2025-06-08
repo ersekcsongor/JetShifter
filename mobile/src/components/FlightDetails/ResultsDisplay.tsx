@@ -154,26 +154,6 @@ export const ResultsDisplay = ({
     </View>
   </View>
 )}
-
-      {/* State Trajectories */}
-      {stateTrajectory.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.subtitle}>Circadian State Evolution</Text>
-          <LineChart
-            data={{
-              labels: stateTrajectory.map((_, i) => (i * flightDuration / stateTrajectory.length).toFixed(1)),
-              datasets: [
-                { data: stateTrajectory.map(s => s.x), color: () => 'red' },
-                { data: stateTrajectory.map(s => s.n), color: () => 'blue' },
-              ]
-            }}
-            width={300}
-            height={200}
-            chartConfig={chartConfig}
-          />
-          <Text style={styles.chartLegend}>Red: Circadian Phase (x), Blue: Neurotransmitter Level (n)</Text>
-        </View>
-      )}
     </View>
   );
 };

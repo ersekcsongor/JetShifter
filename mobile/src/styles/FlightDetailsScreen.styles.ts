@@ -77,6 +77,20 @@ export const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.7)',
     zIndex: 1000,
   },
+  saveButton: {
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginVertical: 12,
+
+  },
+  saveButtonText: {
+    color: '#222',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
 
 export default styles;

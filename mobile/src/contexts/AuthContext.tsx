@@ -39,15 +39,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const token = await SecureStore.getItemAsync('JWT_TOKEN');
         if (token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        setAuthState({ token, authenticated: true, user: null });        }
+          setAuthState({ token, authenticated: true, user: null });
+        }
       } catch (error) {
         console.error('Error loading token:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    
     loadToken();
+  }, []);
+  useEffect(() => {
+    const clearToken = async () => {
+      await SecureStore.deleteItemAsync('JWT_TOKEN');
+      setAuthState({ token: null, authenticated: false, user: null });
+      setIsLoading(false);
+    };
+    clearToken();
   }, []);
 
   const register = async (email: string, password: string) => {

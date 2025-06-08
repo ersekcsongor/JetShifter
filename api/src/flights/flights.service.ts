@@ -1,5 +1,5 @@
 // src/flights/flights.service.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
@@ -7,6 +7,7 @@ import { firstValueFrom } from 'rxjs';
 import { FlightsInputDto } from './dto/input/flights.input.dto';
 import { FlightDataModel } from 'src/schemas/flights.schema';
 import { AirportsService } from 'src/airports/airports.service';
+import { SavedFlight } from 'src/schemas/saved-flight.schema';
 
 
 export interface FlightDetails {
@@ -22,6 +23,7 @@ export interface FlightDetails {
 export class FlightsService {
   constructor(
     @InjectModel(FlightDataModel.name) private flightDataModel: Model<FlightDataModel>,
+    @InjectModel('SavedFlight') private savedFlightModel: Model<SavedFlight>,
     private readonly httpService: HttpService,
     private readonly airportsService: AirportsService,
   ) {}
@@ -136,8 +138,7 @@ export class FlightsService {
 
   // Updated to return the simplified flight data
   async getAllFlights() {
-    const v = await this.flightDataModel.find().exec();
-    return v;
+    return this.flightDataModel.find().lean().exec();
   }
 
   // Updated to return the simplified flight data
@@ -149,7 +150,7 @@ export class FlightsService {
         date: date,
       })
       .select('origin destination date flights')
-      .lean()  // <-- Add this
+      .lean()
       .exec();
   }
 
@@ -163,4 +164,46 @@ export class FlightsService {
     return await newFlight.save();
   }
 
+  async saveFlightForUser(email: string, flightNumber: string) {
+    try {
+      const doc = await this.savedFlightModel.create({ email, flightNumber });
+      return doc.toObject();
+    } catch (err) {
+      if (err.code === 11000) {
+        // Duplicate key error
+        throw new ConflictException('Flight already saved for this user');
+      }
+      throw err;
+    }
+  }
+
+  async unsaveFlightForUser(email: string, flightNumber: string) {
+    console.log('Deleting:', { email, flightNumber });
+    const result = await this.savedFlightModel.deleteOne({ email, flightNumber });
+    console.log('Delete result:', result);
+    return result;
+  }
+
+  async getSavedFlightsForUser(email: string) {
+    const saved = await this.savedFlightModel.find({ email }).lean().exec();
+    const flightNumbers = saved.map(s => s.flightNumber);
+    const flightsData = await this.flightDataModel.find({ 'flights.flightNumber': { $in: flightNumbers } }).lean().exec();
+
+    // Flatten to only the saved flights
+    const savedFlights: any[] = [];
+    for (const doc of flightsData) {
+        for (const flight of doc.flights) {
+            if (flightNumbers.includes(flight.flightNumber)) {
+                savedFlights.push({
+                    ...flight,
+                    origin: doc.origin,
+                    destination: doc.destination,
+                    date: doc.date,
+                    _id: flight._id || doc._id // for React key
+                });
+            }
+        }
+    }
+    return savedFlights;
+}
 }

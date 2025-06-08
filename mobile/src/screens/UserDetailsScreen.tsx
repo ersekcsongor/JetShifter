@@ -12,15 +12,16 @@ import {
   TextInput,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, SimpleLineIcons } from '@expo/vector-icons';
 import axios from 'axios';
 import { useAuth } from '~/contexts/AuthContext';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AppStackParamList } from '~/navigation';
 import styles from '~/styles/UserDetails.styles';
-import { useFocusEffect } from '@react-navigation/native';
+import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import ENV from '~/utils/constants';
 import localStyles from '~/styles/UserDetailsScreen.styles';
+import { Feather } from '@expo/vector-icons';
 
 type UserData = {
   email: string;
@@ -32,7 +33,7 @@ type Props = {
 };
 
 const UserDetailsScreen = ({ navigation }: Props) => {
-  const { authState } = useAuth();
+  const { authState, logout } = useAuth(); 
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -57,27 +58,40 @@ const UserDetailsScreen = ({ navigation }: Props) => {
     })();
   }, []);
 
-  // Unified data fetching function
   const fetchUserData = useCallback(async () => {
-    try {
-      setLoading(true);
-      const resp = await axios.get(`${ENV.API_BASE_URL}/users/me`, {
-        headers: { Authorization: `Bearer ${authState.token}` },
-      });
-      
-      // Ensure consistent data structure
-      setUserData({
-        email: resp.data.email,
-        profileImage: resp.data.profileImageUrl  || null
-      });
-    } catch (error) {
-      console.error('Fetch error:', error);
-      Alert.alert('Error', 'Failed to load profile data');
-      navigation.goBack();
-    } finally {
-      setLoading(false);
-    }
-  }, [authState.token, navigation]);
+  try {
+    setLoading(true);
+    const resp = await axios.get(`${ENV.API_BASE_URL}/users/me`, {
+      headers: { Authorization: `Bearer ${authState.token}` },
+    });
+    
+    setUserData({
+      email: resp.data.email,
+      profileImage: resp.data.profileImageUrl || null
+    });
+  } catch (error) {
+    console.error('Fetch error:', error);
+    
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+    Alert.alert(
+      'Session Expired', 
+      'Your session has expired. Please log in again.',
+      [{ text: 'OK', onPress: () => handleSessionExpiry() }]
+    );
+  } else {
+    // Use replace instead of goBack for safer navigation
+    navigation.navigate('LoginScreen'); // Create a fallback screen in your navigator
+  }
+  } finally {
+    setLoading(false);
+  }
+}, [authState.token, navigation]);
+
+// Add this helper function for session expiration
+const handleSessionExpiry = useCallback(async () => {
+  await logout();
+  navigation.navigate('LoginScreen'); // Changed from reset to replace
+}, [logout, navigation]);
 
   // Fetch on mount and focus
   useEffect(() => {
@@ -122,7 +136,7 @@ const UserDetailsScreen = ({ navigation }: Props) => {
             'Content-Type': 'multipart/form-data',
           },
         }
-      );
+      ); 
 
       // Update user data and force image refresh
       setUserData(prev => ({
@@ -170,6 +184,17 @@ const UserDetailsScreen = ({ navigation }: Props) => {
   }
 };
 
+
+  // Update logout handler
+const handleLogout = useCallback(async () => {
+  try {
+    await logout();
+    navigation.navigate('LoginScreen'); // Changed from reset to replace
+  } catch (error) {
+    console.error("Logout failed:", error);
+    Alert.alert("Error", "Logout failed. Please try again.");
+  }
+}, [logout, navigation]);
   if (loading) {
     return (
       <View style={styles.container}>
@@ -179,8 +204,24 @@ const UserDetailsScreen = ({ navigation }: Props) => {
   }
 
   return (
-    <View style={styles.container}>
-  <Text style={styles.title}>Profile Details</Text>
+  <View style={styles.container}>
+
+  <View style={styles.header}>
+    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
+        {/* You can swap “arrow-back” for any other icon name you like */}
+        <Ionicons name="arrow-back" size={24} color="#333" />
+      </TouchableOpacity>
+
+      {/* Center: Title */}
+      <Text style={styles.title2}>My Profile</Text>
+
+      {/* Right: Gear/settings button */}
+      <TouchableOpacity  style={styles.iconButton}>
+        {/* “settings-outline” is the gear icon in Ionicons */}
+        <Ionicons name="settings-outline" size={24} color="#333" />
+      </TouchableOpacity>
+      </View>    
+
   {userData && (
     <>
       <View style={styles.imageWrapper}>
@@ -203,20 +244,130 @@ const UserDetailsScreen = ({ navigation }: Props) => {
         ) : (
           <View style={styles.profileImage} />
         )}
+
+        {/* Floating action button */}
+          <TouchableOpacity style={styles.uploadButton} onPress={() => setModalVisible(true)}>
+            <MaterialCommunityIcons name="camera-outline" size={32} color="black" />
+          </TouchableOpacity>
       </View>
       
-      <Text style={styles.detail}>Email: {userData.email}</Text>
+      <Text style={styles.detail}>{userData.email}</Text>
           
 
 
-            {/* Add password change button */}
-  <TouchableOpacity 
-    style={styles.passwordButton}
-    onPress={() => setPasswordModalVisible(true)}
-  >
-    <Text style={styles.passwordButtonText}>Change Password</Text>
-  </TouchableOpacity>
+  
+<View style={styles.viewBorder}>
+{  /* advice notification button */}
+<TouchableOpacity 
+  style={styles.passwordButton}
+>
+  <View style={styles.buttonContent}>
+    <View style={styles.iconContainer}>
+      <Ionicons name="notifications-outline" size={24} color="black"></Ionicons>
+    </View>
+    <Text style={styles.passwordButtonText}>Advice Notifications</Text>
+    <View style={styles.chevronContainer}>
+      <Text style={styles.chevron}>{'>'}</Text>
+    </View>
+  </View>
+</TouchableOpacity>
 
+{/* coffee advice button */}
+<TouchableOpacity 
+  style={styles.passwordButton}
+>
+  <View style={styles.buttonContent}>
+    <View style={styles.iconContainer}>
+        <Feather name="coffee" size={24} color="black"></Feather>
+    </View>
+    <Text style={styles.passwordButtonText}>Coffee Advice</Text>
+    <View style={styles.chevronContainer}>
+      <Text style={styles.chevron}>{'>'}</Text>
+    </View>
+  </View>
+</TouchableOpacity>
+
+{/* melatonin */}
+<TouchableOpacity 
+  style={styles.passwordButton}
+>
+  <View style={styles.buttonContent}>
+    <View style={styles.iconContainer}>
+      <Feather name="moon" size={24} color="black"></Feather>
+    </View>
+    <Text style={styles.passwordButtonText}>Use Melatonin</Text>
+    <View style={styles.chevronContainer}>
+      <Text style={styles.chevron}>{'>'}</Text>
+    </View>
+  </View>
+</TouchableOpacity>
+
+{/* normal sleep pattern */}
+<TouchableOpacity 
+  style={styles.passwordButton}
+>
+  <View style={styles.buttonContent}>
+    <View style={styles.iconContainer}>
+        <MaterialCommunityIcons name="bed-outline" size={24} color="black"></MaterialCommunityIcons>
+    </View>
+    <Text style={styles.passwordButtonText}>Normal Sleep Pattern</Text>
+    <View style={styles.chevronContainer}>
+      <Text style={styles.chevron}>{'>'}</Text>
+    </View>
+  </View>
+</TouchableOpacity>
+
+{/* chronotype */}
+<TouchableOpacity 
+  style={styles.passwordButton}
+>
+  <View style={styles.buttonContent}>
+    <View style={styles.iconContainer}>
+      <MaterialCommunityIcons name="yin-yang" size={24} color="black" />
+    </View>
+    <Text style={styles.passwordButtonText}>Chronotype</Text>
+    <View style={styles.chevronContainer}>
+      <Text style={styles.chevron}>{'>'}</Text>
+    </View>
+  </View>
+</TouchableOpacity>
+</View>
+
+
+<View style={styles.viewBorder}>
+{/* Change Password Button */}
+<TouchableOpacity 
+  style={styles.passwordButton}
+  onPress={() => setPasswordModalVisible(true)}
+>
+  <View style={styles.buttonContent}>
+    <View style={styles.iconContainer}>
+      {/* Add your password icon here if needed */}
+      <Feather name="lock" size={24} color="black" />
+    </View>
+    <Text style={styles.passwordButtonText}>Change Password</Text>
+    <View style={styles.chevronContainer}>
+      <Text style={styles.chevron}>{'>'}</Text>
+    </View>
+  </View>
+</TouchableOpacity>
+
+{/* Logout Button */}
+<TouchableOpacity 
+  style={styles.passwordButton}
+  onPress={handleLogout}
+>
+  <View style={styles.buttonContent}>
+    <View style={styles.iconContainer}>
+      <SimpleLineIcons name="logout" size={24} color="black" />
+    </View>
+    <Text style={styles.passwordButtonText}>Log Out</Text>
+    <View style={styles.chevronContainer}>
+      <Text style={styles.chevron}>{'>'}</Text>
+    </View>
+  </View>
+</TouchableOpacity>
+</View>
   {/* Password Change Modal */}
   <Modal
   transparent
@@ -287,10 +438,7 @@ const UserDetailsScreen = ({ navigation }: Props) => {
 </Modal>
 
 
-          {/* Floating action button */}
-          <TouchableOpacity style={styles.uploadButton} onPress={() => setModalVisible(true)}>
-            <MaterialCommunityIcons name="camera-plus-outline" size={32} color="white" />
-          </TouchableOpacity>
+          
 
           {/* Bottom Modal with Icons */}
           <Modal
@@ -313,6 +461,9 @@ const UserDetailsScreen = ({ navigation }: Props) => {
           </Modal>
         </>
       )}
+
+
+        
     </View>
   );
 };
