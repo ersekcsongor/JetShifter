@@ -60,7 +60,7 @@ cancelButton: {
   backgroundColor: '#e0e0e0',
 },
 submitButton: {
-  backgroundColor: '#4CAF50',
+  backgroundColor: '#007AFF',
 },
 buttonText: {
   color: 'white',

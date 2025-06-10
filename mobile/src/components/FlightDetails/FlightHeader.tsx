@@ -160,7 +160,8 @@ const styles = StyleSheet.create({
     marginTop: 16,
   },
   headerContainer: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFF9E3',
+    marginTop: 50,
     padding: 16,
     borderRadius: 8,
     margin: 8,
@@ -246,11 +247,14 @@ const styles = StyleSheet.create({
   planeIcon: {
     marginRight: 8, // Space between icon and text
     transform: [{ rotate: '90deg' }], // Rotates the plane icon horizontally
+    color: '#FFF9E3',
+
   },
   infoValue: {
-    color: 'white',
+    color: '#FFF9E3',
     fontSize: 16, // Adjust as needed
     fontWeight: 'bold',
+    
   },
 });
 

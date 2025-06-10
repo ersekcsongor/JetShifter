@@ -25,6 +25,7 @@ export const styles = StyleSheet.create({
   },
   controlContainer: {
     marginVertical: 10,
+    
   },
   resultContainer: {
     marginTop: 20,
@@ -57,7 +58,7 @@ export const styles = StyleSheet.create({
   subResultContainer: {
     marginTop: 10,
     padding: 10,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFF9E3',
     borderRadius: 5,
     borderWidth: 1,
     borderColor: '#ddd',
@@ -69,7 +70,7 @@ export const styles = StyleSheet.create({
   },
  
   calculateButton: {
-    backgroundColor: '#f5f5f5', 
+    backgroundColor: '#FFF9E3',
     borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 20,

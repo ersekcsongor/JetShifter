@@ -2,6 +2,7 @@ import { StyleSheet } from "react-native";
 
 const styles = StyleSheet.create({
     logo:{
+        marginTop: 100,
         alignSelf: 'center',
         width: 100,
         height: 100,
@@ -25,6 +26,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 10,
     backgroundColor: '#f5f5f5',
+    marginHorizontal: 20,
   },
   icon: {
     marginRight: 5,
@@ -55,6 +57,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+    marginHorizontal: 20,
+
   },
   loginButtonText: {
     color: '#fff',

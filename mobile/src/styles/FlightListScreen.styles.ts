@@ -3,7 +3,6 @@ import { StyleSheet } from 'react-native';
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF9E3',
     paddingHorizontal: 0,
     paddingTop: 0,
   },
@@ -27,7 +26,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   flightItem: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FFF9E3',
     borderRadius: 20,
     marginVertical: 10,
     padding: 18,

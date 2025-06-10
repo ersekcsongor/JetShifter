@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   container: {
     marginVertical: 16,
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFF9E3',
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -179,6 +179,8 @@ const styles = StyleSheet.create({
   timeContainer: {
     color: '#black',
     flex: 1,
+    backgroundColor: '#FFF9E3',
+
   },
   timeLabel: {
     fontSize: 14,
@@ -194,7 +196,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#FFF9E3',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -205,7 +207,7 @@ const styles = StyleSheet.create({
     color: '#2d3436',
   },
   iconContainer: {
-    backgroundColor: '#e3f2fd',
+    backgroundColor: '#FFF9E3',
     borderRadius: 20,
     width: 30,
     height: 30,
@@ -222,7 +224,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#FFF9E3',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 20,
@@ -238,6 +240,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#2d3436',
+    
   },
   modalButton: {
     fontSize: 16,
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   pickerContainer: {
-    backgroundColor: 'white',
+     backgroundColor: '#FFF9E3',
   },
   picker: {
     width: '100%',

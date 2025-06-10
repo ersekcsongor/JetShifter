@@ -10,6 +10,7 @@ import {
   Modal,
   StyleSheet,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons, MaterialCommunityIcons, SimpleLineIcons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ import { CommonActions, useFocusEffect } from '@react-navigation/native';
 import ENV from '~/utils/constants';
 import localStyles from '~/styles/UserDetailsScreen.styles';
 import { Feather } from '@expo/vector-icons';
+import ScreenBackground from '~/components/ScreenBackground';
 
 type UserData = {
   email: string;
@@ -197,13 +199,17 @@ const handleLogout = useCallback(async () => {
 }, [logout, navigation]);
   if (loading) {
     return (
+      <ScreenBackground>
       <View style={styles.container}>
         <ActivityIndicator size="large" />
       </View>
+      </ScreenBackground>
     );
   }
 
   return (
+  <ScreenBackground>
+  <ScrollView>
   <View style={styles.container}>
 
   <View style={styles.header}>
@@ -219,8 +225,8 @@ const handleLogout = useCallback(async () => {
       <TouchableOpacity  style={styles.iconButton}>
         {/* “settings-outline” is the gear icon in Ionicons */}
         <Ionicons name="settings-outline" size={24} color="#333" />
-      </TouchableOpacity>
-      </View>    
+    </TouchableOpacity>
+  </View>
 
   {userData && (
     <>
@@ -256,7 +262,6 @@ const handleLogout = useCallback(async () => {
 
 
   
-<View style={styles.viewBorder}>
 {  /* advice notification button */}
 <TouchableOpacity 
   style={styles.passwordButton}
@@ -266,9 +271,7 @@ const handleLogout = useCallback(async () => {
       <Ionicons name="notifications-outline" size={24} color="black"></Ionicons>
     </View>
     <Text style={styles.passwordButtonText}>Advice Notifications</Text>
-    <View style={styles.chevronContainer}>
-      <Text style={styles.chevron}>{'>'}</Text>
-    </View>
+    
   </View>
 </TouchableOpacity>
 
@@ -281,9 +284,7 @@ const handleLogout = useCallback(async () => {
         <Feather name="coffee" size={24} color="black"></Feather>
     </View>
     <Text style={styles.passwordButtonText}>Coffee Advice</Text>
-    <View style={styles.chevronContainer}>
-      <Text style={styles.chevron}>{'>'}</Text>
-    </View>
+    
   </View>
 </TouchableOpacity>
 
@@ -296,9 +297,7 @@ const handleLogout = useCallback(async () => {
       <Feather name="moon" size={24} color="black"></Feather>
     </View>
     <Text style={styles.passwordButtonText}>Use Melatonin</Text>
-    <View style={styles.chevronContainer}>
-      <Text style={styles.chevron}>{'>'}</Text>
-    </View>
+    
   </View>
 </TouchableOpacity>
 
@@ -311,9 +310,7 @@ const handleLogout = useCallback(async () => {
         <MaterialCommunityIcons name="bed-outline" size={24} color="black"></MaterialCommunityIcons>
     </View>
     <Text style={styles.passwordButtonText}>Normal Sleep Pattern</Text>
-    <View style={styles.chevronContainer}>
-      <Text style={styles.chevron}>{'>'}</Text>
-    </View>
+    
   </View>
 </TouchableOpacity>
 
@@ -326,15 +323,10 @@ const handleLogout = useCallback(async () => {
       <MaterialCommunityIcons name="yin-yang" size={24} color="black" />
     </View>
     <Text style={styles.passwordButtonText}>Chronotype</Text>
-    <View style={styles.chevronContainer}>
-      <Text style={styles.chevron}>{'>'}</Text>
-    </View>
   </View>
 </TouchableOpacity>
-</View>
 
 
-<View style={styles.viewBorder}>
 {/* Change Password Button */}
 <TouchableOpacity 
   style={styles.passwordButton}
@@ -346,9 +338,7 @@ const handleLogout = useCallback(async () => {
       <Feather name="lock" size={24} color="black" />
     </View>
     <Text style={styles.passwordButtonText}>Change Password</Text>
-    <View style={styles.chevronContainer}>
-      <Text style={styles.chevron}>{'>'}</Text>
-    </View>
+    
   </View>
 </TouchableOpacity>
 
@@ -362,12 +352,9 @@ const handleLogout = useCallback(async () => {
       <SimpleLineIcons name="logout" size={24} color="black" />
     </View>
     <Text style={styles.passwordButtonText}>Log Out</Text>
-    <View style={styles.chevronContainer}>
-      <Text style={styles.chevron}>{'>'}</Text>
-    </View>
   </View>
 </TouchableOpacity>
-</View>
+
   {/* Password Change Modal */}
   <Modal
   transparent
@@ -465,6 +452,8 @@ const handleLogout = useCallback(async () => {
 
         
     </View>
+    </ScrollView>
+    </ScreenBackground>
   );
 };
 

@@ -78,7 +78,7 @@ export const styles = StyleSheet.create({
     zIndex: 1000,
   },
   saveButton: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFF9E3',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 12,

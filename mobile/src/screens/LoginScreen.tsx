@@ -8,6 +8,7 @@ import { CompositeNavigationProp } from '@react-navigation/native';
 import styles from '~/styles/LoginScreen.styles';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
+import ScreenBackground from '~/components/ScreenBackground';
 type LoginScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<AuthStackParamList, 'Login'>,
   StackNavigationProp<RootStackParamList>
@@ -44,19 +45,22 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
   if (isSubmitting) {
     return (
+      <ScreenBackground>
       <View style={styles.container}>
         <ActivityIndicator size="large" color="#1e90ff" />
       </View>
+      </ScreenBackground>
     );
   }
 
   return (
-    <ImageBackground
-      source={require('~/assets/background.png')} // <-- your background image path
-      style={styles.container}
-      resizeMode="cover"
-    >
-      <Image style={styles.logo} source={require('~/assets/jet-lag.png')}></Image>
+    <ScreenBackground>
+
+      {/* Add logo */}
+      <Image 
+        style={styles.logo} 
+        source={require('~/assets/jet-lag.png')} 
+      />
 
       <Text style={styles.title}>JetShifter</Text>
 
@@ -135,9 +139,9 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       <View style={styles.signupContainer}>
         <Text style={styles.signupText}>Don't you have an account? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('Auth', { screen: 'Register' })}>
-          <Text style={styles.signupLink}>Sign Up</Text>
+        <Text style={styles.signupLink}>Sign Up</Text>
         </TouchableOpacity>
       </View>
-    </ImageBackground>
+    </ScreenBackground>
   );
 }

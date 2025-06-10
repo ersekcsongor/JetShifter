@@ -6,6 +6,7 @@ import { AppStackParamList, RootStackParamList } from "~/navigation";
 import styles from "~/styles/StartScreen.styles";
 import { useAuth } from "~/contexts/AuthContext";
 import { Ionicons, MaterialIcons } from '@expo/vector-icons'; // Install if needed
+import ScreenBackground from "~/components/ScreenBackground";
 
 type StartScreenNavigationProp = StackNavigationProp<AppStackParamList, 'StartScreen'>;
 type RootNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -16,6 +17,8 @@ const StartScreen = () => {
   
 
   return (
+        <ScreenBackground>
+    
     <View style={styles.container}>
        
 
@@ -39,13 +42,15 @@ const StartScreen = () => {
         <View style={styles.buttonContent}>
           <View style={styles.dashedLine} />
           <MaterialIcons name="info" size={36} color="#6B5B00" />
-          <Text style={styles.yellowButtonText}>How to timeshift</Text>
+          <Text style={styles.yellowButtonText}>About Jetlag</Text>
         </View>
       </TouchableOpacity>
     </View>
 
     
     </View>
+    </ScreenBackground>
+    
   );
 };
 

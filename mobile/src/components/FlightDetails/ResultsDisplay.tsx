@@ -45,117 +45,115 @@ export const ResultsDisplay = ({
 }: Props) => {
   const index = 0;
   
-  return (
-    <View style={styles.container}>
-     
-
-     {/* Switching Points with Sleep Schedule */}
-  {switchingTimes && (
-  <View style={styles.section}>
-    <Text style={styles.subtitle}>Exposure Switching Schedule</Text>
-    <View style={styles.scheduleContainer}>
-      {Object.entries(
-        switchingTimes.switchingPoints.reduce<Record<string, any[]>>((acc, point) => {
-          const date = point.time.split(' ')[0];
-          if (!acc[date]) {
-            acc[date] = [];
-            
-            // Add sleep period only once per date
-            const sleepStart = moment(`${date} ${sleepSchedule.bedtime}`);
-            const sleepEnd = moment(`${date} ${sleepSchedule.wakeupTime}`);
-            
-            if (sleepEnd.isBefore(sleepStart)) {
-              sleepEnd.add(1, 'day');
-            }
-            
-            acc[date].push({
-              time: sleepStart.format('YYYY-MM-DD HH:mm'),
-              endTime: sleepEnd.format('YYYY-MM-DD HH:mm'),
-              type: 'sleep',
-              isSleepPeriod: true
-            });
-          }
-          
-          acc[date].push({
-            ...point,
-            isSleepPeriod: false
-          });
-          
-          return acc;
-        }, {})
-      ).map(([date, points], dateIndex) => (
-        <View key={dateIndex} style={styles.dateGroup}>
-          <Text style={styles.dateHeader}>
-            {moment(date).format('dddd, MMMM D')}
-          </Text>
-          <View style={styles.timeIntervalsContainer}>
-            {points
-              .sort((a, b) => moment(a.time).diff(moment(b.time)))
-              .map((point, index) => {
-                if (point.isSleepPeriod) {
-                  return (
-                    <View 
-                      key={`sleep-${index}`}
-                      style={[styles.scheduleItem]}
-                    >
-                      <View style={styles.typeIndicator}>
-                        <Ionicons name="bed" size={18} color="#343a40" />
-                        <Text style={[styles.typeText, styles.sleepTypeText]}>
-                          SLEEP TIME
-                        </Text>
-                      </View>
-                      <View style={styles.timeInfo}>
-                        <Text style={styles.timeRange}>
-                          {moment(point.time).format('h:mm A')} - {moment(point.endTime).format('h:mm A')}
-                        </Text>
-                      </View>
-                    </View>
-                  );
+return (
+  <>
+    {/* Switching Points with Sleep Schedule */}
+    {switchingTimes && (
+      <View style={styles.section}>
+        <Text style={styles.subtitle}>Exposure Switching Schedule</Text>
+        <View style={styles.scheduleContainer}>
+          {Object.entries(
+            switchingTimes.switchingPoints?.reduce<Record<string, any[]>>((acc, point) => {
+              const date = point.time.split(' ')[0];
+              if (!acc[date]) {
+                acc[date] = [];
+                
+                // Add sleep period only once per date
+                const sleepStart = moment(`${date} ${sleepSchedule.bedtime}`);
+                const sleepEnd = moment(`${date} ${sleepSchedule.wakeupTime}`);
+                
+                if (sleepEnd.isBefore(sleepStart)) {
+                  sleepEnd.add(1, 'day');
                 }
                 
-                const nextPoint = points.find(
-                  p => !p.isSleepPeriod && p.time > point.time
-                );
-                
-                const timeRange = nextPoint 
-                  ? `${moment(point.time).format('h:mm A')} - ${moment(nextPoint.time).format('h:mm A')}`
-                  : `After ${moment(point.time).format('h:mm A')}`;
-                
-                return (
-                  <View 
-                    key={index} 
-                    style={[
-                      styles.scheduleItem,
-                      point.type === 'dark' ? styles.darkItem : styles.lightItem
-                    ]}
-                  >
-                    <View style={styles.typeIndicator}>
-                      {point.type === 'dark' ? (
-                        <Ionicons name="moon" size={18} color="#343a40" />
-                      ) : (
-                        <Ionicons name="sunny" size={18} color="#fcc419" />
-                      )}
-                      <Text style={[
-                        styles.typeText,
-                        point.type === 'dark' ? styles.darkTypeText : styles.lightTypeText
-                      ]}>
-                        {point.type.toUpperCase()}
-                      </Text>
-                    </View>
-                    <View style={styles.timeInfo}>
-                      <Text style={styles.timeRange}>{timeRange}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-          </View>
+                acc[date].push({
+                  time: sleepStart.format('YYYY-MM-DD HH:mm'),
+                  endTime: sleepEnd.format('YYYY-MM-DD HH:mm'),
+                  type: 'sleep',
+                  isSleepPeriod: true
+                });
+              }
+              
+              acc[date].push({
+                ...point,
+                isSleepPeriod: false
+              });
+              
+              return acc;
+            }, {}) ?? {}
+          ).map(([date, points], dateIndex) => (
+            <View key={dateIndex} style={styles.dateGroup}>
+              <Text style={styles.dateHeader}>
+                {moment(date).format('dddd, MMMM D')}
+              </Text>
+              <View style={styles.timeIntervalsContainer}>
+                {points
+                  .sort((a, b) => moment(a.time).diff(moment(b.time)))
+                  .map((point, index) => {
+                    if (point.isSleepPeriod) {
+                      return (
+                        <View 
+                          key={`sleep-${index}`}
+                          style={[styles.scheduleItem]}
+                        >
+                          <View style={styles.typeIndicator}>
+                            <Ionicons name="bed" size={18} color="#343a40" />
+                            <Text style={[styles.typeText, styles.sleepTypeText]}>
+                              SLEEP TIME
+                            </Text>
+                          </View>
+                          <View style={styles.timeInfo}>
+                            <Text style={styles.timeRange}>
+                              {moment(point.time).format('h:mm A')} - {moment(point.endTime).format('h:mm A')}
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    }
+                    
+                    const nextPoint = points.find(
+                      p => !p.isSleepPeriod && p.time > point.time
+                    );
+                    
+                    const timeRange = nextPoint 
+                      ? `${moment(point.time).format('h:mm A')} - ${moment(nextPoint.time).format('h:mm A')}`
+                      : `After ${moment(point.time).format('h:mm A')}`;
+                    
+                    return (
+                      <View 
+                        key={index} 
+                        style={[
+                          styles.scheduleItem,
+                          point.type === 'dark' ? styles.darkItem : styles.lightItem
+                        ]}
+                      >
+                        <View style={styles.typeIndicator}>
+                          {point.type === 'dark' ? (
+                            <Ionicons name="moon" size={18} color="#343a40" />
+                          ) : (
+                            <Ionicons name="sunny" size={18} color="#fcc419" />
+                          )}
+                          <Text style={[
+                            styles.typeText,
+                            point.type === 'dark' ? styles.darkTypeText : styles.lightTypeText
+                          ]}>
+                            {point.type.toUpperCase()}
+                          </Text>
+                        </View>
+                        <View style={styles.timeInfo}>
+                          <Text style={styles.timeRange}>{timeRange}</Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+              </View>
+            </View>
+          ))}
         </View>
-      ))}
-    </View>
-  </View>
-)}
-    </View>
-  );
+      </View>
+    )}
+  </>
+);
 };
 
 const styles = StyleSheet.create({
@@ -182,7 +180,7 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#FFF9E3',
     marginVertical: 8,
     borderRadius: 12,
   },
@@ -200,7 +198,7 @@ const styles = StyleSheet.create({
   section: {
     marginVertical: 16,
     padding: 16,
-    backgroundColor: 'white',
+    backgroundColor: '#FFF9E3',
     borderRadius: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },

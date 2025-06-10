@@ -7,19 +7,19 @@ export default StyleSheet.create({
     marginTop: 20,
     padding: 20,
     alignItems: 'center',  
-    backgroundColor: 'white',
   },
   title: {
     fontSize: 24,
     marginBottom: 20,
     marginTop: 20,
     fontWeight: 'bold',
-    color: 'black',
+    color: '#6B5B00',
   },
   detail: {
     fontSize: 18,
     marginVertical: 8,
     fontWeight: '500',
+    
   },
   profileImage: {
     borderRadius: 75,
@@ -30,7 +30,7 @@ export default StyleSheet.create({
     position: 'absolute',
     bottom: 8,                
     right: 8,                 
-    backgroundColor: 'white', 
+    backgroundColor: '#FFF9E3', 
     padding: 6,
     borderRadius: 20,
     shadowColor: '#000',
@@ -40,6 +40,7 @@ export default StyleSheet.create({
     elevation: 3,
 
   },imageWrapper: {
+    marginTop: 20,
     position: 'relative',    
     width: 150,
     height: 150,
@@ -48,12 +49,27 @@ export default StyleSheet.create({
   },
   passwordButton: {
   display: 'flex',
-  backgroundColor: 'white',
+  backgroundColor: '#FFF9E3',
   paddingVertical: 12,
   borderRadius: 8,
   marginTop: 20,
   marginRight: 10,
+  color: '#6B5B00',
+
 },
+title2: {
+    flex: 1,                       // take up remaining space
+    textAlign: 'center',
+    fontSize: 18,
+    fontWeight: '600',
+    backgroundColor: '#FFF9E3',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    display: 'flex',
+    color: '#6B5B00',
+
+  },
 buttonContent: {
   flexDirection: 'row',
   alignItems: 'center',
@@ -84,22 +100,15 @@ chevron: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',       // header background
+    backgroundColor: '#FFF9E3',
   },
   iconButton: {
     width: 40,                     // hit‐area for the icon
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: '#FFF9E3',
+
   },
-  title2: {
-    flex: 1,                       // take up remaining space
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  viewBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'black',
-  }
+  
+  
   });

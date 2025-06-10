@@ -9,6 +9,7 @@ import { AppStackParamList } from '~/navigation';
 import Flight from '~/types/Flight';
 import { MaterialIcons } from '@expo/vector-icons';
 import styles from '~/styles/SavedFlightsScreen.styles';
+import ScreenBackground from '~/components/ScreenBackground';
 
 const API_URL = `${ENV.API_BASE_URL}/flights`;
 
@@ -53,16 +54,19 @@ const SavedFlightsScreen = () => {
 
   if (flights.length === 0) {
     return (
+      <ScreenBackground>
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#6B5B00', marginBottom: 16 }}>
           Saved Flights
         </Text>
         <Text>No saved flights.</Text>
       </View>
+      </ScreenBackground>
     );
   }
 
   return (
+    <ScreenBackground>
     <View style={{ flex: 1 }}>
       <View style={{ paddingTop: 32, paddingBottom: 16, alignItems: 'center', backgroundColor: '#FFF9E3' }}>
         <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#6B5B00' }}>
@@ -96,6 +100,7 @@ const SavedFlightsScreen = () => {
         )}
       />
     </View>
+  </ScreenBackground>
   );
 };
 

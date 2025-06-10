@@ -7,6 +7,7 @@ import { AppStackParamList } from "~/navigation";
 import axios from "axios";
 import ENV from "~/utils/constants";
 import styles from '~/styles/SelectAirportScreen.styles';
+import ScreenBackground from "~/components/ScreenBackground";
 
 interface Airport {
   _id: string;
@@ -74,12 +75,13 @@ const SelectAirportScreen = () => {
   }, [departure, airports]);
 
   const handleSearch = () => {
-    const formattedDate = date.toISOString().split("T")[0];
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const localDateString = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
     if (departure && arrival) {
-      navigation.navigate("FlightListScreen", {
+      navigation.navigate('FlightListScreen', {
         departure,
         arrival,
-        startDate: formattedDate,
+        startDate: localDateString,
       });
     } else {
       alert("Invalid selection");
@@ -88,14 +90,17 @@ const SelectAirportScreen = () => {
 
   if (loading) {
     return (
+      <ScreenBackground>
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#FFD600" />
         <Text style={styles.loadingText}>Loading airport data...</Text>
       </View>
+      </ScreenBackground>
     );
   }
 
   return (
+    <ScreenBackground>
     <View style={styles.container}>
       <Text style={styles.header}>Select Your Route</Text>
 
@@ -184,7 +189,7 @@ const SelectAirportScreen = () => {
         <DateTimePicker
           value={date}
           mode="date"
-          display="default"
+          display="spinner"
           onChange={(event, selectedDate) => {
             if (selectedDate) setDate(selectedDate);
             setShowDatePicker(false);
@@ -197,6 +202,7 @@ const SelectAirportScreen = () => {
         <Text style={styles.searchButtonText}>Find Flights</Text>
       </TouchableOpacity>
     </View>
+  </ScreenBackground>
   );
 };
 

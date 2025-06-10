@@ -75,7 +75,7 @@ const AppTabNavigator = () => (
         return null;
       },
     })}
-  >
+  > 
     <Tab.Screen name="StartScreen" component={StartScreen} options={{ title: 'Home' }} />
     <Tab.Screen name="SavedFlightsScreen" component={SavedFlightsScreen} options={{ title: 'Saved' }} />
     <Tab.Screen name="UserDetailsScreen" component={UserDetailsScreen} options={{ title: 'Account' }} />

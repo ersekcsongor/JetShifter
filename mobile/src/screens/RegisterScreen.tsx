@@ -11,6 +11,7 @@ import ENV from '~/utils/constants';
 import styles from '~/styles/RegisterScreen.styles';
 import { Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import ScreenBackground from '~/components/ScreenBackground';
 type LoginScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<AuthStackParamList, 'Register'>,
   StackNavigationProp<RootStackParamList>
@@ -61,20 +62,26 @@ const handleRegister = async (data: FormValues) => {
 
   if (isLoading) {
     return (
+      <ScreenBackground>
       <View style={styles.container}>
         <ActivityIndicator size="large" />
       </View>
+      </ScreenBackground>
+
     );
   }
  if (isSubmitting) {
     return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#1e90ff" />
-      </View>
+      <ScreenBackground>
+        <View style={styles.container}>
+          <ActivityIndicator size="large" color="#1e90ff" />
+        </View>
+      </ScreenBackground>
     );
   }
 
   return (
+    <ScreenBackground>
     <View style={styles.container}>
       {/* Add logo */}
       <Image 
@@ -183,5 +190,6 @@ const handleRegister = async (data: FormValues) => {
         </TouchableOpacity>
       </View>
     </View>
+  </ScreenBackground>
   );
 }

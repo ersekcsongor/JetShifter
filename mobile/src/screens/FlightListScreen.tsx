@@ -8,6 +8,9 @@ import { AppStackParamList, RootStackParamList } from "~/navigation";
 import { StackNavigationProp } from "@react-navigation/stack";
 import ENV from "~/utils/constants";
 import styles from "~/styles/FlightListScreen.styles";
+import cardStyles from "~/styles/SavedFlightsScreen.styles";
+import ScreenBackground from "~/components/ScreenBackground";
+import { MaterialIcons } from '@expo/vector-icons';
 
 // Configure API client with better defaults
 const apiClient = axios.create({
@@ -100,37 +103,28 @@ const FlightListScreen = () => {
     const arrivalTime = formatDateTime(item.time[1]);
 
     return (
-      <TouchableOpacity 
-        style={styles.flightItem}
+      <TouchableOpacity
+        style={cardStyles.card}
         onPress={() => navigation.navigate('FlightDetailsScreen', { flight: item })}
       >
-      <View style={styles.flightItem}>
-        <View style={styles.flightHeader}>
-          <Text style={styles.flightNumber}>{item.flightNumber}</Text>
-        </View>
-        
-        <View style={styles.timeContainer}>
-          <View style={styles.timeBox}>
-            <Text style={styles.timeLabel}>Departure</Text>
-            <Text style={styles.time}>{departureTime.time}</Text>
-            <Text style={styles.date}>{departureTime.date}</Text>
-            <Text style={styles.airport}>{item.origin}</Text>
-          </View>
-          
-          <View style={styles.durationContainer}>
-            <View style={styles.durationLine} />
-            <Text style={styles.duration}>{item.duration}</Text>
-            <View style={styles.durationLine} />
-          </View>
-          
-          <View style={styles.timeBox}>
-            <Text style={styles.timeLabel}>Arrival</Text>
-            <Text style={styles.time}>{arrivalTime.time}</Text>
-            <Text style={styles.date}>{arrivalTime.date}</Text>
-            <Text style={styles.airport}>{item.destination}</Text>
+        <View style={cardStyles.cardContent}>
+          <MaterialIcons name="flight" size={36} color="#6B5B00" style={cardStyles.icon} />
+          <View style={cardStyles.flightInfo}>
+            <Text style={cardStyles.route}>
+              {item.origin} → {item.destination}
+            </Text>
+            <Text style={cardStyles.label}>
+              Flight: <Text style={cardStyles.flightNumber}>{item.flightNumber}</Text>
+            </Text>
+            <Text style={cardStyles.duration}>Duration: {item.duration}</Text>
+            <Text style={cardStyles.label}>
+              Departure: {departureTime.time} {departureTime.date}
+            </Text>
+            <Text style={cardStyles.label}>
+              Arrival: {arrivalTime.time} {arrivalTime.date}
+            </Text>
           </View>
         </View>
-      </View>
       </TouchableOpacity>
     );
   };
@@ -140,50 +134,52 @@ const FlightListScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>
-        Flights from {departure} to {arrival}
-      </Text>
-      <Text style={styles.subtitle}>
-        {new Date(startDate).toLocaleDateString("en-US", {
-          weekday: "long",
-          year: "numeric",
-          month: "long",
-          day: "numeric",
-        })}
-      </Text>
+    <ScreenBackground>
+      <View style={styles.container}>
+        <Text style={styles.title}>
+          Flights from {departure} to {arrival}
+        </Text>
+        <Text style={styles.subtitle}>
+          {new Date(startDate).toLocaleDateString("en-US", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          })}
+        </Text>
 
-      {loading && !refreshing ? (
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color="#3498db" />
-          <Text style={styles.loadingText}>Searching for flights...</Text>
-        </View>
-      ) : error ? (
-        <View style={styles.centerContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <Text style={styles.retryText} onPress={() => fetchFlights()}>
-            Tap to retry
-          </Text>
-        </View>
-      ) : flights.length > 0 ? (
-        <FlatList
-          data={flights}
-          renderItem={renderFlightItem}
-          keyExtractor={(item) => `${item.flightNumber}-${item.time[0]}`}
-          contentContainerStyle={styles.listContainer}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
-          ListFooterComponent={<View style={styles.listFooter} />}
-        />
-      ) : (
-        <View style={styles.centerContainer}>
-          <Text style={styles.noFlightsText}>No flights available</Text>
-          <Text style={styles.noFlightsSubtext}>
-            Try adjusting your search criteria
-          </Text>
-        </View>
-      )}
-    </View>
+        {loading && !refreshing ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#3498db" />
+            <Text style={styles.loadingText}>Searching for flights...</Text>
+          </View>
+        ) : error ? (
+          <View style={styles.centerContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <Text style={styles.retryText} onPress={() => fetchFlights()}>
+              Tap to retry
+            </Text>
+          </View>
+        ) : flights.length > 0 ? (
+          <FlatList
+            data={flights}
+            renderItem={renderFlightItem}
+            keyExtractor={(item) => `${item.flightNumber}-${item.time[0]}`}
+            contentContainerStyle={styles.listContainer}
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            ListFooterComponent={<View style={styles.listFooter} />}
+          />
+        ) : (
+          <View style={styles.centerContainer}>
+            <Text style={styles.noFlightsText}>No flights available</Text>
+            <Text style={styles.noFlightsSubtext}>
+              Try adjusting your search criteria
+            </Text>
+          </View>
+        )}
+      </View>
+    </ScreenBackground>
   );
 };
 

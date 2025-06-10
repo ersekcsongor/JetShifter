@@ -29,6 +29,7 @@ import { SleepSchedule } from '~/utils/types';
 import { SleepScheduleInput } from '~/components/FlightDetails/SleepScheduleInput';
 import ENV from '~/utils/constants';
 import { useAuth } from '~/contexts/AuthContext';
+import ScreenBackground from '~/components/ScreenBackground';
 
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreen'>;
@@ -288,67 +289,72 @@ const handleSimulateDynamics = useCallback(async () => {
   // Error handling
   if (!route.params?.flight) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.error}>No flight data provided</Text>
-      </View>
+      <ScreenBackground>
+        <View style={styles.container}>
+          <Text style={styles.error}>No flight data provided</Text>
+        </View>
+      </ScreenBackground>
     );
   }
 
   if (!flight.flightNumber || !flight.origin || !flight.destination) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.error}>Invalid flight data</Text>
-      </View>
+      <ScreenBackground>
+        <View style={styles.container}>
+          <Text style={styles.error}>Invalid flight data</Text>
+        </View>
+      </ScreenBackground>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {loading && <ActivityIndicator size="large" style={styles.loader} />}
-      
-      <FlightHeader flight={flight} />
-      
-      <View style={styles.saveButton}>
-        <TouchableOpacity  onPress={handleSaveFlight}>
-          <Text style={styles.saveButtonText}>Save Flight</Text>
-        </TouchableOpacity>
-      </View>
-
-      <SleepScheduleInput 
-          schedule={sleepSchedule}
-           onChange={setSleepSchedule}
-      />
-
-      <SwitchingTimesControl
-        onCalculate={handleCalculateSwitchingTimes} 
-        loading={loading} 
-        timezonesReady={!!timezones.originTz && !!timezones.destTz}
-      />
-      
-      {switchingTimes && (
-      <>
-       
+    <ScreenBackground>
+      <ScrollView style={styles.container}>
+        {loading && <ActivityIndicator size="large" style={styles.loader} />}
         
+        <FlightHeader flight={flight} />
+        
+        <TouchableOpacity  onPress={handleSaveFlight}>
+        <View style={styles.saveButton}>
+            <Text style={styles.saveButtonText}>Save Flight</Text>
+        </View>
+        </TouchableOpacity>
 
-        <ResultsDisplay
-        switchingTimes={switchingTimes}
-        stateTrajectory={stateTrajectory}
-        coStateTrajectory={coStateTrajectory}
-        coStateAtSwitchingPoints={coStateAtSwitchingPoints}
-        controlPerturbations={controlPerturbations}
-        optimizationHistory={optimizationHistory}
-        optimizationComplete={optimizationComplete}
-        iterationCount={iterationCount}
-        activeSwitchingCount={activeSwitchingCount}
-        costHistory={costHistory}
-        flightDuration={switchingTimes?.flightDurationHours || 0}
-        timezoneDiff={switchingTimes?.timezoneDiff || 0}
-        sleepSchedule={sleepSchedule}
-      />
-      </>
-    )}
-    </ScrollView>
+
+        <SleepScheduleInput 
+            schedule={sleepSchedule}
+            onChange={setSleepSchedule}
+        />
+
+        <SwitchingTimesControl
+          onCalculate={handleCalculateSwitchingTimes} 
+          loading={loading} 
+          timezonesReady={!!timezones.originTz && !!timezones.destTz}
+        />
+        
+        {switchingTimes && (
+        <>
+          <ResultsDisplay
+            switchingTimes={switchingTimes}
+            stateTrajectory={stateTrajectory}
+            coStateTrajectory={coStateTrajectory}
+            coStateAtSwitchingPoints={coStateAtSwitchingPoints}
+            controlPerturbations={controlPerturbations}
+            optimizationHistory={optimizationHistory}
+            optimizationComplete={optimizationComplete}
+            iterationCount={iterationCount}
+            activeSwitchingCount={activeSwitchingCount}
+            costHistory={costHistory}
+            flightDuration={switchingTimes?.flightDurationHours || 0}
+            timezoneDiff={switchingTimes?.timezoneDiff || 0}
+            sleepSchedule={sleepSchedule}
+          />
+        </>
+        )}
+      </ScrollView>
+    </ScreenBackground>
   );
 };
+
 
 export default FlightDetailsScreen;
