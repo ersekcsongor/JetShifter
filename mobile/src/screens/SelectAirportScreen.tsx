@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, TouchableOpacity, Modal, FlatList, Button, Platform } from "react-native";
+import { View, Text, ActivityIndicator, TouchableOpacity, Modal, FlatList, Button, Platform, TextInput } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -35,6 +35,8 @@ const SelectAirportScreen = () => {
   // Modal state
   const [showDepartureModal, setShowDepartureModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
+  const [search, setSearch] = useState('');
+  const [arrivalSearch, setArrivalSearch] = useState(''); // Add this line
 
   useEffect(() => {
     const fetchAirportData = async () => {
@@ -88,6 +90,16 @@ const SelectAirportScreen = () => {
     }
   };
 
+  const filteredAirports = airports.filter(airport =>
+    airport.name.toLowerCase().includes(search.toLowerCase()) ||
+    airport.iataCode.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const filteredArrivalList = filteredArrivalAirports.filter(airport =>
+    airport.name.toLowerCase().includes(arrivalSearch.toLowerCase()) ||
+    airport.iataCode.toLowerCase().includes(arrivalSearch.toLowerCase())
+  );
+
   if (loading) {
     return (
       <ScreenBackground>
@@ -120,8 +132,21 @@ const SelectAirportScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Choose Departure Airport</Text>
+            <TextInput
+              placeholder="Search..."
+              value={search}
+              onChangeText={setSearch}
+              style={{
+                marginBottom: 16,
+                width: '100%',
+                borderWidth: 1,
+                borderColor: '#ccc',
+                borderRadius: 8,
+                padding: 8,
+              }}
+            />
             <FlatList
-              data={airports}
+              data={filteredAirports}
               keyExtractor={(item, index) => `${item._id || item.iataCode}_${index}`}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -157,8 +182,21 @@ const SelectAirportScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Choose Arrival Airport</Text>
+            <TextInput
+              placeholder="Search..."
+              value={arrivalSearch}
+              onChangeText={setArrivalSearch}
+              style={{
+                marginBottom: 16,
+                width: '100%',
+                borderWidth: 1,
+                borderColor: '#ccc',
+                borderRadius: 8,
+                padding: 8,
+              }}
+            />
             <FlatList
-              data={filteredArrivalAirports}
+              data={filteredArrivalList}
               keyExtractor={(item, index) => `${item._id || item.iataCode}_${index}`}
               renderItem={({ item }) => (
                 <TouchableOpacity
