@@ -25,7 +25,7 @@ const StartScreen = () => {
       {/* Buttons */}
       <TouchableOpacity 
       style={styles.yellowCircleButton} 
-      onPress={() => navigation.navigate("SelectAirportScreen")}
+      onPress={() => navigation.navigate("ChooseScreen")}
     >
       <View style={styles.buttonContent}>
         <View style={styles.dashedLine} />

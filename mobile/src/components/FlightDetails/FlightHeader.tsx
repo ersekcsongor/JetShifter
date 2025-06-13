@@ -36,7 +36,7 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
   const fetchCountryByIata = async (iataCode: string) => {
     try {
 
-      const response = await fetch(`${ENV.API_BASE_URL}/airports/getNameByIataCode/${iataCode}`);
+      const response = await fetch(`${ENV.API_BASE_URL}/global-airports/getNameByIataCode/${iataCode}`);
       
 
       if (!response.ok) {

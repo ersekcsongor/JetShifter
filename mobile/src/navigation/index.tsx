@@ -16,6 +16,9 @@ import RegisterScreen from '~/screens/RegisterScreen';
 import Flight from '~/types/Flight';
 import UserDetailsScreen from '~/screens/UserDetailsScreen';
 import SavedFlightsScreen from '~/screens/SavedFlightsScreen';
+import ChooseScreen from '~/screens/ChooseScreen';
+import CustomFlightScreen from '~/screens/CustomFlightScreen';
+import FlightDetailsScreenCustom from '~/screens/FlightDetailsScreenCustom';
 
 
 // Define nested navigator types
@@ -28,12 +31,15 @@ export type AppStackParamList = {
   MainTabs: undefined;
   StartScreen: undefined;
   AboutScreen: undefined;
+  ChooseScreen: undefined; // <-- Add this line
   SelectAirportScreen: undefined;
   FlightListScreen: { departure: string; arrival: string; startDate: string };
   FlightDetailsScreen: { flight: Flight };
   UserDetailsScreen: undefined;
   LoginScreen: undefined;
   RegisterScreen: undefined;
+  CustomFlightScreen: undefined;
+  FlightDetailsScreenCustom : { flight: Flight };// Add this if you have a custom flight screen
 };
 
 export type RootStackParamList = {
@@ -86,12 +92,15 @@ const AppTabNavigator = () => (
 const AppNavigator = () => (
   <AppStack.Navigator screenOptions={{ headerShown: false }}>
     <AppStack.Screen name="MainTabs" component={AppTabNavigator} />
-    <AppStack.Screen name="AboutScreen" component={AboutScreen} />
     <AppStack.Screen name="SelectAirportScreen" component={SelectAirportScreen} />
     <AppStack.Screen name="FlightListScreen" component={FlightListScreen} />
     <AppStack.Screen name="FlightDetailsScreen" component={FlightDetailsScreen} />
     <AppStack.Screen name="LoginScreen" component={LoginScreen} />
     <AppStack.Screen name="RegisterScreen" component={RegisterScreen} />
+    <AppStack.Screen name="AboutScreen" component={AboutScreen} />
+    <AppStack.Screen name="ChooseScreen" component={ChooseScreen} />
+    <AppStack.Screen name="CustomFlightScreen" component={CustomFlightScreen} /> 
+    <AppStack.Screen name="FlightDetailsScreenCustom" component={FlightDetailsScreenCustom} />
   </AppStack.Navigator>
 );
 

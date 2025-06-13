@@ -91,7 +91,12 @@ const styles = StyleSheet.create({
     fontSize: 15,
     marginTop: 8,
     textAlign: 'center',
-  }
+  },
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#6B5B00',
+    marginBottom: 20,}
 });
 
 export default styles;
