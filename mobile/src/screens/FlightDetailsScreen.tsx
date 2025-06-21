@@ -98,11 +98,12 @@ const FlightDetailsScreen = ({ route }: Props) => {
 
     console.time('SwitchingTimesCalculation');
 
+    // Always use the latest sleepSchedule here!
     const initialSwitchingTimes = calculateSwitchingTimes(
       flight,
       timezones.originTz,
       timezones.destTz,
-      sleepSchedule
+      sleepSchedule // <-- pass current sleep schedule
     );
 
     updateState({
@@ -127,8 +128,9 @@ const FlightDetailsScreen = ({ route }: Props) => {
       let optHistory: any[] = [];
 
       while (shouldContinue && currentIteration < maxIterations) {
-        // Simulate dynamics
+        // Simulate dynamics with current sleep schedule
         const trajectory = simulateCircadianDynamics(currentSwitchingTimes);
+
         const currentCost = calculateCost(trajectory.trajectory);
 
         // Integrate co-state
@@ -138,12 +140,16 @@ const FlightDetailsScreen = ({ route }: Props) => {
         );
 
         // Calculate perturbations
+        const decay = Math.pow(0.8, currentIteration);
+        const dynamicTS = PERTURBATION_CONSTANTS.TS * decay;
+        const dynamicMaxTimeAdjustment = 2 * decay;
+
         const perturbations = calculateOptimalPerturbations(
           currentSwitchingTimes,
           trajectory.trajectory,
           coStateSwitching,
-          2,
-          PERTURBATION_CONSTANTS.TS // <-- add this
+          dynamicMaxTimeAdjustment,
+          dynamicTS
         );
 
         // Update switching times using Forger 1999 method
@@ -156,11 +162,6 @@ const FlightDetailsScreen = ({ route }: Props) => {
         // Save history for display
         costHist = [...costHist, currentCost];
         optHistory = [...optHistory, { ...currentSwitchingTimes }];
-
-        // Log progress for each iteration
-        console.log(
-          `Iteration ${currentIteration + 1}: cost=${currentCost}, complete=${result.isComplete}`
-        );
 
         updateState({
           stateTrajectory: trajectory.trajectory,
@@ -196,11 +197,13 @@ const FlightDetailsScreen = ({ route }: Props) => {
             return typeof newTime === 'string'
               ? { time: newTime, type: original?.type || 'light' }
               : newTime;
-          })
+          }),
+          // Always keep the latest sleepSchedule in switchingTimes
+          sleepSchedule: { ...sleepSchedule }
         };
 
         currentIteration++;
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
       }
     } catch (error) {
       console.error('Optimization error:', error);
