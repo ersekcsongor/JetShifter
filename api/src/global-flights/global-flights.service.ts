@@ -28,7 +28,8 @@ export class GlobalFlightsService {
   ) {}
 
   // Save each flight as a separate document
-  private async saveFlightData(flightData: GlobalFlightsInputDto & { data: string }) {
+  
+   async saveFlightData(flightData: GlobalFlightsInputDto & { data: string }) {
     const parsedData = JSON.parse(flightData.data);
     if (parsedData.trips?.length > 0) {
       for (const trip of parsedData.trips) {

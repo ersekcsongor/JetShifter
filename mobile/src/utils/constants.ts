@@ -4,21 +4,21 @@ export const MODEL_CONSTANTS = {
     ALPHA: 0.05,
     BETA: 0.01,
     B: 0.4,
-    I0: 1000,
-    I1: 10000
+    I0: 1,      // Try 1 instead of 1000
+    I1: 10      // Try 10 instead of 10000
   };
   
   export const PERTURBATION_CONSTANTS = {
-    TS: 0.1,
-    DELTA_U: 0.1,
+    TS: 0.5, // Try 1e7
+    DELTA_U: 1,
     EPSILON: 1e-6,
-    TIME_TOLERANCE: 0.1,
-    COST_TOLERANCE: 1E-4,
-    MAX_ITERATIONS: 50
+    MAX_ITERATIONS: 20,
+    COST_TOLERANCE: 1e-4,
+    TIME_TOLERANCE: 0.1
   };
 
   const ENV = {
-  API_BASE_URL: 'http://172.20.10.2:3000',
+  API_BASE_URL: 'http://192.168.1.16:3000',
   //192.168.56.1:3000,172.20.10.2:3000,http://192.168.1.14:3000
 };
 

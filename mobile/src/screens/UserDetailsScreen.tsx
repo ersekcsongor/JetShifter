@@ -24,7 +24,8 @@ import ENV from '~/utils/constants';
 import localStyles from '~/styles/UserDetailsScreen.styles';
 import { Feather } from '@expo/vector-icons';
 import ScreenBackground from '~/components/ScreenBackground';
-
+import { Picker } from '@react-native-picker/picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 type UserData = {
   email: string;
   profileImage: string | null; // Explicitly handle null case
@@ -45,6 +46,28 @@ const UserDetailsScreen = ({ navigation }: Props) => {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
+
+  // Add these states at the top of your component
+  const [adviceNotifications, setAdviceNotifications] = useState(false);
+  const [adviceModalVisible, setAdviceModalVisible] = useState(false);
+
+  const [coffeeAdvice, setCoffeeAdvice] = useState(false);
+  const [coffeeModalVisible, setCoffeeModalVisible] = useState(false);
+
+  const [useMelatonin, setUseMelatonin] = useState(false);
+  const [melatoninModalVisible, setMelatoninModalVisible] = useState(false);
+
+  const [normalSleepPattern, setNormalSleepPattern] = useState(false);
+  const [sleepModalVisible, setSleepModalVisible] = useState(false);
+
+  const [chronotype, setChronotype] = useState<'morning' | 'evening' | 'none'>('none');
+  const [chronotypeModalVisible, setChronotypeModalVisible] = useState(false);
+
+  // Add these states for sleep time management
+  const [bedTime, setBedTime] = useState('22:00');
+  const [wakeTime, setWakeTime] = useState('06:00');
+  const [showBedTimePicker, setShowBedTimePicker] = useState(false);
+  const [showWakeTimePicker, setShowWakeTimePicker] = useState(false);
 
   // Ask for permissions on mount
   useEffect(() => {
@@ -262,70 +285,290 @@ const handleLogout = useCallback(async () => {
 
 
   
-{  /* advice notification button */}
-<TouchableOpacity 
+{/* Advice Notifications */}
+{/* <TouchableOpacity 
   style={styles.passwordButton}
+  onPress={() => setAdviceModalVisible(true)}
 >
   <View style={styles.buttonContent}>
     <View style={styles.iconContainer}>
-      <Ionicons name="notifications-outline" size={24} color="black"></Ionicons>
+      <Ionicons name="notifications-outline" size={24} color="black" />
     </View>
-    <Text style={styles.passwordButtonText}>Advice Notifications</Text>
-    
+    <Text style={styles.passwordButtonText}>
+      Advice Notifications: {adviceNotifications ? 'ON' : 'OFF'}
+    </Text>
   </View>
 </TouchableOpacity>
+<Modal
+  transparent
+  visible={adviceModalVisible}
+  animationType="fade"
+  onRequestClose={() => setAdviceModalVisible(false)}
+>
+  <View style={localStyles.backdrop}>
+    <View style={localStyles.centeredView}>
+      <View style={localStyles.modalView}>
+        <Text style={localStyles.modalTitle}>Advice Notifications</Text>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setAdviceNotifications(true); setAdviceModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>ON</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setAdviceNotifications(false); setAdviceModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>OFF</Text>
+        </TouchableOpacity>
+        
+      </View>
+    </View>
+  </View>
+</Modal>
 
-{/* coffee advice button */}
-<TouchableOpacity 
+{/* Coffee Advice */}
+{/* <TouchableOpacity 
   style={styles.passwordButton}
+  onPress={() => setCoffeeModalVisible(true)}
 >
   <View style={styles.buttonContent}>
     <View style={styles.iconContainer}>
-        <Feather name="coffee" size={24} color="black"></Feather>
+      <Feather name="coffee" size={24} color="black" />
     </View>
-    <Text style={styles.passwordButtonText}>Coffee Advice</Text>
-    
+    <Text style={styles.passwordButtonText}>
+      Coffee Advice: {coffeeAdvice ? 'ON' : 'OFF'}
+    </Text>
   </View>
 </TouchableOpacity>
+<Modal
+  transparent
+  visible={coffeeModalVisible}
+  animationType="fade"
+  onRequestClose={() => setCoffeeModalVisible(false)}
+>
+  <TouchableOpacity
+    style={localStyles.backdrop}
+    activeOpacity={1}
+    onPressOut={() => setCoffeeModalVisible(false)}
+  >
+    <View style={localStyles.centeredView}>
+      <TouchableOpacity
+        activeOpacity={1}
+        style={localStyles.modalView}
+        onPress={() => {}}
+      >
+        <Text style={localStyles.modalTitle}>Coffee Advice</Text>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setCoffeeAdvice(true); setCoffeeModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>ON</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setCoffeeAdvice(false); setCoffeeModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>OFF</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+</Modal>
 
-{/* melatonin */}
-<TouchableOpacity 
+{/* Melatonin */}
+{/* <TouchableOpacity 
   style={styles.passwordButton}
+  onPress={() => setMelatoninModalVisible(true)}
 >
   <View style={styles.buttonContent}>
     <View style={styles.iconContainer}>
-      <Feather name="moon" size={24} color="black"></Feather>
+      <Feather name="moon" size={24} color="black" />
     </View>
-    <Text style={styles.passwordButtonText}>Use Melatonin</Text>
-    
+    <Text style={styles.passwordButtonText}>
+      Use Melatonin: {useMelatonin ? 'Yes' : 'No'}
+    </Text>
   </View>
 </TouchableOpacity>
+<Modal
+  transparent
+  visible={melatoninModalVisible}
+  animationType="fade"
+  onRequestClose={() => setMelatoninModalVisible(false)}
+>
+  <TouchableOpacity
+    style={localStyles.backdrop}
+    activeOpacity={1}
+    onPressOut={() => setMelatoninModalVisible(false)}
+  >
+    <View style={localStyles.centeredView}>
+      <TouchableOpacity
+        activeOpacity={1}
+        style={localStyles.modalView}
+        onPress={() => {}}
+      >
+        <Text style={localStyles.modalTitle}>Use Melatonin</Text>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setUseMelatonin(true); setMelatoninModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>Yes</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setUseMelatonin(false); setMelatoninModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>No</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+</Modal> */}
 
-{/* normal sleep pattern */}
+{/* Normal Sleep Pattern */}
 <TouchableOpacity 
   style={styles.passwordButton}
+  onPress={() => setSleepModalVisible(true)}
 >
   <View style={styles.buttonContent}>
     <View style={styles.iconContainer}>
-        <MaterialCommunityIcons name="bed-outline" size={24} color="black"></MaterialCommunityIcons>
+      <MaterialCommunityIcons name="bed-outline" size={24} color="black" />
     </View>
-    <Text style={styles.passwordButtonText}>Normal Sleep Pattern</Text>
-    
+    <Text style={styles.passwordButtonText}>
+      Normal Sleep Pattern: {bedTime} - {wakeTime}
+    </Text>
   </View>
 </TouchableOpacity>
+{/* Normal Sleep Pattern Modal */}
+<Modal
+  transparent
+  visible={sleepModalVisible}
+  animationType="fade"
+  onRequestClose={() => setSleepModalVisible(false)}
+>
+  <TouchableOpacity
+    style={localStyles.backdrop}
+    activeOpacity={1}
+    onPressOut={() => setSleepModalVisible(false)}
+  >
+    <View style={localStyles.centeredView}>
+      <TouchableOpacity
+        activeOpacity={1}
+        style={localStyles.modalView}
+        onPress={() => {}}
+      >
+        <Text style={localStyles.modalTitle}>Normal Sleep Pattern</Text>
+        <Text style={{ marginTop: 10 }}>Bed Time:</Text>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => setShowBedTimePicker(true)}
+        >
+          <Text style={localStyles.buttonText}>{bedTime}</Text>
+        </TouchableOpacity>
+        {showBedTimePicker && (
+          <DateTimePicker
+            value={new Date(`1970-01-01T${bedTime}:00`)}
+            mode="time"
+            display="spinner"
+            onChange={(_event, selectedTime) => {
+              setShowBedTimePicker(false);
+              if (selectedTime) {
+                const hours = selectedTime.getHours().toString().padStart(2, '0');
+                const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+                setBedTime(`${hours}:${minutes}`);
+              }
+            }}
+            textColor="black" // <-- Add this line
+          />
+        )}
+        <Text style={{ marginTop: 10 }}>Wake Time:</Text>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => setShowWakeTimePicker(true)}
+        >
+          <Text style={localStyles.buttonText}>{wakeTime}</Text>
+        </TouchableOpacity>
+        {showWakeTimePicker && (
+          <DateTimePicker
+            value={new Date(`1970-01-01T${wakeTime}:00`)}
+            mode="time"
+            display="spinner"
+            onChange={(_event, selectedTime) => {
+              setShowWakeTimePicker(false);
+              if (selectedTime) {
+                const hours = selectedTime.getHours().toString().padStart(2, '0');
+                const minutes = selectedTime.getMinutes().toString().padStart(2, '0');
+                setWakeTime(`${hours}:${minutes}`);
+              }
+            }}
+            textColor="black" // <-- Add this line
+          />
+        )}
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => setSleepModalVisible(false)}
+        >
+          <Text style={localStyles.buttonText}>Save</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+</Modal>
 
-{/* chronotype */}
-<TouchableOpacity 
+{/* Chronotype */}
+{/* <TouchableOpacity 
   style={styles.passwordButton}
+  onPress={() => setChronotypeModalVisible(true)}
 >
   <View style={styles.buttonContent}>
     <View style={styles.iconContainer}>
       <MaterialCommunityIcons name="yin-yang" size={24} color="black" />
     </View>
-    <Text style={styles.passwordButtonText}>Chronotype</Text>
+    <Text style={styles.passwordButtonText}>
+      Chronotype: {chronotype === 'morning' ? 'Early Bird' : chronotype === 'evening' ? 'Night Owl' : 'Not set'}
+    </Text>
   </View>
 </TouchableOpacity>
-
+<Modal
+  transparent
+  visible={chronotypeModalVisible}
+  animationType="fade"
+  onRequestClose={() => setChronotypeModalVisible(false)}
+>
+  <TouchableOpacity
+    style={localStyles.backdrop}
+    activeOpacity={1}
+    onPressOut={() => setChronotypeModalVisible(false)}
+  >
+    <View style={localStyles.centeredView}>
+      <TouchableOpacity
+        activeOpacity={1}
+        style={localStyles.modalView}
+        onPress={() => {}}
+      >
+        <Text style={localStyles.modalTitle}>Chronotype</Text>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setChronotype('morning'); setChronotypeModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>Early Bird</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setChronotype('evening'); setChronotypeModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>Night Owl</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={localStyles.button}
+          onPress={() => { setChronotype('none'); setChronotypeModalVisible(false); }}
+        >
+          <Text style={localStyles.buttonText}>Not set</Text>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    </View>
+  </TouchableOpacity>
+</Modal> */}
 
 {/* Change Password Button */}
 <TouchableOpacity 

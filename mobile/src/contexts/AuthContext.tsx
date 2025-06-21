@@ -7,7 +7,7 @@ interface AuthContextType {
   authState: { 
     token: string | null; 
     authenticated: boolean | null;
-    user: { email: string } | null; // Add user field
+    user: { email: string } | null;
   };
   register: (email: string, password: string) => Promise<any>;
   login: (email: string, password: string) => Promise<any>;

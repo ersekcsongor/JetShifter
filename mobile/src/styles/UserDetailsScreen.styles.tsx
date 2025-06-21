@@ -63,7 +63,7 @@ submitButton: {
   backgroundColor: '#007AFF',
 },
 buttonText: {
-  color: 'white',
+  color: 'black',
   fontWeight: 'bold',
 },
 errorText: {

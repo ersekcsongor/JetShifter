@@ -98,29 +98,106 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
     fetchTimezones();
   }, [flight]);
 
-  const handleCalculateSwitchingTimes = useCallback(() => {
+  const handleCalculateSwitchingTimes = useCallback(async () => {
     if (!timezones.originTz || !timezones.destTz) return;
-    
-    const newSwitchingTimes = calculateSwitchingTimes(
+
+    console.time('SwitchingTimesCalculation'); // Start timing
+
+    // Initial switching times calculation
+    const initialSwitchingTimes = calculateSwitchingTimes(
       flight,
       timezones.originTz,
       timezones.destTz,
       sleepSchedule
     );
-    
-    console.log('Calculated switching times:', newSwitchingTimes); 
+
     updateState({ 
-      switchingTimes: newSwitchingTimes,
-      activeSwitchingCount: newSwitchingTimes.switchingPoints.length,
+      switchingTimes: initialSwitchingTimes,
+      activeSwitchingCount: initialSwitchingTimes.switchingPoints.length,
       stateTrajectory: [],
       coStateTrajectory: [],
       coStateAtSwitchingPoints: {},
       controlPerturbations: [],
       optimizationComplete: false,
       iterationCount: 0,
-      costHistory: []
+      costHistory: [],
+      isOptimizing: true
     });
-  }, [flight, timezones]);
+
+    try {
+      let currentSwitchingTimes = initialSwitchingTimes;
+      let shouldContinue = true;
+      let currentIteration = 0;
+      const maxIterations = 20;
+      let costHist: number[] = [];
+      let optHistory: any[] = [];
+
+      while (shouldContinue && currentIteration < maxIterations) {
+        // Simulate dynamics
+        const trajectory = simulateCircadianDynamics(currentSwitchingTimes);
+        const currentCost = calculateCost(trajectory.trajectory);
+
+        // Integrate co-state
+        const [coStateTraj, coStateSwitching] = integrateCoStateEquations(
+          currentSwitchingTimes,
+          trajectory.trajectory
+        );
+
+        // Calculate perturbations
+        const perturbations = calculateOptimalPerturbations(
+          currentSwitchingTimes,
+          trajectory.trajectory,
+          coStateSwitching,
+          2
+        );
+
+        // Update switching times using Forger 1999 method
+        const result = updateSwitchingTimes(
+          currentSwitchingTimes,
+          perturbations,
+          [...costHist, currentCost]
+        );
+
+        // Save history for display
+        costHist = [...costHist, currentCost];
+        optHistory = [...optHistory, { ...currentSwitchingTimes }];
+
+        updateState({
+          stateTrajectory: trajectory.trajectory,
+          coStateTrajectory: coStateTraj,
+          coStateAtSwitchingPoints: coStateSwitching,
+          controlPerturbations: perturbations,
+          updatedSwitchingTimes: result.newSwitchingPoints,
+          iterationCount: result.newIterationCount,
+          optimizationComplete: result.isComplete,
+          activeSwitchingCount: result.newActiveCount,
+          costHistory: costHist,
+          optimizationHistory: optHistory
+        });
+
+        if (result.isComplete) {
+          shouldContinue = false;
+          break;
+        }
+
+        // Update for next iteration
+        currentSwitchingTimes = {
+          ...currentSwitchingTimes,
+          switchingPoints: result.newSwitchingPoints.map((time: any) =>
+            typeof time === 'string' ? { time, type: 'light' } : time
+          )
+        };
+
+        currentIteration++;
+        await new Promise(resolve => setTimeout(resolve, 50)); // Small delay
+      }
+    } catch (error) {
+      console.error('Optimization error:', error);
+    } finally {
+      updateState({ isOptimizing: false });
+      console.timeEnd('SwitchingTimesCalculation'); // End timing and log
+    }
+  }, [flight, timezones, sleepSchedule, updateState]);
 
   
 const handleSimulateDynamics = useCallback(async () => {
@@ -166,7 +243,8 @@ const handleSimulateDynamics = useCallback(async () => {
       const perturbations = calculateOptimalPerturbations(
         switchingTimes,
         stateTrajectory,
-        coStateAtSwitchingPoints
+        coStateAtSwitchingPoints,
+        2
       );
       updateState({ controlPerturbations: perturbations });
     } catch (error) {
@@ -224,7 +302,8 @@ const handleSimulateDynamics = useCallback(async () => {
         const perturbations = calculateOptimalPerturbations(
           currentSwitchingTimes,
           trajectory.trajectory,
-          coStateSwitching
+          coStateSwitching,
+          2
         );
         
         // Update switching times
@@ -341,26 +420,24 @@ const handleSimulateDynamics = useCallback(async () => {
         
         <FlightHeader flight={flight} />
         
-        <TouchableOpacity  onPress={handleSaveFlight}>
-        <View style={styles.saveButton}>
+        <TouchableOpacity onPress={handleSaveFlight}>
+          <View style={styles.saveButton}>
             <Text style={styles.saveButtonText}>Save Flight</Text>
-        </View>
+          </View>
         </TouchableOpacity>
 
-
         <SleepScheduleInput 
-            schedule={sleepSchedule}
-            onChange={setSleepSchedule}
+          schedule={sleepSchedule}
+          onChange={setSleepSchedule}
         />
 
         <SwitchingTimesControl
-          onCalculate={handleCalculateSwitchingTimes} 
-          loading={loading} 
+          onCalculate={handleCalculateSwitchingTimes}
+          loading={loading || isOptimizing}
           timezonesReady={!!timezones.originTz && !!timezones.destTz}
         />
-        
+
         {switchingTimes && (
-        <>
           <ResultsDisplay
             switchingTimes={switchingTimes}
             stateTrajectory={stateTrajectory}
@@ -376,7 +453,6 @@ const handleSimulateDynamics = useCallback(async () => {
             timezoneDiff={switchingTimes?.timezoneDiff || 0}
             sleepSchedule={sleepSchedule}
           />
-        </>
         )}
       </ScrollView>
     </ScreenBackground>
