@@ -24,7 +24,6 @@ import ENV from '~/utils/constants';
 import localStyles from '~/styles/UserDetailsScreen.styles';
 import { Feather } from '@expo/vector-icons';
 import ScreenBackground from '~/components/ScreenBackground';
-import { Picker } from '@react-native-picker/picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 type UserData = {
   email: string;

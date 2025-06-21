@@ -99,10 +99,12 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
     fetchTimezones();
   }, [flight]);
 
+  const [calculationTime, setCalculationTime] = useState<number | null>(null);
+
   const handleCalculateSwitchingTimes = useCallback(async () => {
     if (!timezones.originTz || !timezones.destTz) return;
 
-    console.time('SwitchingTimesCalculation'); // Start timing
+    const start = performance.now(); // <-- Start measuring
 
     // Initial switching times calculation
     const initialSwitchingTimes = calculateSwitchingTimes(
@@ -212,7 +214,8 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
       console.error('Optimization error:', error);
     } finally {
       updateState({ isOptimizing: false });
-      console.timeEnd('SwitchingTimesCalculation'); // End timing and log
+      setCalculationTime(performance.now() - start); // <-- Save elapsed time in ms
+      console.timeEnd('SwitchingTimesCalculation'); // <-- Lezárás és kiírás
     }
   }, [flight, timezones, sleepSchedule, updateState]);
 
@@ -490,6 +493,11 @@ const handleSimulateDynamics = useCallback(async () => {
             timezoneDiff={switchingTimes?.timezoneDiff || 0}
             sleepSchedule={sleepSchedule}
           />
+        )}
+        {calculationTime !== null && (
+          <Text style={{margin: 8, color: 'gray'}}>
+            Kalkuláció ideje: {calculationTime.toFixed(0)} ms
+          </Text>
         )}
       </ScrollView>
     </ScreenBackground>

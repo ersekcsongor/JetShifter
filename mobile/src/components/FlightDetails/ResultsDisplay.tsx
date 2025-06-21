@@ -3,13 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 import moment from 'moment';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { LineChart } from 'react-native-chart-kit';
 import { 
   SwitchingTimes,
   StateTrajectory,
   CoStateTrajectory,
   ControlPerturbation,
-  SleepSchedule
+  SleepSchedule,
+  CoState
 } from '~/utils/types';
 
 type Props = {

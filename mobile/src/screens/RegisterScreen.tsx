@@ -1,12 +1,11 @@
 import React from 'react';
-import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '~/contexts/AuthContext';
-import { StackScreenProps } from '@react-navigation/stack';
+import { StackScreenProps, StackNavigationProp } from '@react-navigation/stack';
+import { CompositeNavigationProp } from '@react-navigation/native';
 import { AuthStackParamList, RootStackParamList } from '~/navigation';
 import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useState } from 'react';
-import { CompositeNavigationProp } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { useForm, Controller } from 'react-hook-form';
 import ENV from '~/utils/constants';
 import styles from '~/styles/RegisterScreen.styles';
 import { Image } from 'react-native';
