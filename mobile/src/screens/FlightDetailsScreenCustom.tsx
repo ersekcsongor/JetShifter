@@ -30,6 +30,7 @@ import { SleepScheduleInput } from '~/components/FlightDetails/SleepScheduleInpu
 import ENV from '~/utils/constants';
 import { useAuth } from '~/contexts/AuthContext';
 import ScreenBackground from '~/components/ScreenBackground';
+import { PERTURBATION_CONSTANTS } from '~/utils/constants';
 
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreenCustom'>;
@@ -144,11 +145,16 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
         );
 
         // Calculate perturbations
+        const decay = Math.pow(0.8, currentIteration);
+        const dynamicTS = PERTURBATION_CONSTANTS.TS * decay;
+        const dynamicMaxTimeAdjustment = 2 * decay; // Decay the clamp
+
         const perturbations = calculateOptimalPerturbations(
           currentSwitchingTimes,
           trajectory.trajectory,
           coStateSwitching,
-          2
+          dynamicMaxTimeAdjustment,
+          dynamicTS
         );
 
         // Update switching times using Forger 1999 method
@@ -167,7 +173,15 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
           coStateTrajectory: coStateTraj,
           coStateAtSwitchingPoints: coStateSwitching,
           controlPerturbations: perturbations,
-          updatedSwitchingTimes: result.newSwitchingPoints,
+          updatedSwitchingTimes: {
+            ...currentSwitchingTimes,
+            switchingPoints: result.newSwitchingPoints.map((newTime: any, idx: number) => {
+              const original = currentSwitchingTimes.switchingPoints[idx];
+              return typeof newTime === 'string'
+                ? { time: newTime, type: original?.type || 'light' }
+                : newTime;
+            }),
+          },
           iterationCount: result.newIterationCount,
           optimizationComplete: result.isComplete,
           activeSwitchingCount: result.newActiveCount,
@@ -183,9 +197,12 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
         // Update for next iteration
         currentSwitchingTimes = {
           ...currentSwitchingTimes,
-          switchingPoints: result.newSwitchingPoints.map((time: any) =>
-            typeof time === 'string' ? { time, type: 'light' } : time
-          )
+          switchingPoints: result.newSwitchingPoints.map((newTime: any, idx: number) => {
+            const original = currentSwitchingTimes.switchingPoints[idx];
+            return typeof newTime === 'string'
+              ? { time: newTime, type: original?.type || 'light' }
+              : newTime;
+          })
         };
 
         currentIteration++;
@@ -244,7 +261,8 @@ const handleSimulateDynamics = useCallback(async () => {
         switchingTimes,
         stateTrajectory,
         coStateAtSwitchingPoints,
-        2
+        2,
+        PERTURBATION_CONSTANTS.TS // <-- add this
       );
       updateState({ controlPerturbations: perturbations });
     } catch (error) {
@@ -264,7 +282,12 @@ const handleSimulateDynamics = useCallback(async () => {
     );
     
     updateState({
-      updatedSwitchingTimes: result.newSwitchingPoints,
+      updatedSwitchingTimes: {
+        ...switchingTimes, // or ...currentSwitchingTimes
+        switchingPoints: result.newSwitchingPoints.map((time: any) =>
+          typeof time === 'string' ? { time, type: 'light' } : time
+        ),
+      },
       iterationCount: result.newIterationCount,
       optimizationComplete: result.isComplete,
       activeSwitchingCount: result.newActiveCount,
@@ -299,11 +322,15 @@ const handleSimulateDynamics = useCallback(async () => {
         );
         
         // Calculate perturbations
+        const decay = Math.pow(0.8, currentIteration); // or 0.9, tune as needed
+        const dynamicTS = PERTURBATION_CONSTANTS.TS * decay;
+        
         const perturbations = calculateOptimalPerturbations(
           currentSwitchingTimes,
           trajectory.trajectory,
           coStateSwitching,
-          2
+          2,
+          dynamicTS // <-- add this
         );
         
         // Update switching times
@@ -318,7 +345,12 @@ const handleSimulateDynamics = useCallback(async () => {
           coStateTrajectory: coStateTraj,
           coStateAtSwitchingPoints: coStateSwitching,
           controlPerturbations: perturbations,
-          updatedSwitchingTimes: result.newSwitchingPoints,
+          updatedSwitchingTimes: {
+            ...currentSwitchingTimes,
+            switchingPoints: result.newSwitchingPoints.map((time: any) =>
+              typeof time === 'string' ? { time, type: 'light' } : time
+            ),
+          },
           iterationCount: result.newIterationCount,
           optimizationComplete: result.isComplete,
           activeSwitchingCount: result.newActiveCount,
@@ -334,7 +366,12 @@ const handleSimulateDynamics = useCallback(async () => {
         // Update for next iteration
         currentSwitchingTimes = {
           ...currentSwitchingTimes,
-          switchingPoints: result.newSwitchingPoints.map((time) => ({ time, type: 'light' })) // or 'dark', depending on your requirements
+          switchingPoints: result.newSwitchingPoints.map((newTime: any, idx: number) => {
+            const original = currentSwitchingTimes.switchingPoints[idx];
+            return typeof newTime === 'string'
+              ? { time: newTime, type: original?.type || 'light' }
+              : newTime;
+          }) // or 'dark', depending on your requirements
         };
         
         currentIteration++;
@@ -439,7 +476,7 @@ const handleSimulateDynamics = useCallback(async () => {
 
         {switchingTimes && (
           <ResultsDisplay
-            switchingTimes={switchingTimes}
+            switchingTimes={updatedSwitchingTimes || switchingTimes} // Use optimized if available
             stateTrajectory={stateTrajectory}
             coStateTrajectory={coStateTrajectory}
             coStateAtSwitchingPoints={coStateAtSwitchingPoints}

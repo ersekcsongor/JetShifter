@@ -39,13 +39,15 @@ export const optimizeCircadianSchedule = (
     // Dynamic step size adjustment
     const decay = Math.max(0.1, 1 - iteration * 0.05);
     const dynamicMaxTimeAdjustment = 2 * decay;
+    const dynamicTS = PERTURBATION_CONSTANTS.TS * decay;
 
-    // Pass dynamicMaxTimeAdjustment here
+    // Pass dynamicTS to calculateOptimalPerturbations
     const perturbations = calculateOptimalPerturbations(
       switchingTimes,
       stateTrajectory.trajectory,
       coStateAtPoints,
-      dynamicMaxTimeAdjustment
+      dynamicMaxTimeAdjustment,
+      dynamicTS // <-- new parameter
     );
 
     const updateResult = updateSwitchingTimes(switchingTimes, perturbations, costHistory);
@@ -473,7 +475,8 @@ export const simulateCircadianDynamics = (
     switchingTimes: SwitchingTimes,
     stateTrajectory: StateTrajectory,
     coStateAtSwitchingPoints: Record<string, CoState>,
-    maxTimeAdjustment: number // <-- add this parameter
+    maxTimeAdjustment: number,
+    TS: number // <-- new parameter
   ): ControlPerturbation[] => {
     const perturbations: ControlPerturbation[] = [];
     const lambdaTdfDuValues: number[] = [];
@@ -534,7 +537,7 @@ export const simulateCircadianDynamics = (
       ? Math.max(...lambdaTdfDuValues, PERTURBATION_CONSTANTS.EPSILON)
       : PERTURBATION_CONSTANTS.EPSILON;
     const ou = isFinite(maxDenominator) && maxDenominator !== 0
-      ? PERTURBATION_CONSTANTS.TS / maxDenominator
+      ? TS / maxDenominator
       : 0;
 
 ;    console.log('OU value:', ou, 'maxDenominator:', maxDenominator);

@@ -30,6 +30,7 @@ import { SleepScheduleInput } from '~/components/FlightDetails/SleepScheduleInpu
 import ENV from '~/utils/constants';
 import { useAuth } from '~/contexts/AuthContext';
 import ScreenBackground from '~/components/ScreenBackground';
+import { PERTURBATION_CONSTANTS } from '~/utils/constants';
 
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreen'>;
@@ -141,7 +142,8 @@ const FlightDetailsScreen = ({ route }: Props) => {
           currentSwitchingTimes,
           trajectory.trajectory,
           coStateSwitching,
-          2
+          2,
+          PERTURBATION_CONSTANTS.TS // <-- add this
         );
 
         // Update switching times using Forger 1999 method
@@ -165,7 +167,15 @@ const FlightDetailsScreen = ({ route }: Props) => {
           coStateTrajectory: coStateTraj,
           coStateAtSwitchingPoints: coStateSwitching,
           controlPerturbations: perturbations,
-          updatedSwitchingTimes: result.newSwitchingPoints,
+          updatedSwitchingTimes: {
+            ...currentSwitchingTimes,
+            switchingPoints: result.newSwitchingPoints.map((newTime: any, idx: number) => {
+              const original = currentSwitchingTimes.switchingPoints[idx];
+              return typeof newTime === 'string'
+                ? { time: newTime, type: original?.type || 'light' }
+                : newTime;
+            }),
+          },
           iterationCount: result.newIterationCount,
           optimizationComplete: result.isComplete,
           activeSwitchingCount: result.newActiveCount,
@@ -181,9 +191,12 @@ const FlightDetailsScreen = ({ route }: Props) => {
         // Update for next iteration
         currentSwitchingTimes = {
           ...currentSwitchingTimes,
-          switchingPoints: result.newSwitchingPoints.map((time: any) =>
-            typeof time === 'string' ? { time, type: 'light' } : time
-          )
+          switchingPoints: result.newSwitchingPoints.map((newTime: any, idx: number) => {
+            const original = currentSwitchingTimes.switchingPoints[idx];
+            return typeof newTime === 'string'
+              ? { time: newTime, type: original?.type || 'light' }
+              : newTime;
+          })
         };
 
         currentIteration++;
@@ -267,7 +280,7 @@ const FlightDetailsScreen = ({ route }: Props) => {
 
         {switchingTimes && (
           <ResultsDisplay
-            switchingTimes={switchingTimes}
+            switchingTimes={updatedSwitchingTimes || switchingTimes}
             stateTrajectory={stateTrajectory}
             coStateTrajectory={coStateTrajectory}
             coStateAtSwitchingPoints={coStateAtSwitchingPoints}

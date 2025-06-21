@@ -58,7 +58,7 @@ export type FlightDetailsState = {
   coStateAtSwitchingPoints: { [key: string]: CoState };
   controlPerturbations: ControlPerturbation[];
   perturbationLoading: boolean;
-  updatedSwitchingTimes: string[] | null;
+  updatedSwitchingTimes: SwitchingTimes | null;
   iterationCount: number;
   optimizationComplete: boolean;
   costHistory: number[];
