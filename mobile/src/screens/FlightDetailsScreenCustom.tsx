@@ -495,10 +495,14 @@ const handleSimulateDynamics = useCallback(async () => {
           />
         )}
         {calculationTime !== null && (
-          <Text style={{margin: 8, color: 'gray'}}>
-            Kalkuláció ideje: {calculationTime.toFixed(0)} ms
-          </Text>
+          <>
+            <Text style={{margin: 8, color: 'gray'}}>
+              Kalkuláció ideje: {calculationTime.toFixed(0)} ms
+            </Text>
+            {console.log('Kalkuláció ideje:', calculationTime.toFixed(0), 'ms')}
+          </>
         )}
+        
       </ScrollView>
     </ScreenBackground>
   );

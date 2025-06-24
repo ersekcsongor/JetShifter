@@ -96,6 +96,8 @@ const FlightDetailsScreen = ({ route }: Props) => {
   const handleCalculateSwitchingTimes = useCallback(async () => {
     if (!timezones.originTz || !timezones.destTz) return;
 
+    const start = performance.now(); // <-- Start measuring
+
     console.time('SwitchingTimesCalculation');
 
     // Always use the latest sleepSchedule here!
@@ -209,6 +211,8 @@ const FlightDetailsScreen = ({ route }: Props) => {
       console.error('Optimization error:', error);
     } finally {
       updateState({ isOptimizing: false });
+      const elapsed = performance.now() - start;
+      console.log('SwitchingTimesCalculation took', elapsed.toFixed(0), 'ms');
       console.timeEnd('SwitchingTimesCalculation');
     }
   }, [flight, timezones, sleepSchedule, updateState]);

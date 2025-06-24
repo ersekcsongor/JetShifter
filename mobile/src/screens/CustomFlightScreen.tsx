@@ -10,6 +10,7 @@ import styles from "~/styles/SelectAirportScreen.styles";
 import ScreenBackground from "~/components/ScreenBackground";
 import Flight from "~/types/Flight";
 import { ScrollView } from "react-native-gesture-handler";
+import moment from "moment-timezone";
 
 interface Airport {
   _id: string;
@@ -91,49 +92,53 @@ const CustomFlightScreen = () => {
     return `${hours}h ${minutes}m`;
   };
 
-  const getRandomFlightNumber = () => {
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const nums = "0123456789";
-    return (
-      letters[Math.floor(Math.random() * letters.length)] +
-      letters[Math.floor(Math.random() * letters.length)] +
-      Math.floor(1000 + Math.random() * 9000)
-    );
+  // NEW: Get airport timezone by IATA code
+  const getAirportTimezone = (iata: string) => {
+    const airport = airports.find(a => a.iataCode === iata);
+    return airport?.timeZone || "UTC";
   };
 
   const handleSearch = () => {
-    const pad = (n: number) => n.toString().padStart(2, '0');
+    // Format: YYYY-MM-DDTHH:mm
+    const depLocalString = `${departureDate.getFullYear()}-${String(departureDate.getMonth() + 1).padStart(2, '0')}-${String(departureDate.getDate()).padStart(2, '0')}T${String(departureTime.getHours()).padStart(2, '0')}:${String(departureTime.getMinutes()).padStart(2, '0')}`;
+    const arrLocalString = `${arrivalDate.getFullYear()}-${String(arrivalDate.getMonth() + 1).padStart(2, '0')}-${String(arrivalDate.getDate()).padStart(2, '0')}T${String(arrivalTime.getHours()).padStart(2, '0')}:${String(arrivalTime.getMinutes()).padStart(2, '0')}`;
 
-    // Combine date and time for departure
-    const depDateTime = new Date(
-      departureDate.getFullYear(),
-      departureDate.getMonth(),
-      departureDate.getDate(),
-      departureTime.getHours(),
-      departureTime.getMinutes()
-    );
-    // Combine date and time for arrival
-    const arrDateTime = new Date(
-      arrivalDate.getFullYear(),
-      arrivalDate.getMonth(),
-      arrivalDate.getDate(),
-      arrivalTime.getHours(),
-      arrivalTime.getMinutes()
-    );
+    // Get timezones
+    const depTz = getAirportTimezone(departure);
+    const arrTz = getAirportTimezone(arrival);
+
+    // Parse as local time in the correct timezone
+    const depMoment = moment.tz(depLocalString, "YYYY-MM-DDTHH:mm", depTz);
+    const arrMoment = moment.tz(arrLocalString, "YYYY-MM-DDTHH:mm", arrTz);
+
+    // Calculate duration in minutes
+    let diffMinutes = arrMoment.diff(depMoment, "minutes");
+    if (diffMinutes < 0) diffMinutes += 24 * 60; // handle overnight
+
+    const hours = Math.floor(diffMinutes / 60);
+    const minutes = diffMinutes % 60;
+    const durationString = `${hours}h ${minutes}m`;
 
     if (departure && arrival) {
       const flight: Flight = {
         flightNumber: getRandomFlightNumber(),
         origin: departure,
         destination: arrival,
-        // Pass ISO strings
-        time: [depDateTime.toISOString(), arrDateTime.toISOString()],
-        duration: getDurationString(depDateTime, arrDateTime),
+        // Pass ISO strings in UTC
+        time: [depMoment.toISOString(), arrMoment.toISOString()],
+        duration: durationString,
       };
       navigation.navigate('FlightDetailsScreenCustom', { flight });
     } else {
       alert("Invalid selection");
     }
+  };
+
+  // Generate a random flight number (e.g., "JS1234")
+  const getRandomFlightNumber = () => {
+    const airlineCode = "JS";
+    const number = Math.floor(1000 + Math.random() * 9000);
+    return `${airlineCode}${number}`;
   };
 
   // Filtered list for departure search
