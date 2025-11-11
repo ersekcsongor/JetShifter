@@ -70,6 +70,14 @@ export const config = convict<Config>({
       env: 'FIREBASE_STORAGE_BUCKET',
     },
   },
+    gemini_api_key: {
+    doc: 'Google Gemini API Key',
+    format: String,
+    default: '',
+    env: 'GEMINI_API_KEY',
+    sensitive: true,
+  },
+
 });
 
 convict.addParser({ extension: ['yml', 'yaml'], parse: yaml.load });

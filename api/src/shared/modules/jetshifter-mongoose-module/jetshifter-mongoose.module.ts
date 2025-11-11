@@ -1,12 +1,12 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { config } from 'src/shared/config/config';
-import { AirportsModel , AirportsSchema } from 'src/schemas/airports.schema';
-import { FlightDataModel, FlightSchema, } from 'src/schemas/flights.schema';
-import { UserModel, UserSchema } from 'src/schemas/user.schema';
-import { GlobalAirportsModel, GlobalAirportsSchema } from 'src/schemas/global-airports.schema';
-import { SavedFlightSchema,SavedFlight } from 'src/schemas/saved-flight.schema';
-import { GlobalFlightsSchema, GlobalFlightDataModel } from 'src/schemas/global-flights.schema';
+import { config } from '../../config/config';
+import { AirportsModel, AirportsSchema } from '../../../schemas/airports.schema';
+import { FlightDataModel, FlightSchema } from '../../../schemas/flights.schema';
+import { UserModel, UserSchema } from '../../../schemas/user.schema';
+import { GlobalAirportsModel, GlobalAirportsSchema } from '../../../schemas/global-airports.schema';
+import { SavedFlight, SavedFlightSchema } from '../../../schemas/saved-flight.schema';
+import { GlobalFlightDataModel, GlobalFlightsSchema } from '../../../schemas/global-flights.schema';
 @Module({
   imports: [
     MongooseModule.forRoot(config.get('db.url')),

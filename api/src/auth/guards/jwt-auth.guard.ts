@@ -4,8 +4,8 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectModel } from '@nestjs/mongoose';
 import { Request } from 'express';
 import { Model } from 'mongoose';
-import { UserModel } from 'src/schemas/user.schema';
-import { config } from 'src/shared/config/config';
+import { UserModel } from '../../schemas/user.schema';
+import { config } from '../../shared/config/config';
 
 @Injectable()
 export class JwtGuard implements CanActivate {

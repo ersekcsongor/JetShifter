@@ -4,10 +4,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { SavedFlight } from 'src/schemas/saved-flight.schema';
+import { SavedFlight } from '../schemas/saved-flight.schema';
 import { GlobalFlightsInputDto } from './dto/input/global-flights.input.dto';
-import { GlobalFlightDataModel } from 'src/schemas/global-flights.schema';
-import { GlobalAirportsService } from 'src/global-airports/global-airports.service';
+import { GlobalFlightDataModel } from '../schemas/global-flights.schema';
+import { GlobalAirportsService } from '../global-airports/global-airports.service';
 
 export interface FlightDetails {
   origin: string;

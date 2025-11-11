@@ -1,4 +1,4 @@
-import { UserModel } from 'src/schemas/user.schema';
+import { UserModel } from "../../../schemas/user.schema";
 
 export class UserProfileDto {
   id: string;

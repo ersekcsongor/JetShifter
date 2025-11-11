@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { UserModel } from 'src/schemas/user.schema';
 import { UserProfileDto } from './dto/output/user-profile.dto';
+import { UserModel } from '../schemas/user.schema';
 
 @Injectable()
 export class UserMapper {

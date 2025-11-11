@@ -13,12 +13,9 @@ import {
   Req,
   Body,
 } from '@nestjs/common';
-import { JwtGuard } from 'src/auth/guards/jwt-auth.guard';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
-import { UserModel } from 'src/schemas/user.schema';
 import { UserMapper } from './users.mapper';
 import { UserProfileDto } from './dto/output/user-profile.dto';
 import * as multer from 'multer';
@@ -26,6 +23,9 @@ import { Response, Request } from 'express';
 import { existsSync } from 'fs';
 import { ChangePasswordDto } from './dto/input/change-password.dto';
 import { UsersService } from './users.service';
+import { JwtGuard } from '../auth/guards/jwt-auth.guard';
+import { UserModel } from '../schemas/user.schema';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 // Define UPLOAD_DIR at top level
 const UPLOAD_DIR = join(__dirname, '../../uploads');

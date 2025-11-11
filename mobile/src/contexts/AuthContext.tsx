@@ -20,17 +20,16 @@ interface AuthProviderProps {
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
 
-
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [authState, setAuthState] = useState<{
-  token: string | null;
-  authenticated: boolean | null;
-  user: { email: string } | null;
-}>({ 
-  token: null, 
-  authenticated: null,
-  user: null
-});
+    token: string | null;
+    authenticated: boolean | null;
+    user: { email: string } | null;
+  }>({ 
+    token: null, 
+    authenticated: null,
+    user: null
+  });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -49,15 +48,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
     loadToken();
   }, []);
-  useEffect(() => {
-    const clearToken = async () => {
-      await SecureStore.deleteItemAsync('JWT_TOKEN');
-      setAuthState({ token: null, authenticated: false, user: null });
-      setIsLoading(false);
-    };
-    clearToken();
-  }, []);
-
+ 
   const register = async (email: string, password: string) => {
     try {
       const response = await axios.post(`${ENV.API_BASE_URL}/auth/register`, {
@@ -66,52 +57,71 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
       return { success: true, data: response.data };
     } catch (error: any) {
+      console.error('Registration error:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
       return { 
         success: false, 
-        error: error.response?.data?.message || 'Registration failed' 
+        error: error.response?.data?.message || error.message || 'Registration failed' 
       };
     }
   };
 
   const login = async (email: string, password: string) => {
-  try {
-    const response = await axios.post(`${ENV.API_BASE_URL}/auth/login`, {
-      email,
-      password,
-    });
-    console.log(response.data);
-    // Get user data after successful login
-    const userResponse = await axios.get(`${ENV.API_BASE_URL}/users/me`, {
-      headers: {
-        Authorization: `Bearer ${response.data.access_token}`
-      }
-    });
+    try {
+      console.log('Attempting login to:', `${ENV.API_BASE_URL}/auth/login`);
+      
+      const response = await axios.post(`${ENV.API_BASE_URL}/auth/login`, {
+        email,
+        password,
+      });
+      
+      console.log('Login response:', response.data);
+      
+      // Get user data after successful login
+      const userResponse = await axios.get(`${ENV.API_BASE_URL}/users/me`, {
+        headers: {
+          Authorization: `Bearer ${response.data.access_token}`
+        }
+      });
 
-    setAuthState({ 
-      token: response.data.access_token, 
-      authenticated: true,
-      user: userResponse.data
-    });
-    
-    await SecureStore.setItemAsync('JWT_TOKEN', response.data.access_token);
-    return { success: true };
-  } catch (error: any) {
-    return { 
-      success: false, 
-      error: error.response?.data?.message || 'Login failed' 
-    };
-  }
-};
+      console.log('User data:', userResponse.data);
+
+      setAuthState({ 
+        token: response.data.access_token, 
+        authenticated: true,
+        user: userResponse.data
+      });
+      
+      await SecureStore.setItemAsync('JWT_TOKEN', response.data.access_token);
+      return { success: true };
+    } catch (error: any) {
+      console.error('Login error:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status,
+        url: error?.config?.url,
+        method: error?.config?.method
+      });
+      
+      return { 
+        success: false, 
+        error: error.response?.data?.message || error.message || 'Login failed. Please check your credentials.'
+      };
+    }
+  };
 
   const logout = async () => {
-  await SecureStore.deleteItemAsync('JWT_TOKEN');
-  axios.defaults.headers.common['Authorization'] = '';
-  setAuthState({ 
-    token: null, 
-    authenticated: false,
-    user: null
-  });
-};
+    await SecureStore.deleteItemAsync('JWT_TOKEN');
+    axios.defaults.headers.common['Authorization'] = '';
+    setAuthState({ 
+      token: null, 
+      authenticated: false,
+      user: null
+    });
+  };
 
   return (
     <AuthContext.Provider
@@ -121,8 +131,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         login: login,
         logout: logout,
         isLoading,
-   }}
->
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

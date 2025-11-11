@@ -3,7 +3,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '~/contexts/AuthContext';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList, RootStackParamList } from "~/navigation";
-import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ImageBackground } from 'react-native';
+import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ImageBackground, Alert } from 'react-native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import styles from '~/styles/LoginScreen.styles';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,13 +32,14 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
       const result = await login(data.email, data.password);
       
       if (!result.success) {
-        throw new Error(result.error || 'Login failed');
+        throw new Error(result.error);
       }
       
       navigation.navigate('App', { screen: 'StartScreen' });
     } catch (error) {
-      alert((error as Error).message || 'Login failed. Please try again.');
-    } finally {
+    Alert.alert('Error', (error as Error).message);
+    console.log(error);
+  } finally {
       setIsSubmitting(false);
     }
   };

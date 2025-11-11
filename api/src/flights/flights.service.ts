@@ -5,9 +5,9 @@ import { Model } from 'mongoose';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { FlightsInputDto } from './dto/input/flights.input.dto';
-import { FlightDataModel } from 'src/schemas/flights.schema';
-import { AirportsService } from 'src/airports/airports.service';
-import { SavedFlight } from 'src/schemas/saved-flight.schema';
+import { FlightDataModel } from '../schemas/flights.schema';
+import { AirportsService } from '../airports/airports.service';
+import { SavedFlight } from '../schemas/saved-flight.schema';
 
 
 export interface FlightDetails {

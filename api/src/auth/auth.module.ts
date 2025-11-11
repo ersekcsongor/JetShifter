@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { config } from '../shared/config/config';
-import { SharedModule } from 'src/shared/shared.module';
+import { SharedModule } from '../shared/shared.module';
 @Module({
   imports: [
     SharedModule,
