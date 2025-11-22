@@ -6,11 +6,12 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { AppStackParamList } from "~/navigation";
 import axios from "axios";
 import ENV from "~/utils/constants";
-import styles from "~/styles/SelectAirportScreen.styles";
+import { createThemedStyles } from "~/styles/SelectAirportScreen.styles";
 import ScreenBackground from "~/components/ScreenBackground";
 import Flight from "~/types/Flight";
 import { ScrollView } from "react-native-gesture-handler";
 import moment from "moment-timezone";
+import { useTheme } from '~/contexts/ThemeContext';
 
 interface Airport {
   _id: string;
@@ -34,8 +35,8 @@ const CustomFlightScreen = () => {
   const [airports, setAirports] = useState<Airport[]>([]);
   const [filteredArrivalAirports, setFilteredArrivalAirports] = useState<Airport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [arrivalSearch, setArrivalSearch] = useState(""); // Add this state
-  const [departureSearch, setDepartureSearch] = useState(""); // Add this state
+  const [arrivalSearch, setArrivalSearch] = useState("");
+  const [departureSearch, setDepartureSearch] = useState("");
   const [departureTime, setDepartureTime] = useState(new Date());
   const [showDepartureTimePicker, setShowDepartureTimePicker] = useState(false);
   const [arrivalTime, setArrivalTime] = useState(new Date());
@@ -48,6 +49,9 @@ const CustomFlightScreen = () => {
   // Modal state
   const [showDepartureModal, setShowDepartureModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
+
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
 
   useEffect(() => {
     const fetchAirportData = async () => {
@@ -195,13 +199,15 @@ const CustomFlightScreen = () => {
               <TextInput
                 style={{
                   borderWidth: 1,
-                  borderColor: "#ccc",
+                  borderColor: colors.border,
                   borderRadius: 8,
                   padding: 8,
                   marginBottom: 12,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
+                  color: colors.text,
                 }}
                 placeholder="Search airport name or code..."
+                placeholderTextColor={colors.textSecondary}
                 value={departureSearch}
                 onChangeText={setDepartureSearch}
               />
@@ -222,12 +228,12 @@ const CustomFlightScreen = () => {
                   </TouchableOpacity>
                 )}
                 ListEmptyComponent={
-                  <Text style={{ textAlign: "center", color: "#888", marginTop: 20 }}>
+                  <Text style={{ textAlign: "center", color: colors.textSecondary, marginTop: 20 }}>
                     No airports found.
                   </Text>
                 }
               />
-              <Button title="Cancel" onPress={() => setShowDepartureModal(false)} color="#FFD600" />
+              <Button title="Cancel" onPress={() => setShowDepartureModal(false)} color={colors.primary} />
             </View>
           </View>
         </Modal>
@@ -253,13 +259,15 @@ const CustomFlightScreen = () => {
               <TextInput
                 style={{
                   borderWidth: 1,
-                  borderColor: "#ccc",
+                  borderColor: colors.border,
                   borderRadius: 8,
                   padding: 8,
                   marginBottom: 12,
-                  backgroundColor: "#fff",
+                  backgroundColor: colors.surface,
+                  color: colors.text,
                 }}
                 placeholder="Search airport name or code..."
+                placeholderTextColor={colors.textSecondary}
                 value={arrivalSearch}
                 onChangeText={setArrivalSearch}
               />
@@ -281,12 +289,12 @@ const CustomFlightScreen = () => {
                   </TouchableOpacity>
                 )}
                 ListEmptyComponent={
-                  <Text style={{ textAlign: "center", color: "#888", marginTop: 20 }}>
+                  <Text style={{ textAlign: "center", color: colors.textSecondary, marginTop: 20 }}>
                     No airports found.
                   </Text>
                 }
               />
-              <Button title="Cancel" onPress={() => { setShowArrivalModal(false); setArrivalSearch(""); }} color="#FFD600" />
+              <Button title="Cancel" onPress={() => { setShowArrivalModal(false); setArrivalSearch(""); }} color={colors.primary} />
             </View>
           </View>
         </Modal>
@@ -378,7 +386,7 @@ const CustomFlightScreen = () => {
 
         {/* Search Button */}
         <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>Find Flights</Text>
+          <Text style={styles.searchButtonText}>Let's Fly</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

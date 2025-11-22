@@ -1,23 +1,24 @@
 import { StyleSheet } from 'react-native';
 
-const styles = StyleSheet.create({
+export const createThemedStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
+    backgroundColor: colors.background,
+    padding: 20,},
   tagline: {
     fontSize: 24,
-    color: '#000', // Black text for better visibility on a white background
+    color: colors.text,
     textAlign: 'center',
     marginBottom: 40,
     fontWeight: 'bold',
   },
   circleButton: {
     backgroundColor: '#007AFF',
-    width: 150,           // fixed width
-    height: 150,          // same as width
-    borderRadius: 100,    // half of width/height
+    width: 150,
+    height: 150,
+    borderRadius: 100,
     justifyContent: 'center',
     alignItems: 'center',
     marginVertical: 10,
@@ -50,12 +51,14 @@ const styles = StyleSheet.create({
   accountButton: {
     marginTop: 20,
     padding: 15,
-    backgroundColor: '#white',
+    backgroundColor: colors.surface,
     borderRadius: 8,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   yellowCircleButton: {
-    backgroundColor: '#FFC700',
+    backgroundColor: colors.primary,
     width: 150,
     height: 150,
     borderRadius: 75,
@@ -66,18 +69,18 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    elevation: 5, // for Android
+    elevation: 5,
   },
   yellowButtonText: {
-    color: '#6B5B00',
+    color: colors.primaryDark,
     fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 8,
+    textAlign: 'center',
   },
   dashedLine: {
     width: 60,
     borderBottomWidth: 2,
-    borderBottomColor: '#6B5B00',
+    borderBottomColor: colors.primaryDark,
     borderStyle: 'dashed',
     marginBottom: 8,
   },
@@ -87,7 +90,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   helperText: {
-    color: '#6B5B00',
+    color: colors.textSecondary,
     fontSize: 15,
     marginTop: 8,
     textAlign: 'center',
@@ -95,8 +98,19 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#6B5B00',
-    marginBottom: 20,}
+    color: colors.primaryDark,
+    marginBottom: 20,
+  }
 });
 
-export default styles;
+// Legacy export for backwards compatibility (optional)
+// You can remove this once all screens are updated
+export default createThemedStyles({
+  background: '#fbf2d5',
+  surface: '#fbf2d5',
+  primary: '#FFC700',
+  primaryDark: '#6B5B00',
+  text: '#000000',
+  textSecondary: '#666666',
+  border: '#E0E0E0',
+});

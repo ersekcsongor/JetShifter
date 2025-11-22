@@ -7,10 +7,11 @@ import Flight from "~/types/Flight";
 import { AppStackParamList, RootStackParamList } from "~/navigation";
 import { StackNavigationProp } from "@react-navigation/stack";
 import ENV from "~/utils/constants";
-import styles from "~/styles/FlightListScreen.styles";
-import cardStyles from "~/styles/SavedFlightsScreen.styles";
+import { createThemedStyles } from "~/styles/FlightListScreen.styles";
+import { createThemedStyles as createCardStyles } from "~/styles/SavedFlightsScreen.styles";
 import ScreenBackground from "~/components/ScreenBackground";
 import { MaterialIcons } from '@expo/vector-icons';
+import { useTheme } from '~/contexts/ThemeContext';
 
 // Configure API client with better defaults
 const apiClient = axios.create({
@@ -41,6 +42,9 @@ const FlightListScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
+  const cardStyles = createCardStyles(colors);
   
 
   const fetchFlights = async (isRefreshing = false) => {
@@ -108,7 +112,7 @@ const FlightListScreen = () => {
         onPress={() => navigation.navigate('FlightDetailsScreen', { flight: item })}
       >
         <View style={cardStyles.cardContent}>
-          <MaterialIcons name="flight" size={36} color="#6B5B00" style={cardStyles.icon} />
+          <MaterialIcons name="flight" size={36} color={colors.primary} style={cardStyles.icon} />
           <View style={cardStyles.flightInfo}>
             <Text style={cardStyles.route}>
               {item.origin} → {item.destination}

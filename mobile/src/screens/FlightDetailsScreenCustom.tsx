@@ -14,15 +14,15 @@ import { ResultsDisplay } from '~/components/FlightDetails/ResultsDisplay';
 
 // Hooks and utilities
 import { useFlightDetailsState } from '~/utils/useFlightDetailsState';
-import { 
-  calculateSwitchingTimes, 
+import {
+  calculateSwitchingTimes,
   simulateCircadianDynamics,
   integrateCoStateEquations,
   calculateOptimalPerturbations,
   calculateCost,
   updateSwitchingTimes
 } from '~/utils/flightCalculations';
-import styles from '~/styles/FlightDetailsScreen.styles';
+import { createThemedStyles } from '~/styles/FlightDetailsScreen.styles';
 import Flight from '~/types/Flight';
 import { AppStackParamList, RootStackParamList } from '~/navigation';
 import { SleepSchedule } from '~/utils/types';
@@ -31,6 +31,7 @@ import ENV from '~/utils/constants';
 import { useAuth } from '~/contexts/AuthContext';
 import ScreenBackground from '~/components/ScreenBackground';
 import { PERTURBATION_CONSTANTS } from '~/utils/constants';
+import { useTheme } from '~/contexts/ThemeContext';
 
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreenCustom'>;
@@ -65,7 +66,9 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
   
   const API_URL = `${ENV.API_BASE_URL}/global-flights`;
   const { authState } = useAuth();
-  const userEmail = authState?.user?.email || ''; // Use user._id if available
+  const userEmail = authState?.user?.email || '';
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
 
   console.log('Flight details:', flight);
   useEffect(() => {
@@ -496,7 +499,7 @@ const handleSimulateDynamics = useCallback(async () => {
         )}
         {calculationTime !== null && (
           <>
-            <Text style={{margin: 8, color: 'gray'}}>
+            <Text style={{margin: 8, color: colors.textSecondary}}>
               Kalkuláció ideje: {calculationTime.toFixed(0)} ms
             </Text>
             {console.log('Kalkuláció ideje:', calculationTime.toFixed(0), 'ms')}

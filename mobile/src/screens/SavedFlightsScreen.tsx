@@ -8,7 +8,8 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AppStackParamList } from '~/navigation';
 import Flight from '~/types/Flight';
 import { MaterialIcons } from '@expo/vector-icons';
-import styles from '~/styles/SavedFlightsScreen.styles';
+import { useTheme } from '~/contexts/ThemeContext';
+import { createThemedStyles } from '~/styles/SavedFlightsScreen.styles';
 import ScreenBackground from '~/components/ScreenBackground';
 
 const API_URL = `${ENV.API_BASE_URL}/flights`; // Ryanair
@@ -21,7 +22,9 @@ const SavedFlightsScreen = () => {
 
   const [flights, setFlights] = useState<(Flight & { _id?: string; source: 'ryanair' | 'custom' })[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
+  
   const fetchSavedFlights = async () => {
     setLoading(true);
     try {
@@ -42,7 +45,7 @@ const SavedFlightsScreen = () => {
 
       setFlights([...ryanairFlights, ...customFlights]);
     } catch (err) {
-      Alert.alert('Error', 'Failed to load saved flights');
+      console.error(err);
     }
     setLoading(false);
   };

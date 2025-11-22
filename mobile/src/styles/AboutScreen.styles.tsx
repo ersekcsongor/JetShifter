@@ -1,18 +1,19 @@
+// ~/styles/AboutScreen.styles.ts
 import { StyleSheet } from 'react-native';
 
-const styles = StyleSheet.create({
+export const createThemedStyles = (colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: colors.border,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -29,11 +30,11 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#000',
+    color: colors.text,
   },
   headerSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: colors.textSecondary,
     marginTop: 2,
   },
   headerRight: {
@@ -48,7 +49,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.surface,
   },
   messagesContainer: {
     flex: 1,
@@ -103,33 +104,36 @@ const styles = StyleSheet.create({
     shadowRadius: 1,
   },
   userMessage: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     borderBottomRightRadius: 4,
   },
   aiMessage: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   messageText: {
     fontSize: 16,
     lineHeight: 22,
   },
   userMessageText: {
-    color: '#FFFFFF',
+    color: colors.primaryDark,
   },
   aiMessageText: {
-    color: '#000000',
+    color: colors.text,
   },
   messageTime: {
     fontSize: 10,
     marginTop: 4,
   },
   userMessageTime: {
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: colors.primaryDark,
+    opacity: 0.7,
     textAlign: 'right',
   },
   aiMessageTime: {
-    color: '#999',
+    color: colors.textSecondary,
     textAlign: 'left',
   },
   typingBubble: {
@@ -145,19 +149,19 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#999',
+    backgroundColor: colors.textSecondary,
   },
   inputWrapper: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    borderTopColor: colors.border,
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.surface,
     borderRadius: 24,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -166,7 +170,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: '#000',
+    color: colors.text,
     maxHeight: 100,
     paddingVertical: 8,
   },
@@ -174,14 +178,14 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
   },
   sendButtonDisabled: {
-    backgroundColor: '#CCC',
+    backgroundColor: colors.border,
   },
 });
 
-export default styles;
+export default createThemedStyles;

@@ -31,7 +31,8 @@ import ENV from '~/utils/constants';
 import { useAuth } from '~/contexts/AuthContext';
 import ScreenBackground from '~/components/ScreenBackground';
 import { PERTURBATION_CONSTANTS } from '~/utils/constants';
-
+import { useTheme } from '~/contexts/ThemeContext';
+import { createThemedStyles } from '~/styles/FlightDetailsScreen.styles';
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreen'>;
   navigation: StackNavigationProp<AppStackParamList, 'FlightDetailsScreen'>;
@@ -66,7 +67,9 @@ const FlightDetailsScreen = ({ route }: Props) => {
   const API_URL = `${ENV.API_BASE_URL}/flights`;
   const { authState } = useAuth();
   const userEmail = authState?.user?.email || '';
-
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
+  
   useEffect(() => {
     const fetchTimezones = async () => {
       try {
@@ -134,6 +137,23 @@ const FlightDetailsScreen = ({ route }: Props) => {
         const trajectory = simulateCircadianDynamics(currentSwitchingTimes);
 
         const currentCost = calculateCost(trajectory.trajectory);
+
+        // Log cost information
+        console.log('=== ITERATION', currentIteration, '===');
+        console.log('Current Cost J:', currentCost);
+        if (costHist.length > 0) {
+          const previousCost = costHist[costHist.length - 1];
+          console.log('Previous Cost:', previousCost);
+          console.log('Cost Change:', currentCost - previousCost);
+          console.log('Cost Increased:', currentCost > previousCost);
+        }
+
+        // Log trajectory state to verify it's changing
+        console.log('Trajectory length:', trajectory.trajectory.length);
+        console.log('First state - x:', trajectory.trajectory[0].x.toFixed(6), 'n:', trajectory.trajectory[0].n.toFixed(6));
+        const midIdx = Math.floor(trajectory.trajectory.length / 2);
+        console.log('Middle state - x:', trajectory.trajectory[midIdx].x.toFixed(6), 'n:', trajectory.trajectory[midIdx].n.toFixed(6));
+        console.log('Last state - x:', trajectory.trajectory[trajectory.trajectory.length-1].x.toFixed(6), 'n:', trajectory.trajectory[trajectory.trajectory.length-1].n.toFixed(6));
 
         // Integrate co-state
         const [coStateTraj, coStateSwitching] = integrateCoStateEquations(
@@ -274,10 +294,10 @@ const FlightDetailsScreen = ({ route }: Props) => {
           </View>
         </TouchableOpacity>
 
-        <SleepScheduleInput 
+        {/* <SleepScheduleInput 
           schedule={sleepSchedule}
           onChange={setSleepSchedule}
-        />
+        /> */}
 
         <SwitchingTimesControl
           onCalculate={handleCalculateSwitchingTimes}

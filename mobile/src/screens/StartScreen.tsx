@@ -3,10 +3,11 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { AppStackParamList, RootStackParamList } from "~/navigation";
-import styles from "~/styles/StartScreen.styles";
 import { useAuth } from "~/contexts/AuthContext";
-import { Ionicons, MaterialIcons } from '@expo/vector-icons'; // Install if needed
+import { useTheme } from "~/contexts/ThemeContext";
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import ScreenBackground from "~/components/ScreenBackground";
+import { createThemedStyles } from "~/styles/StartScreen.styles";
 
 type StartScreenNavigationProp = StackNavigationProp<AppStackParamList, 'StartScreen'>;
 type RootNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -14,43 +15,35 @@ type RootNavigationProp = StackNavigationProp<RootStackParamList>;
 const StartScreen = () => {
   const navigation = useNavigation<StartScreenNavigationProp>();
   const rootNavigation = useNavigation<RootNavigationProp>();
-  
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
 
   return (
-        <ScreenBackground>
-    
-    <View style={styles.container}>
-       
+      <View style={styles.container}>
+        <TouchableOpacity 
+          style={styles.yellowCircleButton} 
+          onPress={() => navigation.navigate("ChooseScreen")}
+        >
+          <View style={styles.buttonContent}>
+            <View style={styles.dashedLine} />
+            <MaterialIcons name="flight-land" size={36} color={colors.primaryDark} />
+            <Text style={styles.yellowButtonText}>Add trip</Text>
+          </View>
+        </TouchableOpacity>
 
-      {/* Buttons */}
-      <TouchableOpacity 
-      style={styles.yellowCircleButton} 
-      onPress={() => navigation.navigate("ChooseScreen")}
-    >
-      <View style={styles.buttonContent}>
-        <View style={styles.dashedLine} />
-        <MaterialIcons name="flight-land" size={36} color="#6B5B00" />
-        <Text style={styles.yellowButtonText}>Add trip</Text>
-      </View>
-    </TouchableOpacity>
-
-    <View style={{ alignItems: 'center' }}>
-      <TouchableOpacity
-        style={styles.yellowCircleButton}
-        onPress={() => navigation.navigate("AboutScreen")}
-      >
-        <View style={styles.buttonContent}>
-          <View style={styles.dashedLine} />
-          <MaterialIcons name="info" size={36} color="#6B5B00" />
-          <Text style={styles.yellowButtonText}>About Jetlag</Text>
+        <View style={{ alignItems: 'center' }}>
+          <TouchableOpacity
+            style={styles.yellowCircleButton}
+            onPress={() => navigation.navigate("AboutScreen")}
+          >
+            <View style={styles.buttonContent}>
+              <View style={styles.dashedLine} />
+              <MaterialIcons name="info" size={36} color={colors.primaryDark} />
+              <Text style={styles.yellowButtonText}>Ask about jetlag</Text>
+            </View>
+          </TouchableOpacity>
         </View>
-      </TouchableOpacity>
-    </View>
-
-    
-    </View>
-    </ScreenBackground>
-    
+      </View>
   );
 };
 

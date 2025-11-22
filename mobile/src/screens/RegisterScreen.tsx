@@ -7,10 +7,11 @@ import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, Touchable
 import { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import ENV from '~/utils/constants';
-import styles from '~/styles/RegisterScreen.styles';
+import { createThemedStyles } from '~/styles/RegisterScreen.styles';
 import { Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import ScreenBackground from '~/components/ScreenBackground';
+import { useTheme } from '~/contexts/ThemeContext';
 type LoginScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<AuthStackParamList, 'Register'>,
   StackNavigationProp<RootStackParamList>
@@ -30,6 +31,8 @@ export default function RegisterScreen({ navigation }: RegisterScreenProps) {
   const { control, handleSubmit, watch, formState: { errors } } = useForm<FormValues>();  const { register, isLoading } = useAuth();
   const password = watch('password');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
   // In your RegisterScreen component
 const handleRegister = async (data: FormValues) => {
   try {
@@ -92,7 +95,7 @@ const handleRegister = async (data: FormValues) => {
 
       {/* Email Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="mail-outline" size={20} color="black" style={styles.icon} />
+        <Ionicons name="mail-outline" size={20} color={colors.text} style={styles.icon} />
         <Controller
           control={control}
           name="email"
@@ -107,7 +110,7 @@ const handleRegister = async (data: FormValues) => {
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor="#888"
+              placeholderTextColor={colors.textSecondary}
               autoCapitalize="none"
               keyboardType="email-address"
               value={value}
@@ -121,7 +124,7 @@ const handleRegister = async (data: FormValues) => {
 
       {/* Password Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color="black" style={styles.icon} />
+        <Ionicons name="lock-closed-outline" size={20} color={colors.text} style={styles.icon} />
         <Controller
           control={control}
           name="password"
@@ -136,7 +139,7 @@ const handleRegister = async (data: FormValues) => {
             <TextInput
               style={styles.input}
               placeholder="Password"
-              placeholderTextColor="#888"
+              placeholderTextColor={colors.textSecondary}
               secureTextEntry
               value={value}
               onBlur={onBlur}
@@ -149,7 +152,7 @@ const handleRegister = async (data: FormValues) => {
 
       {/* Confirm Password Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color="black" style={styles.icon} />
+        <Ionicons name="lock-closed-outline" size={20} color={colors.text} style={styles.icon} />
         <Controller
           control={control}
           name="confirmPassword"
@@ -161,7 +164,7 @@ const handleRegister = async (data: FormValues) => {
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
-              placeholderTextColor="#888"
+              placeholderTextColor={colors.textSecondary}
               secureTextEntry
               value={value}
               onBlur={onBlur}

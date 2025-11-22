@@ -1,13 +1,13 @@
 import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { MessageDto, ChatResponseDto } from './dto/chat.dto';
+import { ChatResponseDto } from './dto/chat.dto';
 import { config } from '../shared/config/config';
 
 @Injectable()
 export class ChatService {
   private readonly logger = new Logger(ChatService.name);
   private genAI: GoogleGenerativeAI;
-  private readonly modelName = 'gemini-1.5-flash-latest'; // Updated model name
+  private readonly modelName = 'gemini-2.5-flash'; // Updated model name
   private readonly systemPrompt = `You are a helpful jet lag and travel wellness assistant. 
 Your expertise includes:
 - Jet lag causes, symptoms, and science
@@ -39,7 +39,7 @@ recommend consulting a healthcare professional.`;
 
   async sendMessage(
     message: string,
-    conversationHistory: MessageDto[],
+    conversationHistory: { id: string; text: string; isUser: boolean }[] = [],
   ): Promise<ChatResponseDto> {
     try {
       this.logger.log(`Processing message: ${message.substring(0, 50)}...`);

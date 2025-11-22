@@ -15,8 +15,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import ENV from '~/utils/constants';
-import styles from "~/styles/AboutScreen.styles";
-
+import createThemedStyles from "~/styles/AboutScreen.styles";
+import { useTheme } from "~/contexts/ThemeContext";
 interface Message {
   id: string;
   text: string;
@@ -36,7 +36,8 @@ const AboutScreen = ({ navigation }: { navigation: any }) => {
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
-
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
   useEffect(() => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });

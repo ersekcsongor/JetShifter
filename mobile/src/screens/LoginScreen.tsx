@@ -5,10 +5,11 @@ import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList, RootStackParamList } from "~/navigation";
 import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ImageBackground, Alert } from 'react-native';
 import { CompositeNavigationProp } from '@react-navigation/native';
-import styles from '~/styles/LoginScreen.styles';
+import { createThemedStyles } from '~/styles/LoginScreen.styles';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
 import ScreenBackground from '~/components/ScreenBackground';
+import { useTheme } from '~/contexts/ThemeContext';
 type LoginScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<AuthStackParamList, 'Login'>,
   StackNavigationProp<RootStackParamList>
@@ -25,6 +26,8 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
 
   const handleLogin = async (data: LoginFormData) => {
     try {
@@ -67,7 +70,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
       {/* Email Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="mail-outline" size={20} color="black" style={styles.icon} />
+        <Ionicons name="mail-outline" size={20} color={colors.text} style={styles.icon} />
         <Controller
           control={control}
           name="email"
@@ -82,7 +85,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             <TextInput
               style={styles.input}
               placeholder="Email"
-              placeholderTextColor="#888"
+              placeholderTextColor={colors.textSecondary}
               keyboardType="email-address"
               autoCapitalize="none"
               onBlur={onBlur}
@@ -96,7 +99,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
       {/* Password Input */}
       <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color="black" style={styles.icon} />
+        <Ionicons name="lock-closed-outline" size={20} color={colors.text} style={styles.icon} />
         <Controller
           control={control}
           name="password"
@@ -111,7 +114,7 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
             <TextInput
               style={styles.input}
               placeholder="Password"
-              placeholderTextColor="#888"
+              placeholderTextColor={colors.textSecondary}
               secureTextEntry
               onBlur={onBlur}
               onChangeText={onChange}

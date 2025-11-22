@@ -1,21 +1,22 @@
+// ~/styles/LoginScreen.styles.ts
 import { StyleSheet } from "react-native";
 
-const styles = StyleSheet.create({
-    logo:{
-        marginTop: 100,
-        alignSelf: 'center',
-        width: 100,
-        height: 100,
-        marginBottom: 20
-    },
-   container: {
+export const createThemedStyles = (colors: any) => StyleSheet.create({
+  logo: {
+    marginTop: 100,
+    alignSelf: 'center',
+    width: 100,
+    height: 100,
+    marginBottom: 20
+  },
+  container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.background,
     padding: 20,
     justifyContent: 'center',
   },
   title: {
-    color: '#423B3B',
+    color: colors.text,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 40,
@@ -25,8 +26,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.surface,
     marginHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   icon: {
     marginRight: 5,
@@ -34,7 +38,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#333',
+    color: colors.text,
     height: 50,
     fontSize: 16,
     paddingHorizontal: 10,
@@ -46,7 +50,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   loginButton: {
-    backgroundColor: '#1e90ff',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     height: 50,
     justifyContent: 'center',
@@ -58,10 +62,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     marginHorizontal: 20,
-
   },
   loginButtonText: {
-    color: '#fff',
+    color: colors.primaryDark,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -71,7 +74,7 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   forgotPasswordText: {
-    color: '#1e90ff',
+    color: colors.primary,
     fontSize: 14,
   },
   signupContainer: {
@@ -80,14 +83,14 @@ const styles = StyleSheet.create({
     marginTop: 30,
   },
   signupText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   signupLink: {
-    color: '#1e90ff',
+    color: colors.primary,
     fontWeight: 'bold',
     fontSize: 14,
   },
 });
 
-export default styles;
+export default createThemedStyles;

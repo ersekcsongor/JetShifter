@@ -3,13 +3,16 @@ import { View, Text, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { AppStackParamList } from "~/navigation";
-import styles from "~/styles/StartScreen.styles"; // Or create a new style file
+import { createThemedStyles } from "~/styles/StartScreen.styles";
 import ScreenBackground from "~/components/ScreenBackground";
+import { useTheme } from '~/contexts/ThemeContext';
 
 type ChooseScreenNavigationProp = StackNavigationProp<AppStackParamList, 'ChooseScreen'>;
 
 const ChooseScreen = () => {
   const navigation = useNavigation<ChooseScreenNavigationProp>();
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
 
   return (
     <ScreenBackground>

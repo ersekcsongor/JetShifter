@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 
-export default StyleSheet.create({
+export const createThemedStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
@@ -13,7 +13,7 @@ export default StyleSheet.create({
     marginBottom: 20
   },
   title: {
-    color: '#333',
+    color: colors.text,
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 40,
@@ -23,7 +23,8 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 10,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.surface,
+    borderRadius: 8,
   },
   icon: {
     marginRight: 5,
@@ -31,7 +32,7 @@ export default StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: '#333',
+    color: colors.text,
     height: 60,
     fontSize: 16,
     paddingHorizontal: 10,
@@ -43,7 +44,7 @@ export default StyleSheet.create({
     fontSize: 12,
   },
   registerButton: {
-    backgroundColor: '#1e90ff',
+    backgroundColor: colors.primary,
     borderRadius: 8,
     height: 50,
     justifyContent: 'center',
@@ -56,7 +57,7 @@ export default StyleSheet.create({
     shadowRadius: 4,
   },
   registerButtonText: {
-    color: '#fff',
+    color: colors.primaryDark,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -66,12 +67,14 @@ export default StyleSheet.create({
     marginTop: 30,
   },
   loginText: {
-    color: '#666',
+    color: colors.textSecondary,
     fontSize: 14,
   },
   loginLink: {
-    color: '#1e90ff',
+    color: colors.primary,
     fontWeight: 'bold',
     fontSize: 14,
   },
 });
+
+export default createThemedStyles;

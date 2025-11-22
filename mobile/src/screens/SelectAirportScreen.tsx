@@ -6,8 +6,9 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { AppStackParamList } from "~/navigation";
 import axios from "axios";
 import ENV from "~/utils/constants";
-import styles from '~/styles/SelectAirportScreen.styles';
+import { createThemedStyles } from "~/styles/SelectAirportScreen.styles"
 import ScreenBackground from "~/components/ScreenBackground";
+import { useTheme } from '~/contexts/ThemeContext';
 
 interface Airport {
   _id: string;
@@ -36,7 +37,9 @@ const SelectAirportScreen = () => {
   const [showDepartureModal, setShowDepartureModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
   const [search, setSearch] = useState('');
-  const [arrivalSearch, setArrivalSearch] = useState(''); // Add this line
+  const [arrivalSearch, setArrivalSearch] = useState('');
+  const { colors } = useTheme();
+  const styles = createThemedStyles(colors);
 
   useEffect(() => {
     const fetchAirportData = async () => {
@@ -112,7 +115,6 @@ const SelectAirportScreen = () => {
   }
 
   return (
-    <ScreenBackground>
     <View style={styles.container}>
       <Text style={styles.header}>Select Your Route</Text>
 
@@ -134,15 +136,18 @@ const SelectAirportScreen = () => {
             <Text style={styles.modalTitle}>Choose Departure Airport</Text>
             <TextInput
               placeholder="Search..."
+              placeholderTextColor={colors.textSecondary}
               value={search}
               onChangeText={setSearch}
               style={{
                 marginBottom: 16,
                 width: '100%',
                 borderWidth: 1,
-                borderColor: '#ccc',
+                borderColor: colors.border,
                 borderRadius: 8,
                 padding: 8,
+                color: colors.text,
+                backgroundColor: colors.surface,
               }}
             />
             <FlatList
@@ -184,15 +189,18 @@ const SelectAirportScreen = () => {
             <Text style={styles.modalTitle}>Choose Arrival Airport</Text>
             <TextInput
               placeholder="Search..."
+              placeholderTextColor={colors.textSecondary}
               value={arrivalSearch}
               onChangeText={setArrivalSearch}
               style={{
                 marginBottom: 16,
                 width: '100%',
                 borderWidth: 1,
-                borderColor: '#ccc',
+                borderColor: colors.border,
                 borderRadius: 8,
                 padding: 8,
+                color: colors.text,
+                backgroundColor: colors.surface,
               }}
             />
             <FlatList
@@ -240,7 +248,6 @@ const SelectAirportScreen = () => {
         <Text style={styles.searchButtonText}>Find Flights</Text>
       </TouchableOpacity>
     </View>
-  </ScreenBackground>
   );
 };
 

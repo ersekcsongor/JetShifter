@@ -1,6 +1,7 @@
+// ~/styles/FlightListScreen.styles.ts
 import { StyleSheet } from 'react-native';
 
-const styles = StyleSheet.create({
+export const createThemedStyles = (colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 0,
@@ -9,14 +10,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#6B5B00',
+    color: colors.primaryDark,
     textAlign: 'center',
     marginTop: 32,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B5B00',
+    color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: 16,
     fontWeight: 'bold',
@@ -26,7 +27,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   flightItem: {
-    backgroundColor: '#FFF9E3',
+    backgroundColor: colors.surface,
     borderRadius: 20,
     marginVertical: 10,
     padding: 18,
@@ -35,6 +36,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   flightHeader: {
     flexDirection: 'row',
@@ -45,7 +48,7 @@ const styles = StyleSheet.create({
   flightNumber: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#6B5B00',
+    color: colors.text,
   },
   timeContainer: {
     flexDirection: 'row',
@@ -58,23 +61,23 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 14,
-    color: '#6B5B00',
+    color: colors.text,
     fontWeight: 'bold',
     marginBottom: 2,
   },
   time: {
     fontSize: 18,
-    color: '#6B5B00',
+    color: colors.text,
     fontWeight: 'bold',
   },
   date: {
     fontSize: 13,
-    color: '#6B5B00',
+    color: colors.textSecondary,
     marginBottom: 2,
   },
   airport: {
     fontSize: 14,
-    color: '#FFD600',
+    color: colors.primary,
     fontWeight: 'bold',
     marginTop: 2,
   },
@@ -85,14 +88,14 @@ const styles = StyleSheet.create({
   },
   duration: {
     fontSize: 14,
-    color: '#6B5B00',
+    color: colors.text,
     fontWeight: 'bold',
     marginVertical: 2,
     textAlign: 'center',
   },
   durationLine: {
     height: 2,
-    backgroundColor: '#FFD600',
+    backgroundColor: colors.primary,
     width: 40,
     borderRadius: 1,
     marginVertical: 2,
@@ -103,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    color: '#6B5B00',
+    color: colors.text,
     marginTop: 12,
     fontSize: 16,
   },
@@ -115,7 +118,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   retryText: {
-    color: '#FFD600',
+    color: colors.primary,
     fontWeight: 'bold',
     fontSize: 16,
     marginTop: 8,
@@ -123,14 +126,14 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   noFlightsText: {
-    color: '#6B5B00',
+    color: colors.text,
     fontWeight: 'bold',
     fontSize: 18,
     marginBottom: 6,
     textAlign: 'center',
   },
   noFlightsSubtext: {
-    color: '#6B5B00',
+    color: colors.textSecondary,
     fontSize: 15,
     textAlign: 'center',
   },
@@ -139,4 +142,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default styles;
+export default createThemedStyles;

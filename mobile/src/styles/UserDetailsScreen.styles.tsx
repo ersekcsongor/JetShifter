@@ -1,82 +1,75 @@
+// ~/styles/UserDetails.styles.ts
 import { StyleSheet } from 'react-native';
 
-const localStyles = StyleSheet.create({
-  backdrop: {
+export const createThemedStyles = (colors: any) => StyleSheet.create({
+  container: {
     flex: 1,
-    backgroundColor: '#00000066',
+    padding: 20,
+    backgroundColor: colors.background,
   },
-  modal: {
-    backgroundColor: '#fff',
-    paddingVertical: 16,
+  userDetailsView: {
+    paddingTop: 40,
+  },
+  header: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  title2: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: colors.text,
   },
   iconButton: {
+    padding: 8,
+  },
+  imageWrapper: {
+    alignItems: 'center',
+    marginBottom: 20,
+    position: 'relative',
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: colors.surface,
+  },
+  uploadButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: '35%',
+    backgroundColor: colors.primary,
+    borderRadius: 20,
+    padding: 8,
+  },
+  detail: {
+    fontSize: 16,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  passwordButton: {
+    backgroundColor: colors.surface,
+    padding: 16,
+    borderRadius: 12,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  buttonContent: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  iconLabel: {
-    marginTop: 8,
-    fontSize: 14,
+  iconContainer: {
+    marginRight: 12,
   },
-  centeredView: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(0,0,0,0.5)',
-},
-modalView: {
-  backgroundColor: 'white',
-  borderRadius: 20,
-  padding: 25,
-  width: '85%',
-},
-modalTitle: {
-  fontSize: 20,
-  fontWeight: 'bold',
-  marginBottom: 20,
-  textAlign: 'center',
-},
-input: {
-  height: 45,
-  borderColor: '#ddd',
-  borderWidth: 1,
-  borderRadius: 8,
-  paddingHorizontal: 15,
-  marginBottom: 15,
-},
-buttonRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: 10,
-},
-button: {
-  borderRadius: 8,
-  paddingVertical: 12,
-  paddingHorizontal: 20,
-},
-cancelButton: {
-  backgroundColor: '#e0e0e0',
-},
-submitButton: {
-  backgroundColor: '#007AFF',
-},
-buttonText: {
-  color: 'black',
-  fontWeight: 'bold',
-},
-errorText: {
-  color: 'red',
-  marginBottom: 15,
-  textAlign: 'center',
-},
-inputLabel: {
-    fontSize: 14,
+  passwordButtonText: {
+    fontSize: 16,
+    color: colors.text,
     fontWeight: '500',
-    marginBottom: 6,
-    color: '#333',
   },
 });
 
-export default localStyles;
+export default createThemedStyles;
+

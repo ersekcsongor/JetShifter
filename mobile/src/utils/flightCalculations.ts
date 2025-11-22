@@ -23,6 +23,7 @@ export const optimizeCircadianSchedule = (
   destTz: string,
   sleepSchedule: SleepSchedule
 ): { switchingTimes: SwitchingTimes; trajectory: StateTrajectory; costHistory: number[] } => {
+  console.log('🔧 OPTIMIZATION V2 - Cost tolerance enabled');
   let switchingTimes = calculateSwitchingTimes(flight, originTz, destTz, sleepSchedule);
   const costHistory: number[] = [];
   let iteration = 0;
@@ -33,6 +34,16 @@ export const optimizeCircadianSchedule = (
     const stateTrajectory = simulateCircadianDynamics(switchingTimes);
     const currentCost = calculateCost(stateTrajectory.trajectory);
     costHistory.push(currentCost);
+
+    // Log cost information
+    console.log('=== ITERATION', iteration, '===');
+    console.log('Current Cost J:', currentCost);
+    if (costHistory.length > 1) {
+      const previousCost = costHistory[costHistory.length - 2];
+      console.log('Previous Cost:', previousCost);
+      console.log('Cost Change:', currentCost - previousCost);
+      console.log('Cost Increased:', currentCost > previousCost);
+    }
 
     const [coStateTraj, coStateAtPoints] = integrateCoStateEquations(switchingTimes, stateTrajectory.trajectory);
 
@@ -314,7 +325,8 @@ export const simulateCircadianDynamics = (
   };
   const trajectory: StateTrajectory = [];
   const departure = moment(switchingTimes.t0);
-  const totalDuration = switchingTimes.flightDurationHours;
+  const endTime = moment(switchingTimes.tf);
+  const totalDuration = endTime.diff(departure, 'hours', true);
   const timeSteps = 1000; // or 1000
   const dt = totalDuration / timeSteps;
 
@@ -503,9 +515,10 @@ export const simulateCircadianDynamics = (
       const pointTime = moment(switchingPoint.time);
       const hoursFromStart = pointTime.diff(departure, 'hours', true);
 
-      // Find corresponding state
+      // Find corresponding state - use totalDuration not flightDuration
+      const totalDuration = arrival.diff(departure, 'hours', true);
       const stateIndex = Math.min(
-        Math.floor((hoursFromStart / flightDurationHours) * stateTrajectory.length),
+        Math.floor((hoursFromStart / totalDuration) * stateTrajectory.length),
         stateTrajectory.length - 1
       );
       const state = stateTrajectory[stateIndex];
@@ -515,8 +528,8 @@ export const simulateCircadianDynamics = (
       }
 
       // Calculate derivatives
-      const dI_du = currentControl === 0 
-        ? (MODEL_CONSTANTS.I1 - MODEL_CONSTANTS.I0) 
+      const dI_du = currentControl === 0
+        ? (MODEL_CONSTANTS.I1 - MODEL_CONSTANTS.I0)
         : (MODEL_CONSTANTS.I0 - MODEL_CONSTANTS.I1);
 
       // Before calculating denominator
@@ -558,17 +571,18 @@ export const simulateCircadianDynamics = (
       const pointTime = moment(switchingPoint.time);
       const hoursFromStart = pointTime.diff(departure, 'hours', true);
 
-      // Find corresponding state
+      // Find corresponding state - use totalDuration not flightDuration
+      const totalDuration = arrival.diff(departure, 'hours', true);
       const stateIndex = Math.min(
-        Math.floor((hoursFromStart / flightDurationHours) * stateTrajectory.length),
+        Math.floor((hoursFromStart / totalDuration) * stateTrajectory.length),
         stateTrajectory.length - 1
       );
       const state = stateTrajectory[stateIndex];
       if (!state) return;
 
       // Calculate derivatives
-      const dI_du = currentControl === 0 
-        ? (MODEL_CONSTANTS.I1 - MODEL_CONSTANTS.I0) 
+      const dI_du = currentControl === 0
+        ? (MODEL_CONSTANTS.I1 - MODEL_CONSTANTS.I0)
         : (MODEL_CONSTANTS.I0 - MODEL_CONSTANTS.I1);
 
       if (
@@ -645,7 +659,14 @@ export const simulateCircadianDynamics = (
     console.log('Switching points before:', switchingTimes.switchingPoints.map(t => t.time));
     console.log('Perturbations:', perturbations);
 
-    if (costHistory.length > 1 && currentCost > previousCost) {
+    // Only remove switching point if cost increase is significant (not just numerical noise)
+    const COST_TOLERANCE = 0.1; // Relative tolerance: 0.1% of previous cost
+    const costIncrease = currentCost - previousCost;
+    const relativeIncrease = Math.abs(costIncrease / previousCost);
+    const isSignificantIncrease = costHistory.length > 1 && costIncrease > 0 && relativeIncrease > COST_TOLERANCE / 100;
+
+    if (isSignificantIncrease) {
+      console.log(`⚠️ SIGNIFICANT COST INCREASE (${(relativeIncrease * 100).toFixed(4)}%) - Removing switching point with largest perturbation`);
       const maxDtIndex = perturbations.reduce(
         (maxIndex, pert, index) =>
           Math.abs(pert.timeAdjustment) > Math.abs(perturbations[maxIndex].timeAdjustment)
@@ -653,6 +674,7 @@ export const simulateCircadianDynamics = (
             : maxIndex,
         0
       );
+      console.log(`Removing switching point at index ${maxDtIndex} (dt = ${perturbations[maxDtIndex].timeAdjustment})`);
 
       filteredTimes = filteredTimes.filter((_, i) => i !== maxDtIndex);
     } else {
