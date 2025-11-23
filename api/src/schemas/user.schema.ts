@@ -16,6 +16,12 @@ export class UserModel extends Document{
 
   @Prop({ default: '' })
   profileImage?: string;
+
+  @Prop({ default: '22:00' })
+  bedtime?: string;
+
+  @Prop({ default: '06:00' })
+  wakeupTime?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserModel);

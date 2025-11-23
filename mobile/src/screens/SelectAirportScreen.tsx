@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, ActivityIndicator, TouchableOpacity, Modal, FlatList, Button, Platform, TextInput } from "react-native";
+import { View, Text, ActivityIndicator, TouchableOpacity, Modal, FlatList, TextInput, ScrollView } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -7,8 +7,8 @@ import { AppStackParamList } from "~/navigation";
 import axios from "axios";
 import ENV from "~/utils/constants";
 import { createThemedStyles } from "~/styles/SelectAirportScreen.styles"
-import ScreenBackground from "~/components/ScreenBackground";
 import { useTheme } from '~/contexts/ThemeContext';
+import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 interface Airport {
   _id: string;
@@ -38,8 +38,12 @@ const SelectAirportScreen = () => {
   const [showArrivalModal, setShowArrivalModal] = useState(false);
   const [search, setSearch] = useState('');
   const [arrivalSearch, setArrivalSearch] = useState('');
-  const { colors } = useTheme();
-  const styles = createThemedStyles(colors);
+
+  const { colors, effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createThemedStyles(colors, isDarkMode);
+
+  const iconColor = isDarkMode ? '#ffffff' : '#1a1a1a';
 
   useEffect(() => {
     const fetchAirportData = async () => {
@@ -105,50 +109,118 @@ const SelectAirportScreen = () => {
 
   if (loading) {
     return (
-      <ScreenBackground>
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FFD600" />
+        <ActivityIndicator size="large" color={iconColor} />
         <Text style={styles.loadingText}>Loading airport data...</Text>
       </View>
-      </ScreenBackground>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Select Your Route</Text>
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
+      {/* Header */}
+      <View style={styles.headerSection}>
+        <Text style={styles.header}>Select Your Route</Text>
+        <Text style={styles.subtitle}>Choose departure and arrival airports for your flight</Text>
+      </View>
 
-      {/* Departure Selector */}
-      <Text style={styles.label}>Departure Airport</Text>
-      <TouchableOpacity
-        style={styles.selectorButton}
-        onPress={() => setShowDepartureModal(true)}
-      >
-        <Text style={styles.selectorButtonText}>
-          {departure
-            ? `${airports.find(a => a.iataCode === departure)?.name} (${departure})`
-            : "Select departure..."}
-        </Text>
+      {/* Departure Selector Card */}
+      <View style={styles.selectionCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconWrapper}>
+            <MaterialCommunityIcons name="airplane-takeoff" size={24} color={iconColor} />
+          </View>
+          <Text style={styles.label}>Departure</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.selectorButton}
+          onPress={() => setShowDepartureModal(true)}
+        >
+          <Text style={departure ? styles.selectorButtonText : styles.placeholderText}>
+            {departure
+              ? `${airports.find(a => a.iataCode === departure)?.name} (${departure})`
+              : "Select departure airport..."}
+          </Text>
+          <Ionicons name="chevron-forward" size={20} color={iconColor} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Arrival Selector Card */}
+      <View style={styles.selectionCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconWrapper}>
+            <MaterialCommunityIcons name="airplane-landing" size={24} color={iconColor} />
+          </View>
+          <Text style={styles.label}>Arrival</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.selectorButton}
+          onPress={() => setShowArrivalModal(true)}
+          disabled={filteredArrivalAirports.length === 0}
+        >
+          <Text style={arrival ? styles.selectorButtonText : styles.placeholderText}>
+            {arrival
+              ? `${filteredArrivalAirports.find(a => a.iataCode === arrival)?.name} (${arrival})`
+              : "Select arrival airport..."}
+          </Text>
+          <Ionicons name="chevron-forward" size={20} color={iconColor} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Date Selector Card */}
+      <View style={styles.selectionCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconWrapper}>
+            <MaterialIcons name="event" size={24} color={iconColor} />
+          </View>
+          <Text style={styles.label}>Travel Date</Text>
+        </View>
+        <TouchableOpacity
+          style={styles.dateButton}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text style={styles.dateButtonText}>{date.toDateString()}</Text>
+          <MaterialIcons name="calendar-today" size={20} color={iconColor} />
+        </TouchableOpacity>
+      </View>
+      {showDatePicker && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display="spinner"
+          textColor={iconColor}
+          onChange={(event, selectedDate) => {
+            if (selectedDate) setDate(selectedDate);
+            setShowDatePicker(false);
+          }}
+        />
+      )}
+
+      {/* Search Button */}
+      <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+        <MaterialIcons name="search" size={24} color={iconColor} />
+        <Text style={styles.searchButtonText}>Find Flights</Text>
       </TouchableOpacity>
+
+      {/* Departure Modal */}
       <Modal visible={showDepartureModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Choose Departure Airport</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Departure Airport</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowDepartureModal(false)}
+              >
+                <Ionicons name="close" size={20} color={iconColor} />
+              </TouchableOpacity>
+            </View>
             <TextInput
-              placeholder="Search..."
-              placeholderTextColor={colors.textSecondary}
+              placeholder="Search by name or code..."
+              placeholderTextColor={isDarkMode ? '#666666' : '#999999'}
               value={search}
               onChangeText={setSearch}
-              style={{
-                marginBottom: 16,
-                width: '100%',
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 8,
-                padding: 8,
-                color: colors.text,
-                backgroundColor: colors.surface,
-              }}
+              style={styles.searchInput}
             />
             <FlatList
               data={filteredAirports}
@@ -159,49 +231,42 @@ const SelectAirportScreen = () => {
                   onPress={() => {
                     setDeparture(item.iataCode);
                     setShowDepartureModal(false);
+                    setSearch('');
                   }}
                 >
-                  <Text style={styles.modalItemText}>{item.name} ({item.iataCode})</Text>
+                  <Text style={styles.modalItemText}>{item.name}</Text>
+                  <Text style={styles.modalItemSubtext}>{item.iataCode}</Text>
                 </TouchableOpacity>
               )}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No airports found</Text>
+                </View>
+              }
             />
-            <Button title="Cancel" onPress={() => setShowDepartureModal(false)} color="#FFD600" />
           </View>
         </View>
       </Modal>
 
-      {/* Arrival Selector */}
-      <Text style={styles.label}>Arrival Airport</Text>
-      <TouchableOpacity
-        style={styles.selectorButton}
-        onPress={() => setShowArrivalModal(true)}
-        disabled={filteredArrivalAirports.length === 0}
-      >
-        <Text style={styles.selectorButtonText}>
-          {arrival
-            ? `${filteredArrivalAirports.find(a => a.iataCode === arrival)?.name} (${arrival})`
-            : "Select arrival..."}
-        </Text>
-      </TouchableOpacity>
+      {/* Arrival Modal */}
       <Modal visible={showArrivalModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Choose Arrival Airport</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Arrival Airport</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => setShowArrivalModal(false)}
+              >
+                <Ionicons name="close" size={20} color={iconColor} />
+              </TouchableOpacity>
+            </View>
             <TextInput
-              placeholder="Search..."
-              placeholderTextColor={colors.textSecondary}
+              placeholder="Search by name or code..."
+              placeholderTextColor={isDarkMode ? '#666666' : '#999999'}
               value={arrivalSearch}
               onChangeText={setArrivalSearch}
-              style={{
-                marginBottom: 16,
-                width: '100%',
-                borderWidth: 1,
-                borderColor: colors.border,
-                borderRadius: 8,
-                padding: 8,
-                color: colors.text,
-                backgroundColor: colors.surface,
-              }}
+              style={styles.searchInput}
             />
             <FlatList
               data={filteredArrivalList}
@@ -212,42 +277,23 @@ const SelectAirportScreen = () => {
                   onPress={() => {
                     setArrival(item.iataCode);
                     setShowArrivalModal(false);
+                    setArrivalSearch('');
                   }}
                 >
-                  <Text style={styles.modalItemText}>{item.name} ({item.iataCode})</Text>
+                  <Text style={styles.modalItemText}>{item.name}</Text>
+                  <Text style={styles.modalItemSubtext}>{item.iataCode}</Text>
                 </TouchableOpacity>
               )}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No airports found</Text>
+                </View>
+              }
             />
-            <Button title="Cancel" onPress={() => setShowArrivalModal(false)} color="#FFD600" />
           </View>
         </View>
       </Modal>
-
-      {/* Date Picker */}
-      <Text style={styles.label}>Start Date</Text>
-      <TouchableOpacity
-        style={styles.dateButton}
-        onPress={() => setShowDatePicker(true)}
-      >
-        <Text style={styles.dateButtonText}>{date.toDateString()}</Text>
-      </TouchableOpacity>
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="date"
-          display="spinner"
-          onChange={(event, selectedDate) => {
-            if (selectedDate) setDate(selectedDate);
-            setShowDatePicker(false);
-          }}
-        />
-      )}
-
-      {/* Search Button */}
-      <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-        <Text style={styles.searchButtonText}>Find Flights</Text>
-      </TouchableOpacity>
-    </View>
+    </ScrollView>
   );
 };
 

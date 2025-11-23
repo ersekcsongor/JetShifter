@@ -5,6 +5,7 @@ import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import moment from 'moment-timezone';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Components
 import { FlightHeader } from '~/components/FlightDetails/FlightHeader';
@@ -29,7 +30,6 @@ import { SleepSchedule } from '~/utils/types';
 import { SleepScheduleInput } from '~/components/FlightDetails/SleepScheduleInput';
 import ENV from '~/utils/constants';
 import { useAuth } from '~/contexts/AuthContext';
-import ScreenBackground from '~/components/ScreenBackground';
 import { PERTURBATION_CONSTANTS } from '~/utils/constants';
 import { useTheme } from '~/contexts/ThemeContext';
 
@@ -39,11 +39,19 @@ type Props = {
 };
 
 const FlightDetailsScreenCustom = ({ route }: Props) => {
+  // Move all hooks to top
+  const { flight } = route.params;
+  const { authState } = useAuth();
+  const { colors, effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createThemedStyles(colors, isDarkMode);
+  const iconColor = isDarkMode ? '#ffffff' : '#1a1a1a';
+
   const [sleepSchedule, setSleepSchedule] = useState<SleepSchedule>({
     bedtime: '22:00',
     wakeupTime: '06:00'
   });
-  const { flight } = route.params;
+
   const {
     loading,
     timezones,
@@ -63,12 +71,58 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
     isOptimizing,
     updateState
   } = useFlightDetailsState();
-  
+
   const API_URL = `${ENV.API_BASE_URL}/global-flights`;
-  const { authState } = useAuth();
   const userEmail = authState?.user?.email || '';
-  const { colors } = useTheme();
-  const styles = createThemedStyles(colors);
+
+  // Load sleep schedule from backend user profile
+  useEffect(() => {
+    const loadSleepSchedule = async () => {
+      try {
+        // Try to load from backend first
+        const resp = await axios.get(`${ENV.API_BASE_URL}/users/me`, {
+          headers: { Authorization: `Bearer ${authState.token}` },
+        });
+
+        if (resp.data.bedtime && resp.data.wakeupTime) {
+          setSleepSchedule({
+            bedtime: resp.data.bedtime,
+            wakeupTime: resp.data.wakeupTime
+          });
+
+          // Also save to AsyncStorage for offline access
+          await AsyncStorage.setItem('userBedTime', resp.data.bedtime);
+          await AsyncStorage.setItem('userWakeTime', resp.data.wakeupTime);
+        } else {
+          // Fallback to AsyncStorage if backend doesn't have values
+          const savedBedTime = await AsyncStorage.getItem('userBedTime');
+          const savedWakeTime = await AsyncStorage.getItem('userWakeTime');
+          if (savedBedTime && savedWakeTime) {
+            setSleepSchedule({
+              bedtime: savedBedTime,
+              wakeupTime: savedWakeTime
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading sleep schedule:', error);
+        // Fallback to AsyncStorage on error
+        try {
+          const savedBedTime = await AsyncStorage.getItem('userBedTime');
+          const savedWakeTime = await AsyncStorage.getItem('userWakeTime');
+          if (savedBedTime && savedWakeTime) {
+            setSleepSchedule({
+              bedtime: savedBedTime,
+              wakeupTime: savedWakeTime
+            });
+          }
+        } catch (e) {
+          console.error('Error loading from AsyncStorage:', e);
+        }
+      }
+    };
+    loadSleepSchedule();
+  }, [authState.token]);
 
   console.log('Flight details:', flight);
   useEffect(() => {
@@ -438,76 +492,77 @@ const handleSimulateDynamics = useCallback(async () => {
   // Error handling
   if (!route.params?.flight) {
     return (
-      <ScreenBackground>
+      <View style={styles.scrollView}>
         <View style={styles.container}>
           <Text style={styles.error}>No flight data provided</Text>
         </View>
-      </ScreenBackground>
+      </View>
     );
   }
 
   if (!flight.flightNumber || !flight.origin || !flight.destination) {
     return (
-      <ScreenBackground>
+      <View style={styles.scrollView}>
         <View style={styles.container}>
           <Text style={styles.error}>Invalid flight data</Text>
         </View>
-      </ScreenBackground>
+      </View>
     );
   }
 
   return (
-    <ScreenBackground>
-      <ScrollView style={styles.container}>
-        {loading && <ActivityIndicator size="large" style={styles.loader} />}
-        
-        <FlightHeader flight={flight} />
-        
-        <TouchableOpacity onPress={handleSaveFlight}>
-          <View style={styles.saveButton}>
-            <Text style={styles.saveButtonText}>Save Flight</Text>
-          </View>
-        </TouchableOpacity>
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
+      {loading && (
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color={iconColor} />
+        </View>
+      )}
 
-        <SleepScheduleInput 
-          schedule={sleepSchedule}
-          onChange={setSleepSchedule}
+      <FlightHeader flight={flight} />
+
+      <TouchableOpacity onPress={handleSaveFlight}>
+        <View style={styles.saveButton}>
+          <Text style={styles.saveButtonText}>Save Flight</Text>
+        </View>
+      </TouchableOpacity>
+
+      {/* <SleepScheduleInput
+        schedule={sleepSchedule}
+        onChange={setSleepSchedule}
+      /> */}
+
+      <SwitchingTimesControl
+        onCalculate={handleCalculateSwitchingTimes}
+        loading={loading || isOptimizing}
+        timezonesReady={!!timezones.originTz && !!timezones.destTz}
+      />
+
+      {switchingTimes && (
+        <ResultsDisplay
+          switchingTimes={updatedSwitchingTimes || switchingTimes}
+          stateTrajectory={stateTrajectory}
+          coStateTrajectory={coStateTrajectory}
+          coStateAtSwitchingPoints={coStateAtSwitchingPoints}
+          controlPerturbations={controlPerturbations}
+          optimizationHistory={optimizationHistory}
+          optimizationComplete={optimizationComplete}
+          iterationCount={iterationCount}
+          activeSwitchingCount={activeSwitchingCount}
+          costHistory={costHistory}
+          flightDuration={switchingTimes?.flightDurationHours || 0}
+          timezoneDiff={switchingTimes?.timezoneDiff || 0}
+          sleepSchedule={sleepSchedule}
         />
-
-        <SwitchingTimesControl
-          onCalculate={handleCalculateSwitchingTimes}
-          loading={loading || isOptimizing}
-          timezonesReady={!!timezones.originTz && !!timezones.destTz}
-        />
-
-        {switchingTimes && (
-          <ResultsDisplay
-            switchingTimes={updatedSwitchingTimes || switchingTimes} // Use optimized if available
-            stateTrajectory={stateTrajectory}
-            coStateTrajectory={coStateTrajectory}
-            coStateAtSwitchingPoints={coStateAtSwitchingPoints}
-            controlPerturbations={controlPerturbations}
-            optimizationHistory={optimizationHistory}
-            optimizationComplete={optimizationComplete}
-            iterationCount={iterationCount}
-            activeSwitchingCount={activeSwitchingCount}
-            costHistory={costHistory}
-            flightDuration={switchingTimes?.flightDurationHours || 0}
-            timezoneDiff={switchingTimes?.timezoneDiff || 0}
-            sleepSchedule={sleepSchedule}
-          />
-        )}
-        {calculationTime !== null && (
-          <>
-            <Text style={{margin: 8, color: colors.textSecondary}}>
-              Kalkuláció ideje: {calculationTime.toFixed(0)} ms
-            </Text>
-            {console.log('Kalkuláció ideje:', calculationTime.toFixed(0), 'ms')}
-          </>
-        )}
-        
-      </ScrollView>
-    </ScreenBackground>
+      )}
+      {calculationTime !== null && (
+        <>
+          <Text style={{margin: 8, color: colors.textSecondary}}>
+            Kalkuláció ideje: {calculationTime.toFixed(0)} ms
+          </Text>
+          {console.log('Kalkuláció ideje:', calculationTime.toFixed(0), 'ms')}
+        </>
+      )}
+    </ScrollView>
   );
 };
 

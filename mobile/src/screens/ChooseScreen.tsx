@@ -1,39 +1,143 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { AppStackParamList } from "~/navigation";
-import { createThemedStyles } from "~/styles/StartScreen.styles";
-import ScreenBackground from "~/components/ScreenBackground";
+import { createThemedStyles } from "~/styles/ChooseScreen.styles";
 import { useTheme } from '~/contexts/ThemeContext';
+import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 type ChooseScreenNavigationProp = StackNavigationProp<AppStackParamList, 'ChooseScreen'>;
 
 const ChooseScreen = () => {
   const navigation = useNavigation<ChooseScreenNavigationProp>();
-  const { colors } = useTheme();
-  const styles = createThemedStyles(colors);
+  const { colors, effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createThemedStyles(colors, isDarkMode);
+
+  const iconColor = isDarkMode ? '#ffffff' : '#1a1a1a';
+  const infoIconColor = isDarkMode ? '#a0a0a0' : '#666666';
 
   return (
-    <ScreenBackground>
-    <View style={styles.container}>
-      <Text style={styles.header}>Choose an Option</Text>
-      <TouchableOpacity
-        style={styles.yellowCircleButton}
-        onPress={() => navigation.navigate("SelectAirportScreen")}
-      >
-        <Text style={styles.yellowButtonText}>Select Airports From RyanAir</Text>
-      </TouchableOpacity>
-      {/* Add more options here if needed */}
-      <TouchableOpacity
-        style={styles.yellowCircleButton}
-        onPress={() => navigation.navigate("CustomFlightScreen")}
-      >
-        <Text style={styles.yellowButtonText}>Custom Flights</Text>
-      </TouchableOpacity>
-    </View>
-    </ScreenBackground>
-    
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Header Section */}
+      <View style={styles.headerSection}>
+        <MaterialCommunityIcons
+          name="airplane-search"
+          size={56}
+          color={iconColor}
+        />
+        <Text style={styles.title}>Choose Flight Type</Text>
+        <Text style={styles.subtitle}>
+          Select how you want to search for your flight
+        </Text>
+      </View>
+
+      {/* Options Cards */}
+      <View style={styles.cardsContainer}>
+        {/* RyanAir Flights Card */}
+        <TouchableOpacity
+          style={styles.primaryCard}
+          onPress={() => navigation.navigate("SelectAirportScreen")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.iconWrapper}>
+              <MaterialCommunityIcons
+                name="airplane"
+                size={32}
+                color={iconColor}
+              />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>RyanAir Flights</Text>
+              <Text style={styles.cardDescription}>
+                Browse and select from RyanAir's flight schedule
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={iconColor}
+            />
+          </View>
+
+          <View style={styles.cardFeatures}>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Real flight schedules</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Easy airport selection</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Quick setup</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Custom Flight Card */}
+        <TouchableOpacity
+          style={styles.secondaryCard}
+          onPress={() => navigation.navigate("CustomFlightScreen")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.iconWrapper}>
+              <MaterialIcons
+                name="edit-calendar"
+                size={32}
+                color={iconColor}
+              />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Custom Flight</Text>
+              <Text style={styles.cardDescription}>
+                Enter your own flight details manually
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={iconColor}
+            />
+          </View>
+
+          <View style={styles.cardFeatures}>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Any airline supported</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Flexible dates & times</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Full customization</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      {/* Info Section */}
+      <View style={styles.infoSection}>
+        <MaterialCommunityIcons
+          name="information-outline"
+          size={20}
+          color={infoIconColor}
+        />
+        <Text style={styles.infoText}>
+          Both options will generate a personalized light exposure schedule to help you beat jet lag
+        </Text>
+      </View>
+    </ScrollView>
   );
 };
 

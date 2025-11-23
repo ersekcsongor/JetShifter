@@ -20,14 +20,10 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
     fontWeight: 'bold',
     color: isDarkMode ? '#ffffff' : '#1a1a1a',
     marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: isDarkMode ? '#a0a0a0' : '#666666',
-    marginBottom: 4,
+    textAlign: 'center',
   },
 
-  // Center Container for Loading/Error/Empty States
+  // Center Container for Loading/Empty States
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -39,24 +35,11 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
     fontSize: 16,
     color: isDarkMode ? '#a0a0a0' : '#666666',
   },
-  errorText: {
-    color: '#ff4444',
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 16,
-    fontWeight: '600',
-  },
-  retryText: {
-    color: isDarkMode ? '#ffffff' : '#1a1a1a',
-    fontSize: 16,
-    fontWeight: '600',
-    textDecorationLine: 'underline',
-    marginTop: 8,
-  },
   noFlightsText: {
     fontSize: 20,
     fontWeight: 'bold',
     color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -69,9 +52,6 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
   // List Container
   listContainer: {
     paddingBottom: 80,
-  },
-  listFooter: {
-    height: 20,
   },
 
   // Flight Card Styles
@@ -121,31 +101,26 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
   duration: {
     fontSize: 14,
     color: isDarkMode ? '#a0a0a0' : '#666666',
-    marginBottom: 8,
+    marginBottom: 4,
     fontWeight: '500',
   },
-  timeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  sourceLabel: {
+    fontSize: 12,
+    color: isDarkMode ? '#a0a0a0' : '#666666',
+    fontStyle: 'italic',
+  },
+  unsaveButton: {
+    backgroundColor: isDarkMode ? '#404040' : '#d0d0d0',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     marginTop: 8,
+    alignSelf: 'flex-end',
   },
-  timeBlock: {
-    flex: 1,
-  },
-  timeLabel: {
-    fontSize: 12,
-    color: isDarkMode ? '#a0a0a0' : '#666666',
-    textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  time: {
-    fontSize: 16,
-    fontWeight: '600',
+  unsaveButtonText: {
     color: isDarkMode ? '#ffffff' : '#1a1a1a',
-  },
-  date: {
-    fontSize: 12,
-    color: isDarkMode ? '#a0a0a0' : '#666666',
+    fontWeight: '600',
+    fontSize: 14,
   },
 });
 

@@ -14,6 +14,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons, MaterialCommunityIcons, SimpleLineIcons, Feather } from '@expo/vector-icons';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '~/contexts/AuthContext';
 import { useTheme } from '~/contexts/ThemeContext';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -21,8 +22,7 @@ import { AppStackParamList } from '~/navigation';
 import { createThemedStyles } from '~/styles/UserDetailsScreen.styles';
 import { useFocusEffect } from '@react-navigation/native';
 import ENV from '~/utils/constants';
-import localStyles from '~/styles/UserDetails.styles';
-import ScreenBackground from '~/components/ScreenBackground';
+import { createLocalStyles } from '~/styles/UserDetails.styles';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 type UserData = {
@@ -35,9 +35,12 @@ type Props = {
 };
 
 const UserDetailsScreen = ({ navigation }: Props) => {
-  const { authState, logout } = useAuth(); 
-  const { theme, setTheme, colors } = useTheme();
-  const styles = createThemedStyles(colors);
+  const { authState, logout } = useAuth();
+  const { theme, setTheme, colors, effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createThemedStyles(colors, isDarkMode);
+  const localStyles = createLocalStyles(colors, isDarkMode);
+  const iconColor = isDarkMode ? '#ffffff' : '#1a1a1a';
   
   const [loading, setLoading] = useState(true);
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -59,6 +62,31 @@ const UserDetailsScreen = ({ navigation }: Props) => {
   const [showBedTimePicker, setShowBedTimePicker] = useState(false);
   const [showWakeTimePicker, setShowWakeTimePicker] = useState(false);
 
+  // Save sleep times to backend
+  const saveSleepTimes = async (newBedTime: string, newWakeTime: string) => {
+    try {
+      await axios.patch(
+        `${ENV.API_BASE_URL}/users/update-sleep-times`,
+        {
+          bedtime: newBedTime,
+          wakeupTime: newWakeTime,
+        },
+        {
+          headers: { Authorization: `Bearer ${authState.token}` },
+        }
+      );
+
+      // Also save to AsyncStorage for offline access
+      await AsyncStorage.setItem('userBedTime', newBedTime);
+      await AsyncStorage.setItem('userWakeTime', newWakeTime);
+
+      Alert.alert('Success', 'Sleep times updated successfully');
+    } catch (error) {
+      console.error('Error saving sleep times:', error);
+      Alert.alert('Error', 'Failed to save sleep times');
+    }
+  };
+
   // Ask for permissions on mount
   useEffect(() => {
     (async () => {
@@ -79,11 +107,21 @@ const UserDetailsScreen = ({ navigation }: Props) => {
       const resp = await axios.get(`${ENV.API_BASE_URL}/users/me`, {
         headers: { Authorization: `Bearer ${authState.token}` },
       });
-      
+
       setUserData({
         email: resp.data.email,
         profileImage: resp.data.profileImageUrl || null
       });
+
+      // Load sleep times from backend
+      if (resp.data.bedtime && resp.data.wakeupTime) {
+        setBedTime(resp.data.bedtime);
+        setWakeTime(resp.data.wakeupTime);
+
+        // Also save to AsyncStorage for offline access
+        await AsyncStorage.setItem('userBedTime', resp.data.bedtime);
+        await AsyncStorage.setItem('userWakeTime', resp.data.wakeupTime);
+      }
     } catch (error) {
       console.error('Fetch error:', error);
       
@@ -206,29 +244,28 @@ const UserDetailsScreen = ({ navigation }: Props) => {
 
   if (loading) {
     return (
-      <ScreenBackground>
-        <View style={styles.container}>
-          <ActivityIndicator size="large" color={colors.primary} />
+      <View style={styles.container}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={iconColor} />
         </View>
-      </ScreenBackground>
+      </View>
     );
   }
 
   return (
-    // <ScreenBackground>
-      <ScrollView style={styles.container}>
-        <View style={styles.userDetailsView}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-              <Ionicons name="arrow-back" size={24} color={colors.iconColor} />
-            </TouchableOpacity>
+    <ScrollView style={styles.container}>
+      <View style={styles.userDetailsView}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
+            <Ionicons name="arrow-back" size={24} color={iconColor} />
+          </TouchableOpacity>
 
-            <Text style={styles.title2}>My Profile</Text>
+          <Text style={styles.title2}>My Profile</Text>
 
-            <TouchableOpacity style={styles.iconButton}>
-              <Ionicons name="settings-outline" size={24} color={colors.iconColor} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity style={styles.iconButton}>
+            <Ionicons name="settings-outline" size={24} color={iconColor} />
+          </TouchableOpacity>
+        </View>
 
           {userData && (
             <>
@@ -251,23 +288,23 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                 )}
 
                 <TouchableOpacity style={styles.uploadButton} onPress={() => setModalVisible(true)}>
-                  <MaterialCommunityIcons name="camera-outline" size={32} color="black" />
+                  <MaterialCommunityIcons name="camera-outline" size={24} color={iconColor} />
                 </TouchableOpacity>
               </View>
               
               <Text style={styles.detail}>{userData.email}</Text>
 
               {/* Theme Toggle Button */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.passwordButton}
                 onPress={() => setThemeModalVisible(true)}
               >
                 <View style={styles.buttonContent}>
                   <View style={styles.iconContainer}>
-                    <Ionicons 
-                      name={theme === 'dark' ? 'moon' : theme === 'light' ? 'sunny' : 'phone-portrait'} 
-                      size={24} 
-                      color={colors.text} 
+                    <Ionicons
+                      name={theme === 'dark' ? 'moon' : theme === 'light' ? 'sunny' : 'phone-portrait'}
+                      size={22}
+                      color={iconColor}
                     />
                   </View>
                   <Text style={styles.passwordButtonText}>
@@ -277,13 +314,13 @@ const UserDetailsScreen = ({ navigation }: Props) => {
               </TouchableOpacity>
 
               {/* Normal Sleep Pattern */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.passwordButton}
                 onPress={() => setSleepModalVisible(true)}
               >
                 <View style={styles.buttonContent}>
                   <View style={styles.iconContainer}>
-                    <MaterialCommunityIcons name="bed-outline" size={24} color={colors.text} />
+                    <MaterialCommunityIcons name="bed-outline" size={22} color={iconColor} />
                   </View>
                   <Text style={styles.passwordButtonText}>
                     Sleep Pattern: {bedTime} - {wakeTime}
@@ -292,26 +329,26 @@ const UserDetailsScreen = ({ navigation }: Props) => {
               </TouchableOpacity>
 
               {/* Change Password Button */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.passwordButton}
                 onPress={() => setPasswordModalVisible(true)}
               >
                 <View style={styles.buttonContent}>
                   <View style={styles.iconContainer}>
-                    <Feather name="lock" size={24} color={colors.text} />
+                    <Feather name="lock" size={22} color={iconColor} />
                   </View>
                   <Text style={styles.passwordButtonText}>Change Password</Text>
                 </View>
               </TouchableOpacity>
 
               {/* Logout Button */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.passwordButton}
                 onPress={handleLogout}
               >
                 <View style={styles.buttonContent}>
                   <View style={styles.iconContainer}>
-                    <SimpleLineIcons name="logout" size={24} color={colors.text} />
+                    <SimpleLineIcons name="logout" size={22} color={iconColor} />
                   </View>
                   <Text style={styles.passwordButtonText}>Log Out</Text>
                 </View>
@@ -456,7 +493,10 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                       
                       <TouchableOpacity
                         style={[localStyles.button, { backgroundColor: colors.primary }]}
-                        onPress={() => setSleepModalVisible(false)}
+                        onPress={() => {
+                          saveSleepTimes(bedTime, wakeTime);
+                          setSleepModalVisible(false);
+                        }}
                       >
                         <Text style={[localStyles.buttonText, { color: colors.primaryDark }]}>Save</Text>
                       </TouchableOpacity>
@@ -567,7 +607,6 @@ const UserDetailsScreen = ({ navigation }: Props) => {
           )}
         </View>
       </ScrollView>
-    // </ScreenBackground> 
   );
 };
 

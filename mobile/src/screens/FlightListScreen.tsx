@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator, FlatList, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, ActivityIndicator, FlatList, TouchableOpacity } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import axios, { AxiosError } from "axios";
 import { useNavigation } from "@react-navigation/native";
 import Flight from "~/types/Flight";
-import { AppStackParamList, RootStackParamList } from "~/navigation";
+import { AppStackParamList } from "~/navigation";
 import { StackNavigationProp } from "@react-navigation/stack";
 import ENV from "~/utils/constants";
 import { createThemedStyles } from "~/styles/FlightListScreen.styles";
-import { createThemedStyles as createCardStyles } from "~/styles/SavedFlightsScreen.styles";
-import ScreenBackground from "~/components/ScreenBackground";
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '~/contexts/ThemeContext';
 
 // Configure API client with better defaults
@@ -42,9 +40,10 @@ const FlightListScreen = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const { colors } = useTheme();
-  const styles = createThemedStyles(colors);
-  const cardStyles = createCardStyles(colors);
+  const { colors, effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createThemedStyles(colors, isDarkMode);
+  const iconColor = isDarkMode ? '#ffffff' : '#1a1a1a';
   
 
   const fetchFlights = async (isRefreshing = false) => {
@@ -108,25 +107,34 @@ const FlightListScreen = () => {
 
     return (
       <TouchableOpacity
-        style={cardStyles.card}
+        style={styles.card}
         onPress={() => navigation.navigate('FlightDetailsScreen', { flight: item })}
       >
-        <View style={cardStyles.cardContent}>
-          <MaterialIcons name="flight" size={36} color={colors.primary} style={cardStyles.icon} />
-          <View style={cardStyles.flightInfo}>
-            <Text style={cardStyles.route}>
+        <View style={styles.cardContent}>
+          <View style={styles.iconWrapper}>
+            <MaterialCommunityIcons name="airplane" size={28} color={iconColor} />
+          </View>
+          <View style={styles.flightInfo}>
+            <Text style={styles.route}>
               {item.origin} → {item.destination}
             </Text>
-            <Text style={cardStyles.label}>
-              Flight: <Text style={cardStyles.flightNumber}>{item.flightNumber}</Text>
+            <Text style={styles.label}>
+              Flight: <Text style={styles.flightNumber}>{item.flightNumber}</Text>
             </Text>
-            <Text style={cardStyles.duration}>Duration: {item.duration}</Text>
-            <Text style={cardStyles.label}>
-              Departure: {departureTime.time} {departureTime.date}
-            </Text>
-            <Text style={cardStyles.label}>
-              Arrival: {arrivalTime.time} {arrivalTime.date}
-            </Text>
+            <Text style={styles.duration}>Duration: {item.duration}</Text>
+
+            <View style={styles.timeRow}>
+              <View style={styles.timeBlock}>
+                <Text style={styles.timeLabel}>Departure</Text>
+                <Text style={styles.time}>{departureTime.time}</Text>
+                <Text style={styles.date}>{departureTime.date}</Text>
+              </View>
+              <View style={styles.timeBlock}>
+                <Text style={styles.timeLabel}>Arrival</Text>
+                <Text style={styles.time}>{arrivalTime.time}</Text>
+                <Text style={styles.date}>{arrivalTime.date}</Text>
+              </View>
+            </View>
           </View>
         </View>
       </TouchableOpacity>
@@ -137,34 +145,50 @@ const FlightListScreen = () => {
     fetchFlights(true);
   };
 
-  return (
-    <ScreenBackground>
-      <View style={styles.container}>
-        <Text style={styles.title}>
-          Flights from {departure} to {arrival}
-        </Text>
-        <Text style={styles.subtitle}>
-          {new Date(startDate).toLocaleDateString("en-US", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
-        </Text>
+  if (loading && !refreshing) {
+    return (
+      <View style={styles.scrollView}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={iconColor} />
+          <Text style={styles.loadingText}>Searching for flights...</Text>
+        </View>
+      </View>
+    );
+  }
 
-        {loading && !refreshing ? (
-          <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#3498db" />
-            <Text style={styles.loadingText}>Searching for flights...</Text>
-          </View>
-        ) : error ? (
-          <View style={styles.centerContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-            <Text style={styles.retryText} onPress={() => fetchFlights()}>
-              Tap to retry
-            </Text>
-          </View>
-        ) : flights.length > 0 ? (
+  if (error) {
+    return (
+      <View style={styles.scrollView}>
+        <View style={styles.centerContainer}>
+          <MaterialCommunityIcons name="alert-circle-outline" size={64} color="#ff4444" />
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity onPress={() => fetchFlights()}>
+            <Text style={styles.retryText}>Tap to retry</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.scrollView}>
+      <View style={styles.container}>
+        {/* Header Section */}
+        <View style={styles.headerSection}>
+          <Text style={styles.title}>
+            {departure} → {arrival}
+          </Text>
+          <Text style={styles.subtitle}>
+            {new Date(startDate).toLocaleDateString("en-US", {
+              weekday: "long",
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </Text>
+        </View>
+
+        {flights.length > 0 ? (
           <FlatList
             data={flights}
             renderItem={renderFlightItem}
@@ -173,9 +197,11 @@ const FlightListScreen = () => {
             refreshing={refreshing}
             onRefresh={handleRefresh}
             ListFooterComponent={<View style={styles.listFooter} />}
+            showsVerticalScrollIndicator={false}
           />
         ) : (
           <View style={styles.centerContainer}>
+            <MaterialCommunityIcons name="airplane-off" size={64} color={isDarkMode ? '#666666' : '#999999'} />
             <Text style={styles.noFlightsText}>No flights available</Text>
             <Text style={styles.noFlightsSubtext}>
               Try adjusting your search criteria
@@ -183,7 +209,7 @@ const FlightListScreen = () => {
           </View>
         )}
       </View>
-    </ScreenBackground>
+    </View>
   );
 };
 

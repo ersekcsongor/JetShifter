@@ -22,6 +22,7 @@ import * as multer from 'multer';
 import { Response, Request } from 'express';
 import { existsSync } from 'fs';
 import { ChangePasswordDto } from './dto/input/change-password.dto';
+import { UpdateSleepTimesDto } from './dto/input/update-sleep-times.dto';
 import { UsersService } from './users.service';
 import { JwtGuard } from '../auth/guards/jwt-auth.guard';
 import { UserModel } from '../schemas/user.schema';
@@ -105,5 +106,21 @@ export class UsersController {
       changePasswordDto.newPassword
     );
     return { message: 'Password updated successfully' };
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch('update-sleep-times')
+  async updateSleepTimes(
+    @CurrentUser() user: UserModel,
+    @Body() updateSleepTimesDto: UpdateSleepTimesDto,
+  ) {
+    user.bedtime = updateSleepTimesDto.bedtime;
+    user.wakeupTime = updateSleepTimesDto.wakeupTime;
+    await user.save();
+    return {
+      message: 'Sleep times updated successfully',
+      bedtime: user.bedtime,
+      wakeupTime: user.wakeupTime
+    };
   }
 }

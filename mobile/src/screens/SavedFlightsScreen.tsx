@@ -7,10 +7,9 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AppStackParamList } from '~/navigation';
 import Flight from '~/types/Flight';
-import { MaterialIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '~/contexts/ThemeContext';
 import { createThemedStyles } from '~/styles/SavedFlightsScreen.styles';
-import ScreenBackground from '~/components/ScreenBackground';
 
 const API_URL = `${ENV.API_BASE_URL}/flights`; // Ryanair
 const API_URL2 = `${ENV.API_BASE_URL}/global-flights`; // Custom
@@ -22,8 +21,10 @@ const SavedFlightsScreen = () => {
 
   const [flights, setFlights] = useState<(Flight & { _id?: string; source: 'ryanair' | 'custom' })[]>([]);
   const [loading, setLoading] = useState(true);
-  const { colors } = useTheme();
-  const styles = createThemedStyles(colors);
+  const { colors, effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createThemedStyles(colors, isDarkMode);
+  const iconColor = isDarkMode ? '#ffffff' : '#1a1a1a';
   
   const fetchSavedFlights = async () => {
     setLoading(true);
@@ -70,33 +71,50 @@ const SavedFlightsScreen = () => {
   );
 
   if (loading) {
-    return <ActivityIndicator size="large" />;
+    return (
+      <View style={styles.scrollView}>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={iconColor} />
+          <Text style={styles.loadingText}>Loading saved flights...</Text>
+        </View>
+      </View>
+    );
   }
 
   if (flights.length === 0) {
     return (
-      <ScreenBackground>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#6B5B00', marginBottom: 16 }}>
-            Saved Flights
-          </Text>
-          <Text>No saved flights.</Text>
+      <View style={styles.scrollView}>
+        <View style={styles.container}>
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>Saved Flights</Text>
+          </View>
+          <View style={styles.centerContainer}>
+            <MaterialCommunityIcons
+              name="bookmark-outline"
+              size={64}
+              color={isDarkMode ? '#666666' : '#999999'}
+            />
+            <Text style={styles.noFlightsText}>No saved flights</Text>
+            <Text style={styles.noFlightsSubtext}>
+              Save flights from search results to see them here
+            </Text>
+          </View>
         </View>
-      </ScreenBackground>
+      </View>
     );
   }
 
   return (
-    <ScreenBackground>
-      <View style={{ flex: 1 }}>
-        <View style={{ paddingTop: 32, paddingBottom: 16, alignItems: 'center', backgroundColor: '#FFF9E3' }}>
-          <Text style={{ fontSize: 28, fontWeight: 'bold', color: '#6B5B00' }}>
-            Saved Flights
-          </Text>
+    <View style={styles.scrollView}>
+      <View style={styles.container}>
+        <View style={styles.headerSection}>
+          <Text style={styles.title}>Saved Flights</Text>
         </View>
         <FlatList
           data={flights}
           keyExtractor={(item, index) => `${item.source}-${item.flightNumber}-${index}`}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
               onPress={() =>
@@ -108,7 +126,9 @@ const SavedFlightsScreen = () => {
               style={styles.card}
             >
               <View style={styles.cardContent}>
-                <MaterialIcons name="flight" size={36} color="#6B5B00" style={styles.icon} />
+                <View style={styles.iconWrapper}>
+                  <MaterialCommunityIcons name="airplane" size={28} color={iconColor} />
+                </View>
                 <View style={styles.flightInfo}>
                   <Text style={styles.route}>
                     {item.origin} → {item.destination}
@@ -119,19 +139,19 @@ const SavedFlightsScreen = () => {
                   <Text style={styles.duration}>
                     Duration: {item.source === 'ryanair' ? formatRyanairDuration(item.duration) : item.duration}
                   </Text>
-                  <Text style={{ fontSize: 12, color: '#888' }}>
+                  <Text style={styles.sourceLabel}>
                     {item.source === 'ryanair' ? 'Ryanair' : 'Custom'}
                   </Text>
+                  <Pressable style={styles.unsaveButton} onPress={() => unsaveFlight(item.flightNumber, item.source)}>
+                    <Text style={styles.unsaveButtonText}>Unsave</Text>
+                  </Pressable>
                 </View>
-                <Pressable style={styles.unsaveButton} onPress={() => unsaveFlight(item.flightNumber, item.source)}>
-                  <Text style={styles.unsaveButtonText}>Unsave</Text>
-                </Pressable>
               </View>
             </TouchableOpacity>
           )}
         />
       </View>
-    </ScreenBackground>
+    </View>
   );
 };
 

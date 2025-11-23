@@ -193,16 +193,20 @@ export const optimizeCircadianSchedule = (
           intervalSize * (currentPhase === 'light' ? 1.2 : 0.8),
           remainingDuration
         );
-        
+
         // Check if next phase will overlap with sleep time
         const nextPhaseEnd = currentTime.clone().add(phaseDuration, 'hours');
-        
-        const activeSleepPeriod = sleepPeriods.find(period => 
-          currentTime.isBetween(period.bedtime, period.wakeTime, null, '[)') ||
-          nextPhaseEnd.isBetween(period.bedtime, period.wakeTime, null, '[)') ||
-          (currentTime.isBefore(period.bedtime) && nextPhaseEnd.isAfter(period.wakeTime))
-        );
-  
+
+        // Only avoid sleep periods AFTER landing (Option 2)
+        // During flight, switching points are allowed even during user's sleep time
+        const activeSleepPeriod = currentTime.isAfter(arrival)
+          ? sleepPeriods.find(period =>
+              currentTime.isBetween(period.bedtime, period.wakeTime, null, '[)') ||
+              nextPhaseEnd.isBetween(period.bedtime, period.wakeTime, null, '[)') ||
+              (currentTime.isBefore(period.bedtime) && nextPhaseEnd.isAfter(period.wakeTime))
+            )
+          : null; // During flight: no sleep protection
+
         if (activeSleepPeriod) {
           if (currentPhase === 'light' && currentTime.isBefore(activeSleepPeriod.bedtime)) {
             // Transition to sleep time

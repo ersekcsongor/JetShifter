@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import moment from 'moment';
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { 
+import {
   SwitchingTimes,
   StateTrajectory,
   CoStateTrajectory,
@@ -11,6 +11,7 @@ import {
   SleepSchedule,
   CoState
 } from '~/utils/types';
+import { useTheme } from '~/contexts/ThemeContext';
 
 type Props = {
   switchingTimes?: SwitchingTimes;
@@ -30,261 +31,305 @@ type Props = {
 
 export const ResultsDisplay = ({
   switchingTimes,
-  stateTrajectory,
-  coStateTrajectory,
-  controlPerturbations,
-  optimizationHistory,
-  optimizationComplete,
-  iterationCount,
-  activeSwitchingCount,
-  costHistory,
-  flightDuration,
-  timezoneDiff,
   sleepSchedule
-
 }: Props) => {
-  const index = 0;
-  
-return (
-  <>
-    {/* Switching Points with Sleep Schedule */}
-    {switchingTimes && (
-      <View style={styles.section}>
-        <Text style={styles.subtitle}>Exposure Switching Schedule</Text>
-        <View style={styles.scheduleContainer}>
-          {Object.entries(
-            switchingTimes.switchingPoints?.reduce<Record<string, any[]>>((acc, point) => {
-              const date = point.time.split(' ')[0];
-              if (!acc[date]) {
-                acc[date] = [];
-                
-                // Add sleep period only once per date
-                const sleepStart = moment(`${date} ${sleepSchedule.bedtime}`);
-                const sleepEnd = moment(`${date} ${sleepSchedule.wakeupTime}`);
-                
-                if (sleepEnd.isBefore(sleepStart)) {
-                  sleepEnd.add(1, 'day');
-                }
-                
-                acc[date].push({
-                  time: sleepStart.format('YYYY-MM-DD HH:mm'),
-                  endTime: sleepEnd.format('YYYY-MM-DD HH:mm'),
-                  type: 'sleep',
-                  isSleepPeriod: true
-                });
-              }
-              
-              acc[date].push({
-                ...point,
-                isSleepPeriod: false
-              });
-              
-              return acc;
-            }, {}) ?? {}
-          ).map(([date, points], dateIndex) => (
-            <View key={dateIndex} style={styles.dateGroup}>
-              <Text style={styles.dateHeader}>
-                {moment(date).format('dddd, MMMM D')}
-              </Text>
-              <View style={styles.timeIntervalsContainer}>
-                {points
-                  .sort((a, b) => moment(a.time).diff(moment(b.time)))
-                  .map((point, index) => {
-                    if (point.isSleepPeriod) {
-                      return (
-                        <View 
-                          key={`sleep-${index}`}
-                          style={[styles.scheduleItem]}
-                        >
-                          <View style={styles.typeIndicator}>
-                            <Ionicons name="bed" size={18} color="#343a40" />
-                            <Text style={[styles.typeText, styles.sleepTypeText]}>
-                              SLEEP TIME
+  const { effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createResultsStyles(isDarkMode);
+
+  if (!switchingTimes) return null;
+
+  // Group switching points by date
+  const groupedByDate = switchingTimes.switchingPoints?.reduce<Record<string, any[]>>((acc, point) => {
+    const date = point.time.split(' ')[0];
+    if (!acc[date]) {
+      acc[date] = [];
+
+      // Calculate landing time
+      const departure = moment(switchingTimes.t0);
+      const landingTime = departure.clone().add(switchingTimes.flightDurationHours, 'hours');
+
+      // Add sleep period only once per date AND only if it's after landing
+      const sleepStart = moment(`${date} ${sleepSchedule.bedtime}`);
+      const sleepEnd = moment(`${date} ${sleepSchedule.wakeupTime}`);
+
+      if (sleepEnd.isBefore(sleepStart)) {
+        sleepEnd.add(1, 'day');
+      }
+
+      // Only show sleep period if it starts after landing
+      if (sleepStart.isAfter(landingTime)) {
+        acc[date].push({
+          time: sleepStart.format('YYYY-MM-DD HH:mm'),
+          endTime: sleepEnd.format('YYYY-MM-DD HH:mm'),
+          type: 'sleep',
+          isSleepPeriod: true
+        });
+      }
+    }
+
+    acc[date].push({
+      ...point,
+      isSleepPeriod: false
+    });
+
+    return acc;
+  }, {}) ?? {};
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.mainTitle}>Your Light Schedule</Text>
+      <Text style={styles.subtitle}>Follow this schedule to minimize jet lag</Text>
+
+      {Object.entries(groupedByDate).map(([date, points], dateIndex) => (
+        <View key={dateIndex} style={styles.dateSection}>
+          <View style={styles.dateHeaderContainer}>
+            <Text style={styles.dateLabel}>
+              {moment(date).format('ddd').toUpperCase()}
+            </Text>
+            <Text style={styles.dateValue}>
+              {moment(date).format('MMM D')}
+            </Text>
+          </View>
+
+          <View style={styles.timeline}>
+            {points
+              .sort((a, b) => moment(a.time).diff(moment(b.time)))
+              .map((point, index) => {
+                if (point.isSleepPeriod) {
+                  return (
+                    <View key={`sleep-${index}`} style={styles.timelineItem}>
+                      <View style={styles.timelineLeft}>
+                        <Text style={styles.timeText}>
+                          {moment(point.time).format('h:mm A')}
+                        </Text>
+                      </View>
+
+                      <View style={styles.timelineCenter}>
+                        <View style={[styles.timelineDot, styles.sleepDot]} />
+                        <View style={[styles.timelineLine, styles.sleepLine]} />
+                      </View>
+
+                      <View style={styles.timelineRight}>
+                        <View style={[styles.activityCard, styles.sleepCard]}>
+                          <Ionicons name="bed" size={24} color={isDarkMode ? '#9ca3af' : '#6b7280'} />
+                          <View style={styles.activityTextContainer}>
+                            <Text style={styles.activityTitle}>Sleep</Text>
+                            <Text style={styles.activityTime}>
+                              Until {moment(point.endTime).format('h:mm A')}
                             </Text>
                           </View>
-                          <View style={styles.timeInfo}>
-                            <Text style={styles.timeRange}>
-                              {moment(point.time).format('h:mm A')} - {moment(point.endTime).format('h:mm A')}
-                            </Text>
-                          </View>
-                        </View>
-                      );
-                    }
-                    
-                    const nextPoint = points.find(
-                      p => !p.isSleepPeriod && p.time > point.time
-                    );
-                    
-                    const timeRange = nextPoint 
-                      ? `${moment(point.time).format('h:mm A')} - ${moment(nextPoint.time).format('h:mm A')}`
-                      : `After ${moment(point.time).format('h:mm A')}`;
-                    
-                    return (
-                      <View 
-                        key={index} 
-                        style={[
-                          styles.scheduleItem,
-                          point.type === 'dark' ? styles.darkItem : styles.lightItem
-                        ]}
-                      >
-                        <View style={styles.typeIndicator}>
-                          {point.type === 'dark' ? (
-                            <Ionicons name="moon" size={18} color="#343a40" />
-                          ) : (
-                            <Ionicons name="sunny" size={18} color="#fcc419" />
-                          )}
-                          <Text style={[
-                            styles.typeText,
-                            point.type === 'dark' ? styles.darkTypeText : styles.lightTypeText
-                          ]}>
-                            {point.type.toUpperCase()}
-                          </Text>
-                        </View>
-                        <View style={styles.timeInfo}>
-                          <Text style={styles.timeRange}>{timeRange}</Text>
                         </View>
                       </View>
-                    );
-                  })}
-              </View>
-            </View>
-          ))}
+                    </View>
+                  );
+                }
+
+                // Find next point to determine end time
+                const currentPointTime = moment(point.time);
+                const allSwitchingPoints = switchingTimes.switchingPoints || [];
+
+                const nextSwitchingPoint = allSwitchingPoints.find(
+                  p => moment(p.time).isAfter(currentPointTime)
+                );
+
+                const nextSleepInCurrentDate = points.find(
+                  p => p.isSleepPeriod && moment(p.time).isAfter(currentPointTime)
+                );
+
+                let endTime;
+                if (nextSwitchingPoint && nextSleepInCurrentDate) {
+                  endTime = moment(nextSwitchingPoint.time).isBefore(moment(nextSleepInCurrentDate.time))
+                    ? moment(nextSwitchingPoint.time)
+                    : moment(nextSleepInCurrentDate.time);
+                } else if (nextSwitchingPoint) {
+                  endTime = moment(nextSwitchingPoint.time);
+                } else if (nextSleepInCurrentDate) {
+                  endTime = moment(nextSleepInCurrentDate.time);
+                } else {
+                  endTime = moment(switchingTimes.tf);
+                }
+
+                const isLastItem = index === points.length - 1;
+                const isLight = point.type === 'light';
+
+                return (
+                  <View key={index} style={styles.timelineItem}>
+                    <View style={styles.timelineLeft}>
+                      <Text style={styles.timeText}>
+                        {moment(point.time).format('h:mm A')}
+                      </Text>
+                    </View>
+
+                    <View style={styles.timelineCenter}>
+                      <View style={[
+                        styles.timelineDot,
+                        isLight ? styles.lightDot : styles.darkDot
+                      ]} />
+                      {!isLastItem && (
+                        <View style={[
+                          styles.timelineLine,
+                          isLight ? styles.lightLine : styles.darkLine
+                        ]} />
+                      )}
+                    </View>
+
+                    <View style={styles.timelineRight}>
+                      <View style={[
+                        styles.activityCard,
+                        isLight ? styles.lightCard : styles.darkCard
+                      ]}>
+                        <Ionicons
+                          name={isLight ? "sunny" : "moon"}
+                          size={24}
+                          color={isLight ? "#fbbf24" : "#6366f1"}
+                        />
+                        <View style={styles.activityTextContainer}>
+                          <Text style={styles.activityTitle}>
+                            {isLight ? "Seek Light" : "Avoid Light"}
+                          </Text>
+                          <Text style={styles.activityTime}>
+                            Until {endTime.format('h:mm A')}
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+          </View>
         </View>
-      </View>
-    )}
-  </>
-);
+      ))}
+    </View>
+  );
 };
 
-const styles = StyleSheet.create({
-  sleepItem: {
-    backgroundColor: '#f8f9fa',
-    borderLeftWidth: 3,
-    borderLeftColor: '#4a5568',
-    marginVertical: 4,
-  },
-  sleepTypeText: {
-    color: '#4a5568',
-    fontWeight: '600',
-  },
-  timeRange: {
-    fontSize: 14,
-    color: '#495057',
-  },
-  dateHeader: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#212529',
-    marginBottom: 8,
-    marginTop: 12,
-  },
+const createResultsStyles = (isDarkMode: boolean = false) => StyleSheet.create({
   container: {
-    padding: 16,
-    backgroundColor: '#FFF9E3',
-    marginVertical: 8,
-    borderRadius: 12,
+    marginTop: 24,
+    paddingBottom: 20,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#2c3e50',
-  },
-  infoText: {
-    fontSize: 15,
-    color: '#34495e',
-    marginBottom: 4,
-  },
-  section: {
-    marginVertical: 16,
-    padding: 16,
-    backgroundColor: '#FFF9E3',
-    borderRadius: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+  mainTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    color: '#2c3e50',
+    fontSize: 15,
+    color: isDarkMode ? '#9ca3af' : '#6b7280',
+    marginBottom: 32,
     textAlign: 'center',
   },
-  scheduleContainer: {
-    borderRadius: 8,
-    overflow: 'hidden',
+  dateSection: {
+    marginBottom: 32,
   },
-  dateGroup: {
+  dateHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 20,
+    paddingLeft: 4,
   },
-  // dateHeader: {
-  //   fontSize: 16,
-  //   fontWeight: '600',
-  //   color: '#343ac40',
-  //   marginBottom: 12,
-  //   marginTop: 12,
-  //   paddingBottom: 6,
-  //   paddingTop: 6,
-  //   borderBottomWidth: 1,
-  //   borderBottomColor: '#ecf0f1',
-  //   borderTopWidth:1,
-  //   borderTopColor: '#ecf0f1',
-  //   textAlign: 'center',
-  // },
-  timeIntervalsContainer: {
-    borderRadius: 6,
-    overflow: 'hidden',
-  },
-  scheduleItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f8f9fa',
-  },
-  darkItem: {
-    backgroundColor: '#white',
-  },
-  lightItem: {
-    backgroundColor: '#white',
-  },
-  typeIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: 90,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 16,
-  },
-  typeText: {
+  dateLabel: {
+    fontSize: 13,
     fontWeight: '600',
-    fontSize: 14,
-    marginLeft: 6,
+    color: isDarkMode ? '#9ca3af' : '#6b7280',
+    letterSpacing: 0.5,
+    marginRight: 12,
   },
-  darkTypeText: {
-    color: '#343ac40',
+  dateValue: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: isDarkMode ? '#ffffff' : '#1a1a1a',
   },
-  lightTypeText: {
-    color: '#343ac40',
+  timeline: {
+    paddingLeft: 20,
   },
-  timeInfo: {
+  timelineItem: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  timelineLeft: {
+    width: 70,
+    paddingTop: 2,
+    paddingRight: 12,
+  },
+  timeText: {
+    fontSize: 13,
+    color: isDarkMode ? '#9ca3af' : '#6b7280',
+    fontWeight: '500',
+  },
+  timelineCenter: {
+    width: 32,
+    alignItems: 'center',
+  },
+  timelineDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginTop: 6,
+  },
+  lightDot: {
+    backgroundColor: '#fbbf24',
+  },
+  darkDot: {
+    backgroundColor: '#6366f1',
+  },
+  sleepDot: {
+    backgroundColor: isDarkMode ? '#6b7280' : '#9ca3af',
+  },
+  timelineLine: {
+    width: 3,
     flex: 1,
-  },
- 
-  timeLabel: {
-    fontSize: 12,
-    color: '#7f8c8d',
     marginTop: 4,
   },
-  chartLegend: {
+  lightLine: {
+    backgroundColor: '#fde68a',
+  },
+  darkLine: {
+    backgroundColor: '#a5b4fc',
+  },
+  sleepLine: {
+    backgroundColor: isDarkMode ? '#4b5563' : '#d1d5db',
+  },
+  timelineRight: {
+    flex: 1,
+    paddingLeft: 12,
+    paddingBottom: 8,
+  },
+  activityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  lightCard: {
+    backgroundColor: isDarkMode ? 'rgba(251, 191, 36, 0.1)' : 'rgba(254, 243, 199, 0.5)',
+    borderColor: isDarkMode ? 'rgba(251, 191, 36, 0.3)' : '#fde68a',
+  },
+  darkCard: {
+    backgroundColor: isDarkMode ? 'rgba(99, 102, 241, 0.1)' : 'rgba(224, 231, 255, 0.5)',
+    borderColor: isDarkMode ? 'rgba(99, 102, 241, 0.3)' : '#c7d2fe',
+  },
+  sleepCard: {
+    backgroundColor: isDarkMode ? 'rgba(107, 114, 128, 0.1)' : 'rgba(243, 244, 246, 0.8)',
+    borderColor: isDarkMode ? 'rgba(107, 114, 128, 0.3)' : '#e5e7eb',
+  },
+  activityTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  activityTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    marginBottom: 2,
+  },
+  activityTime: {
     fontSize: 13,
-    color: '#7f8c8d',
-    textAlign: 'center',
-    marginTop: 8,
+    color: isDarkMode ? '#9ca3af' : '#6b7280',
   },
 });
 

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { format, parseISO, isSameDay } from 'date-fns';
 import ENV from '~/utils/constants';
+import { useTheme } from '~/contexts/ThemeContext';
 
 type FlightHeaderProps = {
   flight: {
@@ -29,6 +30,8 @@ const formatTime = (dateString: string) => {
 };
 
 export const FlightHeader = ({ flight }: FlightHeaderProps) => {
+  const { effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
   const [originCountry, setOriginCountry] = useState('');
   const [destinationCountry, setDestinationCountry] = useState('');
 
@@ -70,191 +73,101 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
 
   const sameDay = isSameDayCheck(flight.time[0], flight.time[1]);
 
+  const iconColor = isDarkMode ? '#9ca3af' : '#6b7280';
+  const textColor = isDarkMode ? '#ffffff' : '#1a1a1a';
+  const subtextColor = isDarkMode ? '#9ca3af' : '#6b7280';
+
   return (
     <View style={styles.headerContainer}>
-      <Text style={styles.title}>Flight {flight.flightNumber}</Text>
-
-    
+      <Text style={[styles.flightNumber, { color: subtextColor }]}>
+        Flight {flight.flightNumber}
+      </Text>
 
       <View style={styles.routeContainer}>
-        {/* Origin */}
-        <View style={styles.airportColumn}>
-          {/* <Text style={styles.timeText}>
-            {formatTime(flight.time[0])}
-            {!sameDay && (
-              <Text style={styles.dateSmall}>
-                {'\n'}{formatDate(flight.time[0])}
-              </Text>
-            )}
-          </Text> */}
-
-          <Text style={styles.airportCode}>{flight.origin}</Text>
-          <MaterialIcons 
-            name="location-pin" 
-            size={24} 
-            color="black" 
-          />
-          {!!originCountry && <Text style={styles.countryText}>{originCountry}</Text>}
-
-          
-        </View>
-
-        <View>
-
-        <View style={styles.planeContainer}>    
-          <MaterialIcons 
-            name="flight" 
-            size={24} 
-            color="white" 
-            style={styles.planeIcon} 
-          />
-          <Text style={styles.infoValue}>{flight.duration}</Text>
-        </View>
-          
-        <View style={styles.timeContainer}>
-
-          {/* Show date only once if same day */}
-          {sameDay && (
-            <Text style={styles.dateText}>
-              {formatDate(flight.time[0])}
-            </Text>
+        <View style={styles.cityColumn}>
+          <Text style={[styles.cityCode, { color: textColor }]}>{flight.origin}</Text>
+          {!!originCountry && (
+            <Text style={[styles.cityName, { color: subtextColor }]}>{originCountry}</Text>
           )}
-        
         </View>
 
-        </View>
-
-        {/* Destination */}
-        <View style={styles.airportColumn}>
-          {/* <Text style={styles.timeText}>
-            {formatTime(flight.time[1])}
-            {!sameDay && (
-              <Text style={styles.dateSmall}>
-                {'\n'}{formatDate(flight.time[1])}
-              </Text>
-            )}
-          </Text> */}
-
-          <Text style={styles.airportCode}>{flight.destination}</Text>
-          <MaterialIcons 
-            name="location-pin" 
-            size={24} 
-            color="black" 
+        <View style={styles.flightInfoCenter}>
+          <MaterialIcons
+            name="flight"
+            size={28}
+            color={iconColor}
+            style={styles.planeIcon}
           />
-          {!!destinationCountry && <Text style={styles.countryText}>{destinationCountry}</Text>}
-
+          <Text style={[styles.duration, { color: subtextColor }]}>
+            {flight.duration}
+          </Text>
         </View>
-        
 
-      
+        <View style={styles.cityColumn}>
+          <Text style={[styles.cityCode, { color: textColor }]}>{flight.destination}</Text>
+          {!!destinationCountry && (
+            <Text style={[styles.cityName, { color: subtextColor }]}>{destinationCountry}</Text>
+          )}
+        </View>
       </View>
 
-      
+      <Text style={[styles.dateText, { color: subtextColor }]}>
+        {formatDate(flight.time[0])}
+      </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  timeContainer: {
-    alignItems: 'center',
-    marginTop: 16,
-  },
   headerContainer: {
-    backgroundColor: '#FFF9E3',
-    marginTop: 50,
-    padding: 16,
-    borderRadius: 8,
-    margin: 8,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    paddingTop: 60,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    alignItems: 'center',
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: 'black',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  dateText: {
-    textAlign: 'center',
-    color: '#black',
-    marginBottom: 8,
+  flightNumber: {
     fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 16,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   routeContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    justifyContent: 'center',
+    marginBottom: 12,
+    width: '100%',
   },
-  airportColumn: {
+  cityColumn: {
     alignItems: 'center',
     flex: 1,
   },
-  airportCode: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: 'black',
-    marginBottom: 2,
-  },
-  // This is for the country name
-  countryText: {
-    fontSize: 14,
-    color: '#black',
+  cityCode: {
+    fontSize: 32,
+    fontWeight: '700',
     marginBottom: 4,
-    textAlign: 'center',
   },
-  timeText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: 'black',
-    marginBottom: 2,
-    textAlign: 'center',
-  },
-  dateSmall: {
-    fontSize: 12,
-    color: '#777',
-  },
-  detailSection: {
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    borderRadius: 6,
-    padding: 10,
-  },
-  infoRow: {
-    flexDirection: 'row',
-  },
-  infoLabel: {
-    color: '#555',
+  cityName: {
     fontSize: 14,
+    fontWeight: '500',
   },
-  planeContainer: {
-    backgroundColor: 'black',
-    borderRadius: 20, // Adjust this value for more/less rounded corners
-    padding: 10, // Adjust padding as needed
-    flexDirection: 'row',
+  flightInfoCenter: {
     alignItems: 'center',
     justifyContent: 'center',
-    // Optional: add shadow if you want
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3, // for Android
+    marginHorizontal: 20,
   },
   planeIcon: {
-    marginRight: 8, // Space between icon and text
-    transform: [{ rotate: '90deg' }], // Rotates the plane icon horizontally
-    color: '#FFF9E3',
-
+    transform: [{ rotate: '90deg' }],
+    marginBottom: 4,
   },
-  infoValue: {
-    color: '#FFF9E3',
-    fontSize: 16, // Adjust as needed
-    fontWeight: 'bold',
-    
+  duration: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  dateText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
 

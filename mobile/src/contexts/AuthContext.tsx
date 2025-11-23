@@ -25,12 +25,33 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     token: string | null;
     authenticated: boolean | null;
     user: { email: string } | null;
-  }>({ 
-    token: null, 
+  }>({
+    token: null,
     authenticated: null,
     user: null
   });
   const [isLoading, setIsLoading] = useState(true);
+
+  // Setup axios interceptor to handle 401 errors
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        if (error.response?.status === 401) {
+          // Token expired or invalid
+          console.log('401 error - logging out user');
+          await SecureStore.deleteItemAsync('JWT_TOKEN');
+          axios.defaults.headers.common['Authorization'] = '';
+          setAuthState({ token: null, authenticated: false, user: null });
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptor);
+    };
+  }, []);
 
   useEffect(() => {
     const loadToken = async () => {
@@ -38,10 +59,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const token = await SecureStore.getItemAsync('JWT_TOKEN');
         if (token) {
           axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          setAuthState({ token, authenticated: true, user: null });
+
+          // Verify token is still valid by making a test request
+          try {
+            const response = await axios.get(`${ENV.API_BASE_URL}/users/me`);
+            setAuthState({ token, authenticated: true, user: { email: response.data.email } });
+          } catch (error: any) {
+            // Token is invalid or expired
+            console.log('Token expired or invalid, logging out');
+            await SecureStore.deleteItemAsync('JWT_TOKEN');
+            axios.defaults.headers.common['Authorization'] = '';
+            setAuthState({ token: null, authenticated: false, user: null });
+          }
+        } else {
+          setAuthState({ token: null, authenticated: false, user: null });
         }
       } catch (error) {
         console.error('Error loading token:', error);
+        setAuthState({ token: null, authenticated: false, user: null });
       } finally {
         setIsLoading(false);
       }

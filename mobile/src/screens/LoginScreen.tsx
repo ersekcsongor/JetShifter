@@ -3,12 +3,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { useAuth } from '~/contexts/AuthContext';
 import { StackNavigationProp, StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList, RootStackParamList } from "~/navigation";
-import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ImageBackground, Alert } from 'react-native';
+import { Button, TextInput, View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ImageBackground, Alert, ScrollView } from 'react-native';
 import { CompositeNavigationProp } from '@react-navigation/native';
 import { createThemedStyles } from '~/styles/LoginScreen.styles';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'react-native';
-import ScreenBackground from '~/components/ScreenBackground';
 import { useTheme } from '~/contexts/ThemeContext';
 type LoginScreenNavigationProp = CompositeNavigationProp<
   StackNavigationProp<AuthStackParamList, 'Login'>,
@@ -26,8 +25,10 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
-  const { colors } = useTheme();
-  const styles = createThemedStyles(colors);
+  const { colors, effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createThemedStyles(colors, isDarkMode);
+  const iconColor = isDarkMode ? '#ffffff' : '#1a1a1a';
 
   const handleLogin = async (data: LoginFormData) => {
     try {
@@ -49,83 +50,96 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
 
   if (isSubmitting) {
     return (
-      <ScreenBackground>
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#1e90ff" />
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={iconColor} />
       </View>
-      </ScreenBackground>
     );
   }
 
   return (
-    <ScreenBackground>
-
-      {/* Add logo */}
-      <Image 
-        style={styles.logo} 
-        source={require('~/assets/jet-lag.png')} 
-      />
-
-      <Text style={styles.title}>JetShifter</Text>
-
-      {/* Email Input */}
-      <View style={styles.inputContainer}>
-        <Ionicons name="mail-outline" size={20} color={colors.text} style={styles.icon} />
-        <Controller
-          control={control}
-          name="email"
-          rules={{
-            required: 'Email is required',
-            pattern: {
-              value: /^\S+@\S+$/i,
-              message: 'Invalid email format',
-            },
-          }}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor={colors.textSecondary}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
-            />
-          )}
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
+      {/* Logo Section */}
+      <View style={styles.logoContainer}>
+        <Image
+          style={styles.logo}
+          source={require('~/assets/jet-lag.png')}
         />
+        <Text style={styles.title}>JetShifter</Text>
+        <Text style={styles.subtitle}>Welcome back! Please login to continue</Text>
       </View>
-      {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
-      {/* Password Input */}
-      <View style={styles.inputContainer}>
-        <Ionicons name="lock-closed-outline" size={20} color={colors.text} style={styles.icon} />
-        <Controller
-          control={control}
-          name="password"
-          rules={{ 
-            required: 'Password is required', 
-            minLength: {
-              value: 6,
-              message: 'Password must be at least 6 characters'
-            }
-          }}
-          render={({ field: { onChange, onBlur, value } }) => (
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              placeholderTextColor={colors.textSecondary}
-              secureTextEntry
-              onBlur={onBlur}
-              onChangeText={onChange}
-              value={value}
+      {/* Form Container */}
+      <View style={styles.formContainer}>
+        {/* Email Input Card */}
+        <View style={styles.inputCard}>
+          <Text style={styles.inputLabel}>Email Address</Text>
+          <View style={styles.inputContainer}>
+            <Ionicons name="mail-outline" size={20} color={iconColor} style={styles.icon} />
+            <Controller
+              control={control}
+              name="email"
+              rules={{
+                required: 'Email is required',
+                pattern: {
+                  value: /^\S+@\S+$/i,
+                  message: 'Invalid email format',
+                },
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor={isDarkMode ? '#666666' : '#999999'}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                />
+              )}
             />
-          )}
-        />
-      </View>
-      {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
+          </View>
+        </View>
+        {errors.email && <Text style={styles.error}>{errors.email.message}</Text>}
 
-      <TouchableOpacity 
+        {/* Password Input Card */}
+        <View style={styles.inputCard}>
+          <Text style={styles.inputLabel}>Password</Text>
+          <View style={styles.inputContainer}>
+            <Ionicons name="lock-closed-outline" size={20} color={iconColor} style={styles.icon} />
+            <Controller
+              control={control}
+              name="password"
+              rules={{
+                required: 'Password is required',
+                minLength: {
+                  value: 6,
+                  message: 'Password must be at least 6 characters'
+                }
+              }}
+              render={({ field: { onChange, onBlur, value } }) => (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your password"
+                  placeholderTextColor={isDarkMode ? '#666666' : '#999999'}
+                  secureTextEntry
+                  autoComplete="password"
+                  textContentType="password"
+                  onBlur={onBlur}
+                  onChangeText={onChange}
+                  value={value}
+                />
+              )}
+            />
+          </View>
+        </View>
+        {errors.password && <Text style={styles.error}>{errors.password.message}</Text>}
+      </View>
+
+      {/* Login Button */}
+      <TouchableOpacity
         style={styles.loginButton}
         onPress={handleSubmit(handleLogin)}
         disabled={isSubmitting}
@@ -133,19 +147,21 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
         <Text style={styles.loginButtonText}>Login</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity 
+      {/* Forgot Password */}
+      <TouchableOpacity
         style={styles.forgotPassword}
         onPress={() => console.log('Forgot password pressed')}
       >
         <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
       </TouchableOpacity>
 
+      {/* Signup Link */}
       <View style={styles.signupContainer}>
-        <Text style={styles.signupText}>Don't you have an account? </Text>
+        <Text style={styles.signupText}>Don't have an account? </Text>
         <TouchableOpacity onPress={() => navigation.navigate('Auth', { screen: 'Register' })}>
-        <Text style={styles.signupLink}>Sign Up</Text>
+          <Text style={styles.signupLink}>Sign Up</Text>
         </TouchableOpacity>
       </View>
-    </ScreenBackground>
+    </ScrollView>
   );
 }

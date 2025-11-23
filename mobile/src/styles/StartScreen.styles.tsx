@@ -1,12 +1,127 @@
 import { StyleSheet } from 'react-native';
 
-export const createThemedStyles = (colors: any) => StyleSheet.create({
-  container: {
+export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => StyleSheet.create({
+  scrollView: {
     flex: 1,
+    backgroundColor: isDarkMode ? '#1a1a1a' : '#f5f5f5',
+  },
+  container: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 40,
+  },
+
+  // Hero Section
+  heroSection: {
+    alignItems: 'center',
+    marginBottom: 40,
+    paddingTop: 20,
+  },
+  iconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: isDarkMode ? '#2a2a2a' : '#d0d0d0',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
-    padding: 20,},
+    marginBottom: 16,
+    borderWidth: 3,
+    borderColor: isDarkMode ? '#404040' : '#b0b0b0',
+  },
+  heroTitle: {
+    fontSize: 36,
+    fontWeight: 'bold',
+    color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    marginBottom: 8,
+    letterSpacing: 0.5,
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: isDarkMode ? '#a0a0a0' : '#666666',
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: '85%',
+  },
+
+  // Cards Container
+  cardsContainer: {
+    gap: 16,
+    marginBottom: 40,
+  },
+
+  // Primary Card
+  primaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: isDarkMode ? '#2a2a2a' : '#e8e8e8',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: isDarkMode ? 0.3 : 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+
+  // Secondary Card
+  secondaryCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: isDarkMode ? '#2a2a2a' : '#e8e8e8',
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: isDarkMode ? 0.2 : 0.08,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+
+  // Card Components
+  cardIconWrapper: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: isDarkMode ? '#404040' : '#d0d0d0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  cardContent: {
+    flex: 1,
+    marginRight: 8,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    marginBottom: 4,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: isDarkMode ? '#a0a0a0' : '#666666',
+    lineHeight: 20,
+  },
+
+  // Features Section
+  featuresSection: {
+    backgroundColor: isDarkMode ? '#2a2a2a' : '#e8e8e8',
+    borderRadius: 16,
+    padding: 20,
+    gap: 16,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  featureText: {
+    fontSize: 15,
+    color: isDarkMode ? '#e0e0e0' : '#333333',
+    fontWeight: '600',
+  },
+
+  // Legacy styles (kept for backwards compatibility)
   tagline: {
     fontSize: 24,
     color: colors.text,

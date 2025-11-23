@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, Modal, FlatList, Button, TextInput } from "react-native";
+import { View, Text, TouchableOpacity, ActivityIndicator, Modal, FlatList, TextInput, ScrollView } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { AppStackParamList } from "~/navigation";
 import axios from "axios";
 import ENV from "~/utils/constants";
-import { createThemedStyles } from "~/styles/SelectAirportScreen.styles";
-import ScreenBackground from "~/components/ScreenBackground";
+import { createThemedStyles } from "~/styles/CustomFlightScreen.styles";
 import Flight from "~/types/Flight";
-import { ScrollView } from "react-native-gesture-handler";
 import moment from "moment-timezone";
 import { useTheme } from '~/contexts/ThemeContext';
+import { MaterialIcons, MaterialCommunityIcons, Ionicons } from '@expo/vector-icons';
 
 interface Airport {
   _id: string;
@@ -50,8 +49,10 @@ const CustomFlightScreen = () => {
   const [showDepartureModal, setShowDepartureModal] = useState(false);
   const [showArrivalModal, setShowArrivalModal] = useState(false);
 
-  const { colors } = useTheme();
-  const styles = createThemedStyles(colors);
+  const { colors, effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const styles = createThemedStyles(colors, isDarkMode);
+  const iconColor = isDarkMode ? '#ffffff' : '#1a1a1a';
 
   useEffect(() => {
     const fetchAirportData = async () => {
@@ -164,233 +165,258 @@ const CustomFlightScreen = () => {
 
   if (loading) {
     return (
-      <ScreenBackground>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFD600" />
-          <Text style={styles.loadingText}>Loading airport data...</Text>
-        </View>
-      </ScreenBackground>
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={iconColor} />
+        <Text style={styles.loadingText}>Loading airport data...</Text>
+      </View>
     );
   }
 
   return (
-    <ScreenBackground>
-    <ScrollView>
-      <View style={styles.container}>
-        <Text style={styles.header}>Select Your Route</Text>
+    <ScrollView style={styles.scrollView} contentContainerStyle={styles.container}>
+      {/* Header Section */}
+      <View style={styles.headerSection}>
+        <Text style={styles.header}>Custom Flight Details</Text>
+        <Text style={styles.subtitle}>Enter your flight information manually</Text>
+      </View>
 
-        {/* Departure Selector */}
-        <Text style={styles.label}>Departure Airport</Text>
+      {/* Departure Selector Card */}
+      <View style={styles.selectionCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconWrapper}>
+            <MaterialCommunityIcons name="airplane-takeoff" size={24} color={iconColor} />
+          </View>
+          <Text style={styles.label}>Departure</Text>
+        </View>
         <TouchableOpacity
           style={styles.selectorButton}
           onPress={() => setShowDepartureModal(true)}
         >
-          <Text style={styles.selectorButtonText}>
+          <Text style={departure ? styles.selectorButtonText : styles.placeholderText}>
             {departure
-              ? `${airports.find(a => a.iataCode === departure)?.name} (${departure}) - ${airports.find(a => a.iataCode === departure)?.countryName}`
-              : "Select departure..."}
+              ? `${airports.find(a => a.iataCode === departure)?.name} (${departure})`
+              : "Select departure airport..."}
           </Text>
+          <Ionicons name="chevron-forward" size={20} color={iconColor} />
         </TouchableOpacity>
-        <Modal visible={showDepartureModal} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Choose Departure Airport</Text>
-              {/* Search Input */}
-              <TextInput
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  padding: 8,
-                  marginBottom: 12,
-                  backgroundColor: colors.surface,
-                  color: colors.text,
-                }}
-                placeholder="Search airport name or code..."
-                placeholderTextColor={colors.textSecondary}
-                value={departureSearch}
-                onChangeText={setDepartureSearch}
-              />
-              <FlatList
-                data={searchedDepartureAirports}
-                keyExtractor={(item, index) => `${item._id || item.iataCode}_${index}`}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.modalItem}
-                    onPress={() => {
-                      setDeparture(item.iataCode);
-                      setShowDepartureModal(false);
-                    }}
-                  >
-                    <Text style={styles.modalItemText}>
-                      {item.name} ({item.iataCode}) - {item.countryName}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                  <Text style={{ textAlign: "center", color: colors.textSecondary, marginTop: 20 }}>
-                    No airports found.
-                  </Text>
-                }
-              />
-              <Button title="Cancel" onPress={() => setShowDepartureModal(false)} color={colors.primary} />
+      </View>
+      <Modal visible={showDepartureModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Departure Airport</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => { setShowDepartureModal(false); setDepartureSearch(''); }}
+              >
+                <Ionicons name="close" size={20} color={iconColor} />
+              </TouchableOpacity>
             </View>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or country..."
+              placeholderTextColor={isDarkMode ? '#666666' : '#999999'}
+              value={departureSearch}
+              onChangeText={setDepartureSearch}
+            />
+            <FlatList
+              data={searchedDepartureAirports}
+              keyExtractor={(item, index) => `${item._id || item.iataCode}_${index}`}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setDeparture(item.iataCode);
+                    setShowDepartureModal(false);
+                    setDepartureSearch('');
+                  }}
+                >
+                  <Text style={styles.modalItemText}>{item.name}</Text>
+                  <Text style={styles.modalItemSubtext}>{item.iataCode} - {item.countryName}</Text>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No airports found</Text>
+                </View>
+              }
+            />
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
-        {/* Arrival Selector */}
-        <Text style={styles.label}>Arrival Airport</Text>
+        {/* Arrival Selector Card */}
+      <View style={styles.selectionCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconWrapper}>
+            <MaterialCommunityIcons name="airplane-landing" size={24} color={iconColor} />
+          </View>
+          <Text style={styles.label}>Arrival</Text>
+        </View>
         <TouchableOpacity
           style={styles.selectorButton}
           onPress={() => setShowArrivalModal(true)}
           disabled={filteredArrivalAirports.length === 0}
         >
-          <Text style={styles.selectorButtonText}>
+          <Text style={arrival ? styles.selectorButtonText : styles.placeholderText}>
             {arrival
-              ? `${filteredArrivalAirports.find(a => a.iataCode === arrival)?.name} (${arrival}) - ${filteredArrivalAirports.find(a => a.iataCode === arrival)?.countryName}`
-              : "Select arrival..."}
+              ? `${filteredArrivalAirports.find(a => a.iataCode === arrival)?.name} (${arrival})`
+              : "Select arrival airport..."}
           </Text>
+          <Ionicons name="chevron-forward" size={20} color={iconColor} />
         </TouchableOpacity>
-        <Modal visible={showArrivalModal} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Choose Arrival Airport</Text>
-              {/* Search Input */}
-              <TextInput
-                style={{
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  borderRadius: 8,
-                  padding: 8,
-                  marginBottom: 12,
-                  backgroundColor: colors.surface,
-                  color: colors.text,
-                }}
-                placeholder="Search airport name or code..."
-                placeholderTextColor={colors.textSecondary}
-                value={arrivalSearch}
-                onChangeText={setArrivalSearch}
-              />
-              <FlatList
-                data={searchedArrivalAirports}
-                keyExtractor={(item, index) => `${item._id || item.iataCode}_${index}`}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.modalItem}
-                    onPress={() => {
-                      setArrival(item.iataCode);
-                      setShowArrivalModal(false);
-                      setArrivalSearch(""); // Clear search on select
-                    }}
-                  >
-                    <Text style={styles.modalItemText}>
-                      {item.name} ({item.iataCode}) - {item.countryName}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-                ListEmptyComponent={
-                  <Text style={{ textAlign: "center", color: colors.textSecondary, marginTop: 20 }}>
-                    No airports found.
-                  </Text>
-                }
-              />
-              <Button title="Cancel" onPress={() => { setShowArrivalModal(false); setArrivalSearch(""); }} color={colors.primary} />
+      </View>
+      <Modal visible={showArrivalModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Arrival Airport</Text>
+              <TouchableOpacity
+                style={styles.closeButton}
+                onPress={() => { setShowArrivalModal(false); setArrivalSearch(''); }}
+              >
+                <Ionicons name="close" size={20} color={iconColor} />
+              </TouchableOpacity>
             </View>
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or country..."
+              placeholderTextColor={isDarkMode ? '#666666' : '#999999'}
+              value={arrivalSearch}
+              onChangeText={setArrivalSearch}
+            />
+            <FlatList
+              data={searchedArrivalAirports}
+              keyExtractor={(item, index) => `${item._id || item.iataCode}_${index}`}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.modalItem}
+                  onPress={() => {
+                    setArrival(item.iataCode);
+                    setShowArrivalModal(false);
+                    setArrivalSearch('');
+                  }}
+                >
+                  <Text style={styles.modalItemText}>{item.name}</Text>
+                  <Text style={styles.modalItemSubtext}>{item.iataCode} - {item.countryName}</Text>
+                </TouchableOpacity>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyStateText}>No airports found</Text>
+                </View>
+              }
+            />
           </View>
-        </Modal>
+        </View>
+      </Modal>
 
-       
-        {/* Departure Date Picker */}
-        <Text style={styles.label}>Departure Date</Text>
+      {/* Departure Date & Time Card */}
+      <View style={styles.selectionCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconWrapper}>
+            <MaterialIcons name="event" size={24} color={iconColor} />
+          </View>
+          <Text style={styles.label}>Departure</Text>
+        </View>
         <TouchableOpacity
           style={styles.dateButton}
           onPress={() => setShowDepartureDatePicker(true)}
         >
           <Text style={styles.dateButtonText}>{departureDate.toDateString()}</Text>
+          <MaterialIcons name="calendar-today" size={20} color={iconColor} />
         </TouchableOpacity>
-        {showDepartureDatePicker && (
-          <DateTimePicker
-            value={departureDate}
-            mode="date"
-            display="spinner"
-            onChange={(event, selectedDate) => {
-              if (selectedDate) setDepartureDate(selectedDate);
-              setShowDepartureDatePicker(false);
-            }}
-          />
-        )}
-
-        {/* Arrival Date Picker */}
-        <Text style={styles.label}>Arrival Date</Text>
         <TouchableOpacity
-          style={styles.dateButton}
-          onPress={() => setShowArrivalDatePicker(true)}
-        >
-          <Text style={styles.dateButtonText}>{arrivalDate.toDateString()}</Text>
-        </TouchableOpacity>
-        {showArrivalDatePicker && (
-          <DateTimePicker
-            value={arrivalDate}
-            mode="date"
-            display="spinner"
-            onChange={(event, selectedDate) => {
-              if (selectedDate) setArrivalDate(selectedDate);
-              setShowArrivalDatePicker(false);
-            }}
-          />
-        )}
-
-        {/* Departure Time Picker */}
-        <Text style={styles.label}>Departure Time</Text>
-        <TouchableOpacity
-          style={styles.dateButton}
+          style={[styles.dateButton, { marginTop: 12 }]}
           onPress={() => setShowDepartureTimePicker(true)}
         >
           <Text style={styles.dateButtonText}>
             {departureTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
+          <MaterialIcons name="access-time" size={20} color={iconColor} />
         </TouchableOpacity>
-        {showDepartureTimePicker && (
-          <DateTimePicker
-            value={departureTime}
-            mode="time"
-            display="spinner"
-            onChange={(event, selectedTime) => {
-              if (selectedTime) setDepartureTime(selectedTime);
-              setShowDepartureTimePicker(false);
-            }}
-          />
-        )}
+      </View>
+      {showDepartureDatePicker && (
+        <DateTimePicker
+          value={departureDate}
+          mode="date"
+          display="spinner"
+          textColor={iconColor}
+          onChange={(event, selectedDate) => {
+            if (selectedDate) setDepartureDate(selectedDate);
+            setShowDepartureDatePicker(false);
+          }}
+        />
+      )}
+      {showDepartureTimePicker && (
+        <DateTimePicker
+          value={departureTime}
+          mode="time"
+          display="spinner"
+          textColor={iconColor}
+          onChange={(event, selectedTime) => {
+            if (selectedTime) setDepartureTime(selectedTime);
+            setShowDepartureTimePicker(false);
+          }}
+        />
+      )}
 
-        {/* Arrival Time Picker */}
-        <Text style={styles.label}>Arrival Time</Text>
+      {/* Arrival Date & Time Card */}
+      <View style={styles.selectionCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.iconWrapper}>
+            <MaterialIcons name="event-available" size={24} color={iconColor} />
+          </View>
+          <Text style={styles.label}>Arrival</Text>
+        </View>
         <TouchableOpacity
           style={styles.dateButton}
+          onPress={() => setShowArrivalDatePicker(true)}
+        >
+          <Text style={styles.dateButtonText}>{arrivalDate.toDateString()}</Text>
+          <MaterialIcons name="calendar-today" size={20} color={iconColor} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.dateButton, { marginTop: 12 }]}
           onPress={() => setShowArrivalTimePicker(true)}
         >
           <Text style={styles.dateButtonText}>
             {arrivalTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </Text>
-        </TouchableOpacity>
-        {showArrivalTimePicker && (
-          <DateTimePicker
-            value={arrivalTime}
-            mode="time"
-            display="spinner"
-            onChange={(event, selectedTime) => {
-              if (selectedTime) setArrivalTime(selectedTime);
-              setShowArrivalTimePicker(false);
-            }}
-          />
-        )}
-
-        {/* Search Button */}
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
-          <Text style={styles.searchButtonText}>Let's Fly</Text>
+          <MaterialIcons name="access-time" size={20} color={iconColor} />
         </TouchableOpacity>
       </View>
+      {showArrivalDatePicker && (
+        <DateTimePicker
+          value={arrivalDate}
+          mode="date"
+          display="spinner"
+          textColor={iconColor}
+          onChange={(event, selectedDate) => {
+            if (selectedDate) setArrivalDate(selectedDate);
+            setShowArrivalDatePicker(false);
+          }}
+        />
+      )}
+      {showArrivalTimePicker && (
+        <DateTimePicker
+          value={arrivalTime}
+          mode="time"
+          display="spinner"
+          textColor={iconColor}
+          onChange={(event, selectedTime) => {
+            if (selectedTime) setArrivalTime(selectedTime);
+            setShowArrivalTimePicker(false);
+          }}
+        />
+      )}
+
+      {/* Search Button */}
+      <TouchableOpacity style={styles.searchButton} onPress={handleSearch}>
+        <MaterialIcons name="flight-takeoff" size={24} color={iconColor} />
+        <Text style={styles.searchButtonText}>Let's Fly</Text>
+      </TouchableOpacity>
     </ScrollView>
-    </ScreenBackground>
   );
 };
 

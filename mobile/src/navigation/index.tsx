@@ -3,7 +3,9 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAuth } from '~/contexts/AuthContext';
+import { useTheme } from '~/contexts/ThemeContext';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Screens
 import StartScreen from '~/screens/StartScreen';
@@ -62,31 +64,57 @@ const AuthNavigator = () => (
 );
 
 // App Tab Navigator
-const AppTabNavigator = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      headerShown: false,
-      tabBarActiveTintColor: '#FFC700',
-      tabBarInactiveTintColor: '#6B5B00',
-      tabBarIcon: ({ color, size }) => {
-        if (route.name === 'StartScreen') {
-          return <MaterialIcons name="flight-land" size={size} color={color} />;
-        }
-        if (route.name === 'SavedFlightsScreen') {
-          return <MaterialIcons name="bookmark" size={size} color={color} />;
-        }
-        if (route.name === 'UserDetailsScreen') {
-          return <Ionicons name="person-circle" size={size} color={color} />;
-        }
-        return null;
-      },
-    })}
-  > 
-    <Tab.Screen name="StartScreen" component={StartScreen} options={{ title: 'Home' }} />
-    <Tab.Screen name="SavedFlightsScreen" component={SavedFlightsScreen} options={{ title: 'Saved' }} />
-    <Tab.Screen name="UserDetailsScreen" component={UserDetailsScreen} options={{ title: 'Account' }} />
-  </Tab.Navigator>
-);
+const AppTabNavigator = () => {
+  const { effectiveTheme } = useTheme();
+  const isDarkMode = effectiveTheme === 'dark';
+  const insets = useSafeAreaInsets();
+
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarActiveTintColor: isDarkMode ? '#ffffff' : '#1a1a1a',
+        tabBarInactiveTintColor: isDarkMode ? '#666666' : '#999999',
+        tabBarStyle: {
+          backgroundColor: isDarkMode ? '#2a2a2a' : '#e8e8e8',
+          borderTopColor: isDarkMode ? '#404040' : '#d0d0d0',
+          borderTopWidth: 1,
+          height: 60 + insets.bottom,
+          paddingBottom: insets.bottom + 8,
+          paddingTop: 8,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: isDarkMode ? 0.3 : 0.1,
+          shadowRadius: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+          marginTop: 4,
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          const iconSize = focused ? size + 2 : size;
+
+          if (route.name === 'StartScreen') {
+            return <MaterialIcons name="flight-land" size={iconSize} color={color} />;
+          }
+          if (route.name === 'SavedFlightsScreen') {
+            return <MaterialIcons name="bookmark" size={iconSize} color={color} />;
+          }
+          if (route.name === 'UserDetailsScreen') {
+            return <Ionicons name="person-circle" size={iconSize} color={color} />;
+          }
+          return null;
+        },
+      })}
+    >
+      <Tab.Screen name="StartScreen" component={StartScreen} options={{ title: 'Home' }} />
+      <Tab.Screen name="SavedFlightsScreen" component={SavedFlightsScreen} options={{ title: 'Saved' }} />
+      <Tab.Screen name="UserDetailsScreen" component={UserDetailsScreen} options={{ title: 'Account' }} />
+    </Tab.Navigator>
+  );
+};
 
 // App Stack Navigator
 const AppNavigator = () => (
@@ -106,7 +134,18 @@ const AppNavigator = () => (
 
 // Main Navigator
 const MainNavigator = () => {
-  const { authState } = useAuth();
+  const { authState, isLoading } = useAuth();
+
+  // Show loading screen while checking authentication
+  if (isLoading) {
+    return (
+      <NavigationContainer>
+        <RootStack.Navigator screenOptions={{ headerShown: false }}>
+          <RootStack.Screen name="Auth" component={AuthNavigator} />
+        </RootStack.Navigator>
+      </NavigationContainer>
+    );
+  }
 
   return (
     <NavigationContainer>
