@@ -10,6 +10,7 @@ import {
   Modal,
   TextInput,
   ScrollView,
+  Switch,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons, MaterialCommunityIcons, SimpleLineIcons, Feather } from '@expo/vector-icons';
@@ -24,6 +25,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import ENV from '~/utils/constants';
 import { createLocalStyles } from '~/styles/UserDetails.styles';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { scheduleLocalNotification } from '~/services/notificationService';
+import { useNotifications } from '~/contexts/NotificationContext';
 
 type UserData = {
   email: string;
@@ -37,6 +40,7 @@ type Props = {
 const UserDetailsScreen = ({ navigation }: Props) => {
   const { authState, logout } = useAuth();
   const { theme, setTheme, colors, effectiveTheme } = useTheme();
+  const { permissionsGranted } = useNotifications();
   const isDarkMode = effectiveTheme === 'dark';
   const styles = createThemedStyles(colors, isDarkMode);
   const localStyles = createLocalStyles(colors, isDarkMode);
@@ -62,6 +66,14 @@ const UserDetailsScreen = ({ navigation }: Props) => {
   const [showBedTimePicker, setShowBedTimePicker] = useState(false);
   const [showWakeTimePicker, setShowWakeTimePicker] = useState(false);
 
+  // Melatonin and Coffee states
+  const [useMelatonin, setUseMelatonin] = useState(false);
+  const [useCoffee, setUseCoffee] = useState(false);
+
+  // Chronotype state and modal
+  const [chronotype, setChronotype] = useState<'morning' | 'evening' | 'intermediate'>('intermediate');
+  const [chronotypeModalVisible, setChronotypeModalVisible] = useState(false);
+
   // Save sleep times to backend
   const saveSleepTimes = async (newBedTime: string, newWakeTime: string) => {
     try {
@@ -84,6 +96,45 @@ const UserDetailsScreen = ({ navigation }: Props) => {
     } catch (error) {
       console.error('Error saving sleep times:', error);
       Alert.alert('Error', 'Failed to save sleep times');
+    }
+  };
+
+  // Save melatonin/coffee preferences
+  const saveSupplementPreferences = async (melatonin: boolean, coffee: boolean) => {
+    try {
+      await axios.patch(
+        `${ENV.API_BASE_URL}/users/update-preferences`,
+        {
+          useMelatonin: melatonin,
+          useCoffee: coffee,
+        },
+        {
+          headers: { Authorization: `Bearer ${authState.token}` },
+        }
+      );
+    } catch (error) {
+      console.error('Error saving preferences:', error);
+      Alert.alert('Error', 'Failed to save preferences');
+    }
+  };
+
+  // Save chronotype
+  const saveChronotype = async (newChronotype: 'morning' | 'evening' | 'intermediate') => {
+    try {
+      await axios.patch(
+        `${ENV.API_BASE_URL}/users/update-chronotype`,
+        {
+          chronotype: newChronotype,
+        },
+        {
+          headers: { Authorization: `Bearer ${authState.token}` },
+        }
+      );
+      setChronotype(newChronotype);
+      Alert.alert('Success', 'Chronotype updated successfully');
+    } catch (error) {
+      console.error('Error saving chronotype:', error);
+      Alert.alert('Error', 'Failed to save chronotype');
     }
   };
 
@@ -121,6 +172,19 @@ const UserDetailsScreen = ({ navigation }: Props) => {
         // Also save to AsyncStorage for offline access
         await AsyncStorage.setItem('userBedTime', resp.data.bedtime);
         await AsyncStorage.setItem('userWakeTime', resp.data.wakeupTime);
+      }
+
+      // Load melatonin and coffee preferences
+      if (resp.data.useMelatonin !== undefined) {
+        setUseMelatonin(resp.data.useMelatonin);
+      }
+      if (resp.data.useCoffee !== undefined) {
+        setUseCoffee(resp.data.useCoffee);
+      }
+
+      // Load chronotype
+      if (resp.data.chronotype) {
+        setChronotype(resp.data.chronotype);
       }
     } catch (error) {
       console.error('Fetch error:', error);
@@ -242,6 +306,65 @@ const UserDetailsScreen = ({ navigation }: Props) => {
     }
   }, [logout, navigation]);
 
+  const handleTestNotification = async () => {
+    try {
+      if (!permissionsGranted) {
+        Alert.alert('Permissions Required', 'Please grant notification permissions first.');
+        return;
+      }
+
+      // Log JWT token for debugging
+      console.log('🔑 JWT TOKEN:', authState.token);
+
+      await scheduleLocalNotification(
+        '✈️ Test Notification',
+        'This is a test notification from JetShifter! It will appear in 5 seconds.',
+        5
+      );
+      Alert.alert('Success', 'Test notification scheduled! It will appear in 5 seconds.');
+      console.log('Permissions granted:', permissionsGranted);
+    } catch (error) {
+      console.error('Failed to schedule notification:', error);
+      Alert.alert('Error', 'Failed to schedule notification.');
+    }
+  };
+
+  const handleTestFirebasePush = async () => {
+    try {
+      if (!authState.user?.email) {
+        Alert.alert('Error', 'You must be logged in to test Firebase push notifications.');
+        return;
+      }
+
+      console.log('🚀 Sending Firebase push notification from server...');
+
+      const response = await axios.post(
+        `${ENV.API_BASE_URL}/notifications/send`,
+        {
+          email: authState.user.email,
+          title: '🔥 Firebase Push Notification',
+          body: 'This notification was sent from the server via Firebase Cloud Messaging!',
+          data: { type: 'test', timestamp: new Date().toISOString() }
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${authState.token}`
+          }
+        }
+      );
+
+      console.log('✅ Server response:', response.data);
+      Alert.alert('Success', 'Firebase push notification sent from server! Check your notification tray.');
+    } catch (error) {
+      console.error('❌ Failed to send Firebase push notification:', error);
+      if (axios.isAxiosError(error)) {
+        Alert.alert('Error', error.response?.data?.message || 'Failed to send Firebase push notification from server.');
+      } else {
+        Alert.alert('Error', 'Failed to send Firebase push notification from server.');
+      }
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.container}>
@@ -328,6 +451,67 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                 </View>
               </TouchableOpacity>
 
+              {/* Melatonin Toggle */}
+              <View style={styles.passwordButton}>
+                <View style={styles.buttonContent}>
+                  <View style={styles.iconContainer}>
+                    <MaterialCommunityIcons name="pill" size={22} color={iconColor} />
+                  </View>
+                  <Text style={styles.passwordButtonText}>
+                    Use Melatonin
+                  </Text>
+                  <Switch
+                    value={useMelatonin}
+                    onValueChange={(value) => {
+                      setUseMelatonin(value);
+                      saveSupplementPreferences(value, useCoffee);
+                    }}
+                    trackColor={{ false: isDarkMode ? '#4b5563' : '#d1d5db', true: isDarkMode ? '#3b82f6' : '#2563eb' }}
+                    thumbColor={useMelatonin ? '#ffffff' : '#f3f4f6'}
+                  />
+                </View>
+              </View>
+
+              {/* Coffee Toggle */}
+              <View style={styles.passwordButton}>
+                <View style={styles.buttonContent}>
+                  <View style={styles.iconContainer}>
+                    <MaterialCommunityIcons name="coffee" size={22} color={iconColor} />
+                  </View>
+                  <Text style={styles.passwordButtonText}>
+                    Use Coffee
+                  </Text>
+                  <Switch
+                    value={useCoffee}
+                    onValueChange={(value) => {
+                      setUseCoffee(value);
+                      saveSupplementPreferences(useMelatonin, value);
+                    }}
+                    trackColor={{ false: isDarkMode ? '#4b5563' : '#d1d5db', true: isDarkMode ? '#3b82f6' : '#2563eb' }}
+                    thumbColor={useCoffee ? '#ffffff' : '#f3f4f6'}
+                  />
+                </View>
+              </View>
+
+              {/* Chronotype Selector */}
+              <TouchableOpacity
+                style={styles.passwordButton}
+                onPress={() => setChronotypeModalVisible(true)}
+              >
+                <View style={styles.buttonContent}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons
+                      name={chronotype === 'morning' ? 'sunny' : chronotype === 'evening' ? 'moon' : 'partly-sunny'}
+                      size={22}
+                      color={iconColor}
+                    />
+                  </View>
+                  <Text style={styles.passwordButtonText}>
+                    Chronotype: {chronotype === 'morning' ? 'Morning Bird' : chronotype === 'evening' ? 'Night Owl' : 'In Between'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
               {/* Change Password Button */}
               <TouchableOpacity
                 style={styles.passwordButton}
@@ -338,6 +522,32 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                     <Feather name="lock" size={22} color={iconColor} />
                   </View>
                   <Text style={styles.passwordButtonText}>Change Password</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Test Local Notification Button */}
+              <TouchableOpacity
+                style={styles.passwordButton}
+                onPress={handleTestNotification}
+              >
+                <View style={styles.buttonContent}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="notifications-outline" size={22} color={iconColor} />
+                  </View>
+                  <Text style={styles.passwordButtonText}>Test Local Notification</Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* Test Firebase Push Button */}
+              <TouchableOpacity
+                style={styles.passwordButton}
+                onPress={handleTestFirebasePush}
+              >
+                <View style={styles.buttonContent}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="cloud-upload-outline" size={22} color={iconColor} />
+                  </View>
+                  <Text style={styles.passwordButtonText}>Test Firebase Push</Text>
                 </View>
               </TouchableOpacity>
 
@@ -499,6 +709,87 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                         }}
                       >
                         <Text style={[localStyles.buttonText, { color: colors.primaryDark }]}>Save</Text>
+                      </TouchableOpacity>
+                    </TouchableOpacity>
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+
+              {/* Chronotype Modal */}
+              <Modal
+                transparent
+                visible={chronotypeModalVisible}
+                animationType="fade"
+                onRequestClose={() => setChronotypeModalVisible(false)}
+              >
+                <TouchableOpacity
+                  style={localStyles.backdrop}
+                  activeOpacity={1}
+                  onPressOut={() => setChronotypeModalVisible(false)}
+                >
+                  <View style={localStyles.centeredView}>
+                    <TouchableOpacity
+                      activeOpacity={1}
+                      style={[localStyles.modalView, { backgroundColor: colors.surface }]}
+                      onPress={() => {}}
+                    >
+                      <Text style={[localStyles.modalTitle, { color: colors.text }]}>Choose Your Chronotype</Text>
+                      <Text style={[localStyles.inputLabel, { color: colors.textSecondary, marginBottom: 16, textAlign: 'center' }]}>
+                        This adjusts light exposure and supplement timing based on your circadian rhythm
+                      </Text>
+
+                      <TouchableOpacity
+                        style={[
+                          localStyles.button,
+                          { backgroundColor: chronotype === 'morning' ? colors.primary : colors.surface },
+                          { borderWidth: 1, borderColor: colors.border }
+                        ]}
+                        onPress={() => {
+                          saveChronotype('morning');
+                          setChronotypeModalVisible(false);
+                        }}
+                      >
+                        <Ionicons name="sunny" size={24} color={colors.text} style={{ marginRight: 8 }} />
+                        <Text style={[localStyles.buttonText, { color: colors.text }]}>Morning Bird</Text>
+                        {chronotype === 'morning' && (
+                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          localStyles.button,
+                          { backgroundColor: chronotype === 'intermediate' ? colors.primary : colors.surface },
+                          { borderWidth: 1, borderColor: colors.border }
+                        ]}
+                        onPress={() => {
+                          saveChronotype('intermediate');
+                          setChronotypeModalVisible(false);
+                        }}
+                      >
+                        <Ionicons name="partly-sunny" size={24} color={colors.text} style={{ marginRight: 8 }} />
+                        <Text style={[localStyles.buttonText, { color: colors.text }]}>In Between</Text>
+                        {chronotype === 'intermediate' && (
+                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[
+                          localStyles.button,
+                          { backgroundColor: chronotype === 'evening' ? colors.primary : colors.surface },
+                          { borderWidth: 1, borderColor: colors.border }
+                        ]}
+                        onPress={() => {
+                          saveChronotype('evening');
+                          setChronotypeModalVisible(false);
+                        }}
+                      >
+                        <Ionicons name="moon" size={24} color={colors.text} style={{ marginRight: 8 }} />
+                        <Text style={[localStyles.buttonText, { color: colors.text }]}>Night Owl</Text>
+                        {chronotype === 'evening' && (
+                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                        )}
                       </TouchableOpacity>
                     </TouchableOpacity>
                   </View>

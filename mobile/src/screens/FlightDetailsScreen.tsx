@@ -32,6 +32,8 @@ import ENV from '~/utils/constants';
 import { useAuth } from '~/contexts/AuthContext';
 import { PERTURBATION_CONSTANTS } from '~/utils/constants';
 import { useTheme } from '~/contexts/ThemeContext';
+import { scheduleFlightScheduleNotifications, cancelAllScheduledNotifications } from '~/services/scheduleNotificationService';
+import { useNotifications } from '~/contexts/NotificationContext';
 
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreen'>;
@@ -51,6 +53,14 @@ const FlightDetailsScreen = ({ route }: Props) => {
     bedtime: '22:00',
     wakeupTime: '06:00'
   });
+
+  const [useMelatonin, setUseMelatonin] = useState(false);
+  const [useCoffee, setUseCoffee] = useState(false);
+  const [chronotype, setChronotype] = useState<'morning' | 'evening' | 'intermediate'>('intermediate');
+  const [isFlightSaved, setIsFlightSaved] = useState(false);
+  const [checkingSaveStatus, setCheckingSaveStatus] = useState(true);
+  const [notificationsScheduled, setNotificationsScheduled] = useState(false);
+  const { permissionsGranted } = useNotifications();
 
   const {
     loading,
@@ -75,6 +85,33 @@ const FlightDetailsScreen = ({ route }: Props) => {
   const API_URL = `${ENV.API_BASE_URL}/flights`;
   const userEmail = authState?.user?.email || '';
 
+  // Check if flight is already saved
+  useEffect(() => {
+    const checkIfFlightSaved = async () => {
+      try {
+        if (!userEmail || !flight.flightNumber) {
+          setCheckingSaveStatus(false);
+          return;
+        }
+
+        const response = await axios.get(`${API_URL}/saved/${encodeURIComponent(userEmail)}`);
+
+        const savedFlights = response.data || [];
+        const isSaved = savedFlights.some(
+          (savedFlight: Flight) => savedFlight.flightNumber === flight.flightNumber
+        );
+
+        setIsFlightSaved(isSaved);
+      } catch (error) {
+        console.error('Error checking flight save status:', error);
+      } finally {
+        setCheckingSaveStatus(false);
+      }
+    };
+
+    checkIfFlightSaved();
+  }, [userEmail, flight.flightNumber, API_URL]);
+
   // Load sleep schedule from backend user profile
   useEffect(() => {
     const loadSleepSchedule = async () => {
@@ -93,7 +130,22 @@ const FlightDetailsScreen = ({ route }: Props) => {
           // Also save to AsyncStorage for offline access
           await AsyncStorage.setItem('userBedTime', resp.data.bedtime);
           await AsyncStorage.setItem('userWakeTime', resp.data.wakeupTime);
-        } else {
+        }
+
+        // Load melatonin and coffee preferences
+        if (resp.data.useMelatonin !== undefined) {
+          setUseMelatonin(resp.data.useMelatonin);
+        }
+        if (resp.data.useCoffee !== undefined) {
+          setUseCoffee(resp.data.useCoffee);
+        }
+
+        // Load chronotype
+        if (resp.data.chronotype) {
+          setChronotype(resp.data.chronotype);
+        }
+
+        if (!resp.data.bedtime || !resp.data.wakeupTime) {
           // Fallback to AsyncStorage if backend doesn't have values
           const savedBedTime = await AsyncStorage.getItem('userBedTime');
           const savedWakeTime = await AsyncStorage.getItem('userWakeTime');
@@ -303,14 +355,87 @@ const FlightDetailsScreen = ({ route }: Props) => {
         return;
       }
       await axios.post(`${API_URL}/save`, { email: userEmail, flightNumber: flight.flightNumber });
+      setIsFlightSaved(true);
       Alert.alert('Success', 'Flight saved!');
     } catch (error: any) {
       if (axios.isAxiosError(error) && error.response?.status === 409) {
         Alert.alert('Already saved', 'You have already saved this flight.');
+        setIsFlightSaved(true);
       } else {
         Alert.alert('Error', 'Failed to save flight.');
         console.error('Save flight error:', error);
       }
+    }
+  };
+
+  const handleUnsaveFlight = async () => {
+    try {
+      if (!userEmail) {
+        Alert.alert('Error', 'You must be logged in to unsave flights.');
+        return;
+      }
+      if (!flight.flightNumber) {
+        Alert.alert('Error', 'Flight number not found.');
+        return;
+      }
+      await axios.post(`${API_URL}/unsave`, {
+        email: userEmail,
+        flightNumber: flight.flightNumber
+      });
+      setIsFlightSaved(false);
+      Alert.alert('Success', 'Flight removed from saved flights!');
+    } catch (error: any) {
+      Alert.alert('Error', 'Failed to unsave flight.');
+      console.error('Unsave flight error:', error);
+    }
+  };
+
+  const handleScheduleNotifications = async () => {
+    try {
+      if (!permissionsGranted) {
+        Alert.alert(
+          'Permissions Required',
+          'Please grant notification permissions to schedule reminders.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      if (!switchingTimes) {
+        Alert.alert('Error', 'Please calculate the schedule first.');
+        return;
+      }
+
+      const finalSwitchingTimes = updatedSwitchingTimes || switchingTimes;
+
+      // Schedule notifications for all switching points
+      const scheduled = await scheduleFlightScheduleNotifications(
+        finalSwitchingTimes,
+        flight.flightNumber
+      );
+
+      setNotificationsScheduled(true);
+      Alert.alert(
+        'Success!',
+        `Scheduled ${scheduled.length} notifications for your jet lag schedule.\n\nYou'll receive reminders for:\n• Light exposure times\n• Dark periods\n• 15-minute advance warnings`,
+        [{ text: 'OK' }]
+      );
+
+      console.log('📅 Scheduled notifications:', scheduled);
+    } catch (error) {
+      console.error('Failed to schedule notifications:', error);
+      Alert.alert('Error', 'Failed to schedule notifications.');
+    }
+  };
+
+  const handleCancelNotifications = async () => {
+    try {
+      await cancelAllScheduledNotifications();
+      setNotificationsScheduled(false);
+      Alert.alert('Success', 'All scheduled notifications have been cancelled.');
+    } catch (error) {
+      console.error('Failed to cancel notifications:', error);
+      Alert.alert('Error', 'Failed to cancel notifications.');
     }
   };
 
@@ -345,9 +470,14 @@ const FlightDetailsScreen = ({ route }: Props) => {
 
       <FlightHeader flight={flight} />
 
-      <TouchableOpacity onPress={handleSaveFlight}>
+      <TouchableOpacity
+        onPress={isFlightSaved ? handleUnsaveFlight : handleSaveFlight}
+        disabled={checkingSaveStatus}
+      >
         <View style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Save Flight</Text>
+          <Text style={styles.saveButtonText}>
+            {checkingSaveStatus ? 'Checking...' : (isFlightSaved ? 'Unsave Flight' : 'Save Flight')}
+          </Text>
         </View>
       </TouchableOpacity>
 
@@ -363,21 +493,49 @@ const FlightDetailsScreen = ({ route }: Props) => {
       />
 
       {switchingTimes && (
-        <ResultsDisplay
-          switchingTimes={updatedSwitchingTimes || switchingTimes}
-          stateTrajectory={stateTrajectory}
-          coStateTrajectory={coStateTrajectory}
-          coStateAtSwitchingPoints={coStateAtSwitchingPoints}
-          controlPerturbations={controlPerturbations}
-          optimizationHistory={optimizationHistory}
-          optimizationComplete={optimizationComplete}
-          iterationCount={iterationCount}
-          activeSwitchingCount={activeSwitchingCount}
-          costHistory={costHistory}
-          flightDuration={switchingTimes?.flightDurationHours || 0}
-          timezoneDiff={switchingTimes?.timezoneDiff || 0}
-          sleepSchedule={sleepSchedule}
-        />
+        <>
+          <ResultsDisplay
+            switchingTimes={updatedSwitchingTimes || switchingTimes}
+            stateTrajectory={stateTrajectory}
+            coStateTrajectory={coStateTrajectory}
+            coStateAtSwitchingPoints={coStateAtSwitchingPoints}
+            controlPerturbations={controlPerturbations}
+            optimizationHistory={optimizationHistory}
+            optimizationComplete={optimizationComplete}
+            iterationCount={iterationCount}
+            activeSwitchingCount={activeSwitchingCount}
+            costHistory={costHistory}
+            flightDuration={switchingTimes?.flightDurationHours || 0}
+            timezoneDiff={switchingTimes?.timezoneDiff || 0}
+            sleepSchedule={sleepSchedule}
+            useMelatonin={useMelatonin}
+            useCoffee={useCoffee}
+            chronotype={chronotype}
+          />
+
+          {/* Notification Scheduling Buttons */}
+          <View style={{ marginTop: 20, marginBottom: 20 }}>
+            <TouchableOpacity
+              onPress={notificationsScheduled ? handleCancelNotifications : handleScheduleNotifications}
+              style={styles.saveButton}
+            >
+              <Text style={styles.saveButtonText}>
+                {notificationsScheduled ? '🔕 Cancel Notifications' : '🔔 Schedule Notifications'}
+              </Text>
+            </TouchableOpacity>
+
+            {notificationsScheduled && (
+              <Text style={{
+                textAlign: 'center',
+                marginTop: 10,
+                color: colors.textSecondary,
+                fontSize: 12
+              }}>
+                ✓ You'll receive reminders for light exposure and dark periods
+              </Text>
+            )}
+          </View>
+        </>
       )}
     </ScrollView>
   );

@@ -682,10 +682,15 @@ export const simulateCircadianDynamics = (
 
       filteredTimes = filteredTimes.filter((_, i) => i !== maxDtIndex);
     } else {
+      // If cost is increasing consistently, try reversing the perturbation direction
+      const shouldReverse = costHistory.length > 2 && costIncrease > 0;
+
       perturbations.forEach(pert => {
         const pointIndex = parseInt(pert.point.replace('t', '')) - 1;
         if (pointIndex >= 0 && pointIndex < filteredTimes.length) {
-          const newTime = filteredTimes[pointIndex].clone().add(pert.timeAdjustment, 'hours');
+          // Reverse perturbation if cost is increasing
+          const adjustment = shouldReverse ? -pert.timeAdjustment : pert.timeAdjustment;
+          const newTime = filteredTimes[pointIndex].clone().add(adjustment, 'hours');
           if (newTime.isBetween(moment(switchingTimes.t0), moment(switchingTimes.tf))) {
             filteredTimes[pointIndex] = newTime;
           }

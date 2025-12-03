@@ -2,7 +2,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import moment from 'moment';
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import {
   SwitchingTimes,
   StateTrajectory,
@@ -12,6 +12,13 @@ import {
   CoState
 } from '~/utils/types';
 import { useTheme } from '~/contexts/ThemeContext';
+import {
+  calculateOptimalMelatoninTiming,
+  calculateCaffeineCutoff,
+} from '~/utils/circadianPharmacology';
+import { PHARMACOLOGY_CONSTANTS } from '~/utils/constants';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 type Props = {
   switchingTimes?: SwitchingTimes;
@@ -27,11 +34,17 @@ type Props = {
   flightDuration: number;
   timezoneDiff: number;
   sleepSchedule: SleepSchedule;
+  useMelatonin?: boolean;
+  useCoffee?: boolean;
+  chronotype?: 'morning' | 'evening' | 'intermediate';
 };
 
 export const ResultsDisplay = ({
   switchingTimes,
-  sleepSchedule
+  sleepSchedule,
+  useMelatonin = false,
+  useCoffee = false,
+  chronotype = 'intermediate',
 }: Props) => {
   const { effectiveTheme } = useTheme();
   const isDarkMode = effectiveTheme === 'dark';
@@ -39,167 +52,502 @@ export const ResultsDisplay = ({
 
   if (!switchingTimes) return null;
 
-  // Group switching points by date
-  const groupedByDate = switchingTimes.switchingPoints?.reduce<Record<string, any[]>>((acc, point) => {
-    const date = point.time.split(' ')[0];
-    if (!acc[date]) {
-      acc[date] = [];
+  // Add sleep periods
+  const departure = moment(switchingTimes.t0);
+  const landingTime = departure.clone().add(switchingTimes.flightDurationHours, 'hours');
+  const scheduleEnd = moment(switchingTimes.tf);
 
-      // Calculate landing time
-      const departure = moment(switchingTimes.t0);
-      const landingTime = departure.clone().add(switchingTimes.flightDurationHours, 'hours');
+  // Calculate chronotype phase shift using PHARMACOLOGY_CONSTANTS
+  const chronotypePhaseShift =
+    chronotype === 'morning' ? PHARMACOLOGY_CONSTANTS.INTERVENTION.CHRONOTYPE_PHASE_SHIFT.MORNING :
+    chronotype === 'evening' ? PHARMACOLOGY_CONSTANTS.INTERVENTION.CHRONOTYPE_PHASE_SHIFT.EVENING :
+    PHARMACOLOGY_CONSTANTS.INTERVENTION.CHRONOTYPE_PHASE_SHIFT.INTERMEDIATE;
 
-      // Add sleep period only once per date AND only if it's after landing
-      const sleepStart = moment(`${date} ${sleepSchedule.bedtime}`);
-      const sleepEnd = moment(`${date} ${sleepSchedule.wakeupTime}`);
+  // Determine if this is an eastbound (advancing) or westbound (delaying) flight
+  const isAdvancing = switchingTimes.timezoneDiff > 0;
 
-      if (sleepEnd.isBefore(sleepStart)) {
-        sleepEnd.add(1, 'day');
-      }
+  // Create a flat timeline of all activities sorted by time
+  const allActivities: any[] = [];
 
-      // Only show sleep period if it starts after landing
-      if (sleepStart.isAfter(landingTime)) {
-        acc[date].push({
-          time: sleepStart.format('YYYY-MM-DD HH:mm'),
-          endTime: sleepEnd.format('YYYY-MM-DD HH:mm'),
-          type: 'sleep',
-          isSleepPeriod: true
-        });
+  // Add all switching points with chronotype-adjusted timing
+  // Light exposure timing is shifted based on circadian phase
+  switchingTimes.switchingPoints?.forEach((point) => {
+    const adjustedTime = moment(point.time).add(chronotypePhaseShift, 'minutes');
+    allActivities.push({
+      time: adjustedTime,
+      type: point.type,
+      isSwitch: true,
+    });
+  });
+
+  // Generate sleep periods for each day (using user's stated sleep times)
+  let currentDay = landingTime.clone().startOf('day');
+  while (currentDay.isBefore(scheduleEnd)) {
+    const sleepStart = currentDay.clone().hour(parseInt(sleepSchedule.bedtime.split(':')[0])).minute(parseInt(sleepSchedule.bedtime.split(':')[1]));
+    const sleepEnd = sleepStart.clone().hour(parseInt(sleepSchedule.wakeupTime.split(':')[0])).minute(parseInt(sleepSchedule.wakeupTime.split(':')[1]));
+
+    if (sleepEnd.isBefore(sleepStart)) {
+      sleepEnd.add(1, 'day');
+    }
+
+    if (sleepStart.isAfter(landingTime)) {
+      allActivities.push({
+        time: sleepStart,
+        type: 'sleep',
+        endTime: sleepEnd,
+        isSleep: true,
+      });
+
+      // === KRONAUER MODEL-BASED MELATONIN CALCULATION ===
+      if (useMelatonin) {
+        // Estimate current circadian phase based on time relative to habitual sleep schedule
+        const wakeHour = parseInt(sleepSchedule.wakeupTime.split(':')[0]) +
+                        parseInt(sleepSchedule.wakeupTime.split(':')[1]) / 60;
+
+        // CT 0 is approximately at wake time; calculate hours since wake
+        let currentCircadianPhase = (sleepStart.hour() + sleepStart.minute() / 60 - wakeHour + 24) % 24;
+
+        // Apply chronotype adjustment to circadian phase
+        currentCircadianPhase = (currentCircadianPhase + chronotypePhaseShift / 60 + 24) % 24;
+
+        // Calculate optimal melatonin timing using phase response curve
+        const melatoninTiming = calculateOptimalMelatoninTiming(
+          Math.abs(switchingTimes.timezoneDiff) * 60, // Target shift in minutes
+          currentCircadianPhase,
+          isAdvancing
+        );
+
+        // Melatonin should be taken 30-60 minutes before desired bedtime
+        // The timing is based on the PRC, which peaks around CT 21 (DLMO + 2-4h before bed)
+        const melatoninTime = sleepStart.clone().subtract(
+          PHARMACOLOGY_CONSTANTS.MELATONIN.ONSET_TIME_MIN,
+          'minutes'
+        );
+
+        if (melatoninTime.isAfter(landingTime)) {
+          allActivities.push({
+            time: melatoninTime,
+            type: 'melatonin',
+            isMelatonin: true,
+            expectedShift: melatoninTiming.expectedShift, // For debugging/display
+          });
+        }
       }
     }
 
-    acc[date].push({
-      ...point,
-      isSleepPeriod: false
+    // === KRONAUER MODEL-BASED CAFFEINE CALCULATION ===
+    if (useCoffee && sleepEnd.isAfter(landingTime)) {
+      // Only calculate caffeine for wake times that are after landing
+      // Calculate caffeine cutoff using pharmacokinetic model
+      const cutoffHours = calculateCaffeineCutoff(
+        PHARMACOLOGY_CONSTANTS.CAFFEINE.TYPICAL_DOSE_MG,
+        PHARMACOLOGY_CONSTANTS.CAFFEINE.SLEEP_THRESHOLD,
+        PHARMACOLOGY_CONSTANTS.CAFFEINE.T_HALF,
+        PHARMACOLOGY_CONSTANTS.CAFFEINE.K_SENSITIVITY
+      );
+
+      // Calculate cutoff time for this sleep period
+      const avoidAfter = sleepStart.clone().subtract(cutoffHours, 'hours');
+
+      // Calculate caffeine times based on travel direction
+      const recommendedTimes: moment.Moment[] = [];
+
+      if (isAdvancing) {
+        // For eastward travel, caffeine at wake time helps advance the clock
+        const morningCaffeine = sleepEnd.clone();
+        if (morningCaffeine.isAfter(landingTime) && morningCaffeine.isBefore(scheduleEnd)) {
+          recommendedTimes.push(morningCaffeine);
+        }
+
+        // Additional dose 3-4 hours after wake for sustained alertness
+        const midMorningCaffeine = sleepEnd.clone().add(3.5, 'hours');
+        if (midMorningCaffeine.isAfter(landingTime) &&
+            midMorningCaffeine.isBefore(avoidAfter) &&
+            midMorningCaffeine.isBefore(scheduleEnd)) {
+          recommendedTimes.push(midMorningCaffeine);
+        }
+      } else {
+        // For westward travel, caffeine helps delay the clock
+        // Use later in the day to extend wake period
+        const afternoonCaffeine = sleepEnd.clone().add(8, 'hours');
+        if (afternoonCaffeine.isAfter(landingTime) &&
+            afternoonCaffeine.isBefore(avoidAfter) &&
+            afternoonCaffeine.isBefore(scheduleEnd)) {
+          recommendedTimes.push(afternoonCaffeine);
+        }
+      }
+
+      const rationale = isAdvancing
+        ? "Caffeine at wake time reinforces phase advance by strengthening wake signals during the new morning"
+        : "Caffeine in afternoon extends wake period to delay circadian phase";
+
+      // Add recommended caffeine times
+      recommendedTimes.forEach((coffeeTime) => {
+        allActivities.push({
+          time: coffeeTime,
+          type: 'coffee',
+          isCoffee: true,
+          rationale: rationale,
+        });
+      });
+    }
+
+    currentDay.add(1, 'day');
+  }
+
+  // Sort all activities by time
+  allActivities.sort((a, b) => a.time.diff(b.time));
+
+  // Separate instant recommendations (melatonin/coffee) from duration segments
+  const instantRecommendations: any[] = [];
+  const durationActivities: any[] = [];
+
+  allActivities.forEach((activity) => {
+    if (activity.isMelatonin || activity.isCoffee) {
+      instantRecommendations.push(activity);
+    } else {
+      durationActivities.push(activity);
+    }
+  });
+
+  // Create segments from duration activities (light exposure and sleep)
+  const segments: any[] = [];
+  for (let i = 0; i < durationActivities.length; i++) {
+    const current = durationActivities[i];
+
+    // Find next duration activity (skip instant recommendations)
+    const next = durationActivities[i + 1];
+    const endTime = next ? next.time : scheduleEnd;
+
+    segments.push({
+      startTime: current.time,
+      endTime: endTime,
+      type: current.type,
+      isSleep: current.isSleep || false,
+    });
+  }
+
+  // Add instant recommendations as overlay segments
+  instantRecommendations.forEach((instant) => {
+    segments.push({
+      startTime: instant.time,
+      endTime: instant.time,
+      type: instant.type,
+      isMelatonin: instant.isMelatonin || false,
+      isCoffee: instant.isCoffee || false,
+      isInstant: true,
+    });
+  });
+
+  // Group segments by date - segments that cross midnight need to be added to both days
+  const groupedByDate: Record<string, any> = {};
+  segments.forEach((segment) => {
+    // Add segment to its starting day
+    const startDateKey = segment.startTime.format('YYYY-MM-DD');
+    if (!groupedByDate[startDateKey]) {
+      groupedByDate[startDateKey] = {
+        date: segment.startTime.clone().startOf('day'),
+        segments: [],
+      };
+    }
+    groupedByDate[startDateKey].segments.push(segment);
+
+    // If segment crosses midnight, also add it to the next day
+    if (!segment.isInstant) {
+      const endDateKey = segment.endTime.format('YYYY-MM-DD');
+      if (endDateKey !== startDateKey) {
+        // This segment spans multiple days
+        if (!groupedByDate[endDateKey]) {
+          groupedByDate[endDateKey] = {
+            date: segment.endTime.clone().startOf('day'),
+            segments: [],
+          };
+        }
+        // Add the same segment reference to the next day
+        groupedByDate[endDateKey].segments.push(segment);
+      }
+    }
+  });
+
+  // Detect overlapping segments and assign lanes
+  Object.values(groupedByDate).forEach((dayData: any) => {
+    const sortedSegments = [...dayData.segments].sort((a, b) => a.startTime.diff(b.startTime));
+
+    // Build overlap groups - segments that overlap with each other
+    const overlapGroups: any[][] = [];
+
+    sortedSegments.forEach((segment: any) => {
+      const segStart = segment.startTime.hours() * 60 + segment.startTime.minutes();
+      const segEnd = segment.isInstant ? segStart + 60 : (segment.endTime.hours() * 60 + segment.endTime.minutes());
+
+      // Find which overlap group this segment belongs to
+      let addedToGroup = false;
+      for (const group of overlapGroups) {
+        // Check if this segment overlaps with any segment in this group
+        const overlapsWithGroup = group.some((other: any) => {
+          const otherStart = other.startTime.hours() * 60 + other.startTime.minutes();
+          const otherEnd = other.isInstant ? otherStart + 60 : (other.endTime.hours() * 60 + other.endTime.minutes());
+          return (segStart < otherEnd && segEnd > otherStart);
+        });
+
+        if (overlapsWithGroup) {
+          group.push(segment);
+          addedToGroup = true;
+          break;
+        }
+      }
+
+      // If not added to any group, create a new group
+      if (!addedToGroup) {
+        overlapGroups.push([segment]);
+      }
     });
 
-    return acc;
-  }, {}) ?? {};
+    // Assign lanes within each overlap group
+    overlapGroups.forEach((group: any[]) => {
+      const totalLanes = group.length;
+
+      // Sort by start time within group
+      group.sort((a, b) => a.startTime.diff(b.startTime));
+
+      // Assign lane index to each segment
+      group.forEach((segment: any, index: number) => {
+        segment.lane = index;
+        segment.totalLanes = totalLanes;
+      });
+    });
+  });
 
   return (
     <View style={styles.container}>
       <Text style={styles.mainTitle}>Your Light Schedule</Text>
       <Text style={styles.subtitle}>Follow this schedule to minimize jet lag</Text>
 
-      {Object.entries(groupedByDate).map(([date, points], dateIndex) => (
-        <View key={dateIndex} style={styles.dateSection}>
-          <View style={styles.dateHeaderContainer}>
-            <Text style={styles.dateLabel}>
-              {moment(date).format('ddd').toUpperCase()}
-            </Text>
-            <Text style={styles.dateValue}>
-              {moment(date).format('MMM D')}
-            </Text>
-          </View>
+      {Object.values(groupedByDate).map((dayData: any, dateIndex) => {
+        const startHour = 0;
+        const endHour = 24;
+        const hours = Array.from({ length: endHour - startHour + 1 }, (_, i) => startHour + i);
 
-          <View style={styles.timeline}>
-            {points
-              .sort((a, b) => moment(a.time).diff(moment(b.time)))
-              .map((point, index) => {
-                if (point.isSleepPeriod) {
-                  return (
-                    <View key={`sleep-${index}`} style={styles.timelineItem}>
-                      <View style={styles.timelineLeft}>
-                        <Text style={styles.timeText}>
-                          {moment(point.time).format('h:mm A')}
-                        </Text>
-                      </View>
+        return (
+          <View key={dateIndex} style={styles.dateSection}>
+            {/* Date Header */}
+            <View style={styles.dateHeaderContainer}>
+              <Text style={styles.dayLabel}>
+                {dayData.date.format('ddd').toUpperCase()}
+              </Text>
+              <Text style={styles.dateValue}>
+                {dayData.date.format('MMM D')}
+              </Text>
+            </View>
 
-                      <View style={styles.timelineCenter}>
-                        <View style={[styles.timelineDot, styles.sleepDot]} />
-                        <View style={[styles.timelineLine, styles.sleepLine]} />
-                      </View>
+            {/* Timeline Grid */}
+            <View style={styles.timelineContainer}>
+              {/* Left hour labels */}
+              <View style={styles.hourLabelsLeft}>
+                {hours.map((hour) => (
+                  <View key={`left-${hour}`} style={styles.hourRow}>
+                    <Text style={styles.hourText}>
+                      {hour === 0 ? '12am' : hour < 12 ? `${hour}am` : hour === 12 ? '12pm' : `${hour - 12}pm`}
+                    </Text>
+                  </View>
+                ))}
+              </View>
 
-                      <View style={styles.timelineRight}>
-                        <View style={[styles.activityCard, styles.sleepCard]}>
-                          <Ionicons name="bed" size={24} color={isDarkMode ? '#9ca3af' : '#6b7280'} />
-                          <View style={styles.activityTextContainer}>
-                            <Text style={styles.activityTitle}>Sleep</Text>
-                            <Text style={styles.activityTime}>
-                              Until {moment(point.endTime).format('h:mm A')}
-                            </Text>
+              {/* Center timeline bar */}
+              <View style={styles.timelineBarContainer}>
+                {hours.map((hour) => (
+                  <View key={`grid-${hour}`} style={styles.hourRow}>
+                    <View style={styles.hourLine} />
+                  </View>
+                ))}
+
+                {/* Activity bars overlaid on grid */}
+                <View style={styles.activitiesOverlay}>
+                  {dayData.segments.map((segment: any, segIndex: number) => {
+                    const currentDate = dayData.date.format('YYYY-MM-DD');
+                    const currentDayStart = dayData.date.clone().startOf('day');
+                    const currentDayEnd = dayData.date.clone().endOf('day');
+
+                    // Check if segment overlaps with current day (start on this day OR spans into this day)
+                    const segmentStartsOnThisDay = segment.startTime.format('YYYY-MM-DD') === currentDate;
+                    const segmentSpansIntoThisDay = !segment.isInstant &&
+                      segment.startTime.isBefore(currentDayStart) &&
+                      segment.endTime.isAfter(currentDayStart);
+
+                    // Skip segments that don't touch this day at all
+                    if (!segmentStartsOnThisDay && !segmentSpansIntoThisDay) return null;
+
+                    // Handle instant recommendations (melatonin/coffee)
+                    if (segment.isInstant) {
+                      // Only show instant recommendations on the day they occur
+                      if (!segmentStartsOnThisDay) return null;
+
+                      const instantMinutes = segment.startTime.hours() * 60 + segment.startTime.minutes();
+                      const topPercent = (instantMinutes / (24 * 60)) * 100;
+                      const heightPercent = 2; // Small height for instant recommendations
+
+                      let icon, iconColor, barColor;
+                      if (segment.isMelatonin) {
+                        icon = 'medkit';
+                        iconColor = '#ffffff';
+                        barColor = '#8b5cf6';
+                      } else if (segment.isCoffee) {
+                        icon = 'cafe';
+                        iconColor = '#ffffff';
+                        barColor = '#92400e';
+                      }
+
+                      const totalLanes = segment.totalLanes || 1;
+                      const laneIndex = segment.lane || 0;
+                      const gapSize = 200; // Gap between bars in pixels
+                      const totalGapWidth = (totalLanes - 1) * gapSize;
+                      const availableWidth = 50 - totalGapWidth;
+                      const barWidth = availableWidth / totalLanes;
+                      const leftOffset = (laneIndex * (barWidth + gapSize)) - 25;
+                      return (
+                        <View
+                          key={segIndex}
+                          style={[
+                            styles.activityBarWrapper,
+                            {
+                              top: `${topPercent}%`,
+                              height: `${heightPercent}%`,
+                            },
+                          ]}
+                        >
+                          <View
+                            style={[
+                              styles.activityBar,
+                              {
+                                backgroundColor: barColor,
+                                width: barWidth,
+                                marginLeft: leftOffset,
+                              },
+                            ]}
+                          >
+                            <View style={styles.activityIconContainer}>
+                              <Ionicons name={icon as any} size={20} color={iconColor} />
+                            </View>
                           </View>
                         </View>
-                      </View>
-                    </View>
-                  );
-                }
+                      );
+                    }
 
-                // Find next point to determine end time
-                const currentPointTime = moment(point.time);
-                const allSwitchingPoints = switchingTimes.switchingPoints || [];
+                    // Handle duration segments (light/dark/sleep)
+                    // If segment spans from previous day, start at midnight (0:00)
+                    let startMinutes;
+                    if (segmentSpansIntoThisDay) {
+                      startMinutes = 0; // Start at beginning of this day
+                    } else {
+                      startMinutes = segment.startTime.hours() * 60 + segment.startTime.minutes();
+                    }
 
-                const nextSwitchingPoint = allSwitchingPoints.find(
-                  p => moment(p.time).isAfter(currentPointTime)
-                );
+                    // If segment extends beyond this day, cap at end of day (24:00)
+                    let endMinutes;
+                    if (segment.endTime.isAfter(currentDayEnd)) {
+                      endMinutes = 24 * 60; // End at end of this day
+                    } else {
+                      endMinutes = segment.endTime.hours() * 60 + segment.endTime.minutes();
+                    }
 
-                const nextSleepInCurrentDate = points.find(
-                  p => p.isSleepPeriod && moment(p.time).isAfter(currentPointTime)
-                );
+                    const topPercent = (startMinutes / (24 * 60)) * 100;
+                    const heightPercent = ((endMinutes - startMinutes) / (24 * 60)) * 100;
 
-                let endTime;
-                if (nextSwitchingPoint && nextSleepInCurrentDate) {
-                  endTime = moment(nextSwitchingPoint.time).isBefore(moment(nextSleepInCurrentDate.time))
-                    ? moment(nextSwitchingPoint.time)
-                    : moment(nextSleepInCurrentDate.time);
-                } else if (nextSwitchingPoint) {
-                  endTime = moment(nextSwitchingPoint.time);
-                } else if (nextSleepInCurrentDate) {
-                  endTime = moment(nextSleepInCurrentDate.time);
-                } else {
-                  endTime = moment(switchingTimes.tf);
-                }
+                    let barColor, icon, iconColor;
+                    if (segment.isSleep) {
+                      barColor = isDarkMode ? '#4b5563' : '#d1d5db';
+                      icon = 'bed';
+                      iconColor = isDarkMode ? '#9ca3af' : '#6b7280';
+                    } else if (segment.type === 'light') {
+                      barColor = '#fbbf24';
+                      icon = 'sunny';
+                      iconColor = '#f59e0b';
+                    } else {
+                      barColor = '#6366f1';
+                      icon = 'moon';
+                      iconColor = '#4f46e5';
+                    }
 
-                const isLastItem = index === points.length - 1;
-                const isLight = point.type === 'light';
+                    // Duration segments (light/sleep) always use full width
+                    const barWidth = 50;
+                    const leftOffset = 0;
 
-                return (
-                  <View key={index} style={styles.timelineItem}>
-                    <View style={styles.timelineLeft}>
-                      <Text style={styles.timeText}>
-                        {moment(point.time).format('h:mm A')}
-                      </Text>
-                    </View>
-
-                    <View style={styles.timelineCenter}>
-                      <View style={[
-                        styles.timelineDot,
-                        isLight ? styles.lightDot : styles.darkDot
-                      ]} />
-                      {!isLastItem && (
-                        <View style={[
-                          styles.timelineLine,
-                          isLight ? styles.lightLine : styles.darkLine
-                        ]} />
-                      )}
-                    </View>
-
-                    <View style={styles.timelineRight}>
-                      <View style={[
-                        styles.activityCard,
-                        isLight ? styles.lightCard : styles.darkCard
-                      ]}>
-                        <Ionicons
-                          name={isLight ? "sunny" : "moon"}
-                          size={24}
-                          color={isLight ? "#fbbf24" : "#6366f1"}
-                        />
-                        <View style={styles.activityTextContainer}>
-                          <Text style={styles.activityTitle}>
-                            {isLight ? "Seek Light" : "Avoid Light"}
-                          </Text>
-                          <Text style={styles.activityTime}>
-                            Until {endTime.format('h:mm A')}
-                          </Text>
+                    return (
+                      <View
+                        key={segIndex}
+                        style={[
+                          styles.activityBarWrapper,
+                          {
+                            top: `${topPercent}%`,
+                            height: `${heightPercent}%`,
+                          },
+                        ]}
+                      >
+                        <View
+                          style={[
+                            styles.activityBar,
+                            {
+                              backgroundColor: barColor,
+                              width: barWidth,
+                              marginLeft: leftOffset,
+                            },
+                          ]}
+                        >
+                          {/* Icon at the top of the segment - only show if segment starts on this day */}
+                          {segmentStartsOnThisDay && (
+                            <View style={styles.activityIconContainer}>
+                              <Ionicons name={icon as any} size={20} color={iconColor} />
+                            </View>
+                          )}
                         </View>
                       </View>
-                    </View>
+                    );
+                  })}
+                </View>
+              </View>
+
+              {/* Right hour labels */}
+              <View style={styles.hourLabelsRight}>
+                {hours.map((hour) => (
+                  <View key={`right-${hour}`} style={styles.hourRow}>
+                    <Text style={styles.hourText}>
+                      {hour === 0 ? '12am' : hour < 12 ? `${hour}am` : hour === 12 ? '12pm' : `${hour - 12}pm`}
+                    </Text>
                   </View>
-                );
-              })}
+                ))}
+              </View>
+            </View>
+
+            {/* Legend at bottom */}
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#fbbf24' }]} />
+                <Text style={styles.legendText}>Seek Light</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: '#6366f1' }]} />
+                <Text style={styles.legendText}>Avoid Light</Text>
+              </View>
+              <View style={styles.legendItem}>
+                <View style={[styles.legendDot, { backgroundColor: isDarkMode ? '#4b5563' : '#d1d5db' }]} />
+                <Text style={styles.legendText}>Sleep</Text>
+              </View>
+              {useMelatonin && (
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#8b5cf6' }]} />
+                  <Text style={styles.legendText}>Melatonin</Text>
+                </View>
+              )}
+              {useCoffee && (
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#92400e' }]} />
+                  <Text style={styles.legendText}>Coffee</Text>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 };
@@ -221,115 +569,122 @@ const createResultsStyles = (isDarkMode: boolean = false) => StyleSheet.create({
     color: isDarkMode ? '#9ca3af' : '#6b7280',
     marginBottom: 32,
     textAlign: 'center',
+    paddingHorizontal: 20,
   },
   dateSection: {
-    marginBottom: 32,
+    marginBottom: 40,
   },
   dateHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 20,
-    paddingLeft: 4,
   },
-  dateLabel: {
+  dayLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: isDarkMode ? '#9ca3af' : '#6b7280',
     letterSpacing: 0.5,
-    marginRight: 12,
+    marginRight: 8,
   },
   dateValue: {
     fontSize: 17,
     fontWeight: '600',
     color: isDarkMode ? '#ffffff' : '#1a1a1a',
   },
-  timeline: {
-    paddingLeft: 20,
-  },
-  timelineItem: {
+  timelineContainer: {
     flexDirection: 'row',
-    marginBottom: 4,
+    paddingLeft: 8,
+    paddingRight: 8,
+    minHeight: 600,
   },
-  timelineLeft: {
-    width: 70,
-    paddingTop: 2,
+  hourLabelsLeft: {
+    flex: 1,
     paddingRight: 12,
+    alignItems: 'flex-start',
   },
-  timeText: {
-    fontSize: 13,
-    color: isDarkMode ? '#9ca3af' : '#6b7280',
+  hourLabelsRight: {
+    flex: 1,
+    paddingLeft: 12,
+    alignItems: 'flex-end',
+  },
+  hourRow: {
+    height: 24,
+    justifyContent: 'center',
+  },
+  hourText: {
+    fontSize: 11,
+    color: isDarkMode ? '#6b7280' : '#9ca3af',
     fontWeight: '500',
   },
-  timelineCenter: {
-    width: 32,
+  hourLine: {
+    height: 1,
+    backgroundColor: isDarkMode ? '#374151' : '#f3f4f6',
+    opacity: 0.5,
+  },
+  timelineBarContainer: {
+    width: SCREEN_WIDTH * 0.5,
+    position: 'relative',
+    marginHorizontal: 8,
+  },
+  activitiesOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  activityBarWrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  timelineDot: {
+  activityBar: {
+    width: 50,
+    height: '100%',
+    borderRadius: 40,
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+  },
+  activityIconContainer: {
+    marginTop: 4,
+  },
+  instantRecommendation: {
+    position: 'absolute',
+    left: -20,
+    right: -20,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: isDarkMode ? '#374151' : '#e5e7eb',
+    borderStyle: 'dashed',
+  },
+  legendContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 20,
+    gap: 20,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  legendDot: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    marginTop: 6,
+    marginRight: 6,
   },
-  lightDot: {
-    backgroundColor: '#fbbf24',
-  },
-  darkDot: {
-    backgroundColor: '#6366f1',
-  },
-  sleepDot: {
-    backgroundColor: isDarkMode ? '#6b7280' : '#9ca3af',
-  },
-  timelineLine: {
-    width: 3,
-    flex: 1,
-    marginTop: 4,
-  },
-  lightLine: {
-    backgroundColor: '#fde68a',
-  },
-  darkLine: {
-    backgroundColor: '#a5b4fc',
-  },
-  sleepLine: {
-    backgroundColor: isDarkMode ? '#4b5563' : '#d1d5db',
-  },
-  timelineRight: {
-    flex: 1,
-    paddingLeft: 12,
-    paddingBottom: 8,
-  },
-  activityCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  lightCard: {
-    backgroundColor: isDarkMode ? 'rgba(251, 191, 36, 0.1)' : 'rgba(254, 243, 199, 0.5)',
-    borderColor: isDarkMode ? 'rgba(251, 191, 36, 0.3)' : '#fde68a',
-  },
-  darkCard: {
-    backgroundColor: isDarkMode ? 'rgba(99, 102, 241, 0.1)' : 'rgba(224, 231, 255, 0.5)',
-    borderColor: isDarkMode ? 'rgba(99, 102, 241, 0.3)' : '#c7d2fe',
-  },
-  sleepCard: {
-    backgroundColor: isDarkMode ? 'rgba(107, 114, 128, 0.1)' : 'rgba(243, 244, 246, 0.8)',
-    borderColor: isDarkMode ? 'rgba(107, 114, 128, 0.3)' : '#e5e7eb',
-  },
-  activityTextContainer: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  activityTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: isDarkMode ? '#ffffff' : '#1a1a1a',
-    marginBottom: 2,
-  },
-  activityTime: {
+  legendText: {
     fontSize: 13,
     color: isDarkMode ? '#9ca3af' : '#6b7280',
+    fontWeight: '500',
   },
 });
 

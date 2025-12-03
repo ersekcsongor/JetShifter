@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "154585782344",
+    "project_id": "jetshifter-dcf02",
+    "storage_bucket": "jetshifter-dcf02.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:154585782344:android:9d7094fe7c3df96d6e207d",
+        "android_client_info": {
+          "package_name": "com.jetshifter.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "154585782344-pfd8bbfa9b5apptbmuhb6mfmui1282vq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAP31VmFMRFDDoGYg2WP3ISzeVDlUYzab4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "154585782344-pfd8bbfa9b5apptbmuhb6mfmui1282vq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -22,6 +22,18 @@ export class UserModel extends Document{
 
   @Prop({ default: '06:00' })
   wakeupTime?: string;
+
+  @Prop({ default: false })
+  useMelatonin?: boolean;
+
+  @Prop({ default: false })
+  useCoffee?: boolean;
+
+  @Prop({ default: 'intermediate', enum: ['morning', 'evening', 'intermediate'] })
+  chronotype?: string;
+
+  @Prop({ default: '' })
+  expoPushToken?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserModel);

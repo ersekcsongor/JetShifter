@@ -23,6 +23,8 @@ import { Response, Request } from 'express';
 import { existsSync } from 'fs';
 import { ChangePasswordDto } from './dto/input/change-password.dto';
 import { UpdateSleepTimesDto } from './dto/input/update-sleep-times.dto';
+import { UpdatePreferencesDto } from './dto/input/update-preferences.dto';
+import { UpdateChronotypeDto } from './dto/input/update-chronotype.dto';
 import { UsersService } from './users.service';
 import { JwtGuard } from '../auth/guards/jwt-auth.guard';
 import { UserModel } from '../schemas/user.schema';
@@ -121,6 +123,50 @@ export class UsersController {
       message: 'Sleep times updated successfully',
       bedtime: user.bedtime,
       wakeupTime: user.wakeupTime
+    };
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch('update-preferences')
+  async updatePreferences(
+    @CurrentUser() user: UserModel,
+    @Body() updatePreferencesDto: UpdatePreferencesDto,
+  ) {
+    user.useMelatonin = updatePreferencesDto.useMelatonin;
+    user.useCoffee = updatePreferencesDto.useCoffee;
+    await user.save();
+    return {
+      message: 'Preferences updated successfully',
+      useMelatonin: user.useMelatonin,
+      useCoffee: user.useCoffee
+    };
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch('update-chronotype')
+  async updateChronotype(
+    @CurrentUser() user: UserModel,
+    @Body() updateChronotypeDto: UpdateChronotypeDto,
+  ) {
+    user.chronotype = updateChronotypeDto.chronotype;
+    await user.save();
+    return {
+      message: 'Chronotype updated successfully',
+      chronotype: user.chronotype
+    };
+  }
+
+  @UseGuards(JwtGuard)
+  @Patch('register-push-token')
+  async registerPushToken(
+    @CurrentUser() user: UserModel,
+    @Body() body: { pushToken: string },
+  ) {
+    user.expoPushToken = body.pushToken;
+    await user.save();
+    return {
+      message: 'Push token registered successfully',
+      token: user.expoPushToken
     };
   }
 }

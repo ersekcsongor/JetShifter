@@ -31,8 +31,25 @@ export class FlightsService {
   private async saveFlightData(flightData: FlightsInputDto) {
     const parsedData = JSON.parse(flightData.data);
     const flightDetails: FlightDetails[] = [];
-    
-    if (parsedData.trips?.length > 0) {
+
+    // Handle farfinder API format
+    if (parsedData.outbound?.fares) {
+      console.log(`Processing farfinder data for ${flightData.origin} -> ${flightData.destination}`);
+      for (const fare of parsedData.outbound.fares) {
+        if (fare.departureDate && fare.departureDate.startsWith(flightData.date)) {
+          flightDetails.push({
+            origin: flightData.origin,
+            destination: flightData.destination,
+            flightNumber: `FR-${fare.departureDate}`, // Farfinder doesn't give flight numbers
+            time: [fare.departureDate, fare.departureDate], // Simplified
+            timeUTC: [fare.departureDate, fare.departureDate],
+            duration: 'N/A' // Farfinder doesn't provide duration
+          });
+        }
+      }
+    }
+    // Handle availability API format (original)
+    else if (parsedData.trips?.length > 0) {
       for (const trip of parsedData.trips) {
         if (trip.dates?.length > 0) {
           for (const dateInfo of trip.dates) {
@@ -61,20 +78,54 @@ export class FlightsService {
         date: flightData.date,
         flights: flightDetails,
       });
-      console.log(`Saved flights for ${flightData.origin} -> ${flightData.destination} on ${flightData.date}`);
+      console.log(`✓ Saved ${flightDetails.length} flights for ${flightData.origin} -> ${flightData.destination} on ${flightData.date}`);
     } else {
       // console.log(`No flights found for ${flightData.origin} -> ${flightData.destination} on ${flightData.date}. Skipping save.`);
     }
   }
 
-  // Fetch data from Ryanair API (unchanged)
+  // Fetch data from Ryanair API - Try simpler endpoint first
   private async fetchRyanairData(origin: string, destination: string, date: string) {
+    // Try the simpler farfinder API first
+    const farfinderUrl = `https://www.ryanair.com/api/farfnd/v4/oneWayFares/${origin}/${destination}/cheapestPerDay?outboundMonthOfDate=${date}`;
+
+    try {
+      const farfinderResponse = await firstValueFrom(
+        this.httpService.get(farfinderUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json',
+            'Referer': 'https://www.ryanair.com/gb/en',
+          }
+        })
+      );
+
+      // If farfinder works, transform the data
+      if (farfinderResponse.data && farfinderResponse.data.outbound) {
+        console.log(`✓ Farfinder API worked for ${origin} -> ${destination}`);
+        return farfinderResponse.data;
+      }
+    } catch (error) {
+      console.log(`Farfinder failed for ${origin} -> ${destination}, trying availability API...`);
+    }
+
+    // Fallback to original availability API
     const url = `https://www.ryanair.com/api/booking/v4/en-gb/availability?ADT=1&TEEN=0&CHD=0&INF=0&Origin=${origin}&Destination=${destination}&promoCode=&IncludeConnectingFlights=false&DateOut=${date}&DateIn=&FlexDaysBeforeOut=2&FlexDaysOut=2&FlexDaysBeforeIn=2&FlexDaysIn=2&RoundTrip=false&IncludePrimeFares=false&ToUs=AGREED`;
     try {
-      const response = await firstValueFrom(this.httpService.get(url));
+      const response = await firstValueFrom(
+        this.httpService.get(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'en-GB,en;q=0.9',
+            'Referer': 'https://www.ryanair.com/gb/en',
+            'Origin': 'https://www.ryanair.com',
+          }
+        })
+      );
       return response.data;
     } catch (error) {
-      console.error(`Error fetching Ryanair data for ${origin} -> ${destination}:`, error);
+      console.error(`Both APIs failed for ${origin} -> ${destination}:`, error.message);
       return null;
     }
   }
@@ -82,7 +133,9 @@ export class FlightsService {
   // Process flights for the next 3 days (unchanged)
   async processFlightsForNext3Days() {
     const airports = await this.airportsService.getAllAirports();
-    const dates = this.generateDates(new Date(), 3);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dates = this.generateDates(tomorrow, 3);
 
     for (const date of dates) {
       for (const originAirport of airports) {

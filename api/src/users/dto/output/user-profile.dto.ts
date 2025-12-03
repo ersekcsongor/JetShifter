@@ -6,6 +6,9 @@ export class UserProfileDto {
   profileImageUrl: string;
   bedtime: string;
   wakeupTime: string;
+  useMelatonin: boolean;
+  useCoffee: boolean;
+  chronotype: string;
 
   constructor(user: UserModel) {
     this.id = user.id;
@@ -13,5 +16,8 @@ export class UserProfileDto {
     this.profileImageUrl = user.profileImage ?? '';
     this.bedtime = user.bedtime ?? '22:00';
     this.wakeupTime = user.wakeupTime ?? '06:00';
+    this.useMelatonin = user.useMelatonin ?? false;
+    this.useCoffee = user.useCoffee ?? false;
+    this.chronotype = user.chronotype ?? 'intermediate';
   }
 }
