@@ -8,6 +8,7 @@ import { FlightsInputDto } from './dto/input/flights.input.dto';
 import { FlightDataModel } from '../schemas/flights.schema';
 import { AirportsService } from '../airports/airports.service';
 import { SavedFlight } from '../schemas/saved-flight.schema';
+import { config } from '../shared/config/config';
 
 
 export interface FlightDetails {
@@ -17,6 +18,8 @@ export interface FlightDetails {
   time: string[];
   timeUTC: string[];
   duration: string;
+  departureDate: string;
+  arrivalDate: string;
 }
 
 @Injectable()
@@ -36,14 +39,36 @@ export class FlightsService {
     if (parsedData.outbound?.fares) {
       console.log(`Processing farfinder data for ${flightData.origin} -> ${flightData.destination}`);
       for (const fare of parsedData.outbound.fares) {
-        if (fare.departureDate && fare.departureDate.startsWith(flightData.date)) {
+        // Check if the fare is for the requested date and has valid flight data
+        if (fare.day && fare.day.startsWith(flightData.date) && fare.departureDate && fare.arrivalDate && !fare.unavailable) {
+          // Extract date and time portions
+          const departureDateTime = fare.departureDate; // e.g., "2025-12-14T23:45:00"
+          const arrivalDateTime = fare.arrivalDate;     // e.g., "2025-12-15T00:30:00"
+
+          const departureDate = departureDateTime.split('T')[0]; // "2025-12-14"
+          const arrivalDate = arrivalDateTime.split('T')[0];     // "2025-12-15"
+
+          const departureTime = departureDateTime.split('T')[1].substring(0, 5); // "23:45"
+          const arrivalTime = arrivalDateTime.split('T')[1].substring(0, 5);     // "00:30"
+
+          // Calculate duration
+          const depTime = new Date(departureDateTime);
+          const arrTime = new Date(arrivalDateTime);
+          const durationMs = arrTime.getTime() - depTime.getTime();
+          const durationMinutes = Math.floor(durationMs / 60000);
+          const hours = Math.floor(durationMinutes / 60);
+          const minutes = durationMinutes % 60;
+          const duration = `${hours}h ${minutes}m`;
+
           flightDetails.push({
             origin: flightData.origin,
             destination: flightData.destination,
-            flightNumber: `FR-${fare.departureDate}`, // Farfinder doesn't give flight numbers
-            time: [fare.departureDate, fare.departureDate], // Simplified
-            timeUTC: [fare.departureDate, fare.departureDate],
-            duration: 'N/A' // Farfinder doesn't provide duration
+            flightNumber: `FR-${fare.day}`, // Use day as unique identifier
+            time: [departureDateTime, arrivalDateTime], // Store full datetime for calculations
+            timeUTC: [departureDateTime, arrivalDateTime],
+            duration: duration,
+            departureDate: departureDate,
+            arrivalDate: arrivalDate
           });
         }
       }
@@ -55,13 +80,24 @@ export class FlightsService {
           for (const dateInfo of trip.dates) {
             if (dateInfo.dateOut.startsWith(flightData.date) && dateInfo.flights?.length > 0) {
               for (const flight of dateInfo.flights) {
+                // Calculate arrival date based on departure time and duration
+                const departureDate = flight.timeUTC?.[0] ? flight.timeUTC[0].split('T')[0] : flightData.date;
+                let arrivalDate = departureDate;
+
+                // If we have UTC times, calculate the actual arrival date
+                if (flight.timeUTC?.[0] && flight.timeUTC?.[1]) {
+                  arrivalDate = flight.timeUTC[1].split('T')[0];
+                }
+
                 flightDetails.push({
                   origin: flightData.origin,
                   destination: flightData.destination,
                   flightNumber: flight.flightNumber,
                   time: flight.time,
                   timeUTC: flight.timeUTC,
-                  duration: flight.duration
+                  duration: flight.duration,
+                  departureDate: departureDate,
+                  arrivalDate: arrivalDate
                 });
               }
             }
@@ -103,6 +139,7 @@ export class FlightsService {
       // If farfinder works, transform the data
       if (farfinderResponse.data && farfinderResponse.data.outbound) {
         console.log(`✓ Farfinder API worked for ${origin} -> ${destination}`);
+        console.log('📦 API Response:', JSON.stringify(farfinderResponse.data, null, 2));
         return farfinderResponse.data;
       }
     } catch (error) {
@@ -123,6 +160,8 @@ export class FlightsService {
           }
         })
       );
+      console.log(`✓ Availability API worked for ${origin} -> ${destination}`);
+      console.log('📦 API Response:', JSON.stringify(response.data, null, 2));
       return response.data;
     } catch (error) {
       console.error(`Both APIs failed for ${origin} -> ${destination}:`, error.message);
@@ -130,8 +169,76 @@ export class FlightsService {
     }
   }
 
-  // Process flights for the next 3 days (unchanged)
+  // Fetch Ryanair flights for a specific date (manual trigger)
+  async fetchRyanairFlightsForDate(date: string) {
+    if (!config.get('enable_ryanair_api')) {
+      return {
+        success: false,
+        message: 'Ryanair API is disabled via configuration'
+      };
+    }
+
+    console.log(`✓ Manually fetching Ryanair flights for ${date}...`);
+    const airports = await this.airportsService.getAllAirports();
+    let totalFetched = 0;
+    let totalRoutes = 0;
+
+    for (const originAirport of airports) {
+      const destinations = originAirport.routes.map(route =>
+        route.split(':')[1]
+      );
+
+      for (const destinationIata of destinations) {
+        totalRoutes++;
+        const destinationAirport = airports.find(
+          a => a.iataCode === destinationIata
+        );
+
+        if (!destinationAirport) {
+          console.log(`Skipping invalid destination: ${destinationIata}`);
+          continue;
+        }
+
+        const data = await this.fetchRyanairData(
+          originAirport.iataCode,
+          destinationIata,
+          date
+        );
+
+        if (data) {
+          const flightData: FlightsInputDto = {
+            origin: originAirport.iataCode,
+            destination: destinationIata,
+            date,
+            data: JSON.stringify(data),
+            createdAt: new Date(),
+          };
+
+          await this.saveFlightData(flightData);
+          totalFetched++;
+        }
+
+        // Add delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+
+    return {
+      success: true,
+      totalRoutes,
+      totalFetched,
+      message: `Fetched flights for ${totalFetched} out of ${totalRoutes} routes`
+    };
+  }
+
+  // Process flights for the next 3 days
   async processFlightsForNext3Days() {
+    if (!config.get('enable_ryanair_api')) {
+      console.log('⚠️ Ryanair API is disabled via configuration');
+      return;
+    }
+
+    console.log('✓ Ryanair API is enabled, processing flights...');
     const airports = await this.airportsService.getAllAirports();
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -139,7 +246,7 @@ export class FlightsService {
 
     for (const date of dates) {
       for (const originAirport of airports) {
-        const destinations = originAirport.routes.map(route => 
+        const destinations = originAirport.routes.map(route =>
           route.split(':')[1]
         );
 
@@ -196,7 +303,8 @@ export class FlightsService {
 
   // Updated to return the simplified flight data
   async searchFlights(departure: string, arrival: string, date: string) {
-    return this.flightDataModel
+    // First, check if we already have data
+    const existingFlights = await this.flightDataModel
       .find({
         origin: departure,
         destination: arrival,
@@ -205,6 +313,46 @@ export class FlightsService {
       .select('origin destination date flights')
       .lean()
       .exec();
+
+    // If we have data, return it
+    if (existingFlights && existingFlights.length > 0) {
+      console.log(`✓ Found cached flights for ${departure} -> ${arrival} on ${date}`);
+      return existingFlights;
+    }
+
+    // If no data exists and Ryanair API is enabled, fetch it
+    if (config.get('enable_ryanair_api')) {
+      console.log(`⚡ No cached data, fetching from Ryanair API for ${departure} -> ${arrival} on ${date}...`);
+
+      const data = await this.fetchRyanairData(departure, arrival, date);
+
+      if (data) {
+        const flightData: FlightsInputDto = {
+          origin: departure,
+          destination: arrival,
+          date,
+          data: JSON.stringify(data),
+          createdAt: new Date(),
+        };
+
+        await this.saveFlightData(flightData);
+
+        // Query again to return the newly saved data
+        return this.flightDataModel
+          .find({
+            origin: departure,
+            destination: arrival,
+            date: date,
+          })
+          .select('origin destination date flights')
+          .lean()
+          .exec();
+      }
+    }
+
+    // If API is disabled or fetch failed, return empty array
+    console.log(`⚠️ No flights available for ${departure} -> ${arrival} on ${date}`);
+    return [];
   }
 
   async createFlight(flightData: {

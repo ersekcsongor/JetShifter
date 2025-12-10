@@ -58,4 +58,14 @@ export class FlightsController {
   async getSavedFlights(@Param('email') email: string) {
     return this.flightsService.getSavedFlightsForUser(email);
   }
+
+  @Post('fetch-ryanair')
+  async fetchRyanairFlights(@Body() body: { date?: string }) {
+    const date = body.date || new Date().toISOString().split('T')[0];
+    const result = await this.flightsService.fetchRyanairFlightsForDate(date);
+    return {
+      date,
+      ...result
+    };
+  }
 }

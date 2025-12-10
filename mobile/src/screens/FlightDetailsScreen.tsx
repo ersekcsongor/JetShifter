@@ -180,16 +180,35 @@ const FlightDetailsScreen = ({ route }: Props) => {
     const fetchTimezones = async () => {
       try {
         updateState({ loading: true });
-        const [originRes, destRes] = await Promise.all([
-          fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${flight.origin}`),
-          fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${flight.destination}`)
+
+        // Helper function to fetch timezone with fallback
+        const fetchTimezone = async (iataCode: string) => {
+          try {
+            // Try transatlantic endpoint first
+            const transatlanticRes = await fetch(`${ENV.API_BASE_URL}/transatlantic-flights/timezone/${iataCode}`);
+            if (transatlanticRes.ok) {
+              const data = await transatlanticRes.json();
+              return data.timeZone;
+            }
+          } catch (e) {
+            // Fallback to regular airports endpoint
+          }
+
+          // Fallback to regular airports endpoint
+          const airportsRes = await fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${iataCode}`);
+          const data = await airportsRes.json();
+          return data.timeZone;
+        };
+
+        const [originTz, destTz] = await Promise.all([
+          fetchTimezone(flight.origin),
+          fetchTimezone(flight.destination)
         ]);
-        const originData = await originRes.json();
-        const destData = await destRes.json();
+
         updateState({
           timezones: {
-            originTz: originData.timeZone,
-            destTz: destData.timeZone
+            originTz,
+            destTz
           }
         });
       } catch (error) {

@@ -13,8 +13,8 @@ interface ThemeContextType {
 }
 
 const lightColors = {
-  background: '#cec4a4ff',
-  surface: '#fbf2d5',
+  background: '#ffff',
+  surface: '#ffffff',
   primary: '#fdc57b',
   primaryDark: '#6B5B00',
   text: '#000000',

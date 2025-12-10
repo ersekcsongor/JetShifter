@@ -14,13 +14,11 @@ import {
   Body,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { extname } from 'path';
 import { UserMapper } from './users.mapper';
 import { UserProfileDto } from './dto/output/user-profile.dto';
 import * as multer from 'multer';
-import { Response, Request } from 'express';
-import { existsSync } from 'fs';
+import { Request } from 'express';
 import { ChangePasswordDto } from './dto/input/change-password.dto';
 import { UpdateSleepTimesDto } from './dto/input/update-sleep-times.dto';
 import { UpdatePreferencesDto } from './dto/input/update-preferences.dto';
@@ -29,9 +27,7 @@ import { UsersService } from './users.service';
 import { JwtGuard } from '../auth/guards/jwt-auth.guard';
 import { UserModel } from '../schemas/user.schema';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-
-// Define UPLOAD_DIR at top level
-const UPLOAD_DIR = join(__dirname, '../../uploads');
+import * as admin from 'firebase-admin';
 
 @Controller('users')
 export class UsersController {
@@ -45,55 +41,65 @@ export class UsersController {
 
   @UseGuards(JwtGuard)
   @Patch('upload-profile')
-  @UseInterceptors(
-    FileInterceptor('profile', {
-      storage: diskStorage({
-        destination: UPLOAD_DIR,
-        filename: (_req, file, cb) => {
-          const ext = extname(file.originalname);
-          const name = `profile-${Date.now()}${ext}`;
-          cb(null, name);
-        },
-      }),
-    }),
-  )
+  @UseInterceptors(FileInterceptor('profile'))
   async uploadProfile(
     @UploadedFile() file: multer.File,
     @CurrentUser() user: UserModel,
-    @Req() req: Request,
   ): Promise<{ profileImageUrl: string }> {
     if (!file) {
       throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
     }
 
-    // Use consistent base URL construction
-    const baseUrl = `${req.protocol}://${req.get('host')}`;
-    const url = `${baseUrl}/users/profile/${file.filename}`;
-    const saveUrl = `/users/profile/${file.filename}`;
-    user.profileImage = saveUrl;
-    await user.save();
+    try {
+      // Get Firebase Storage bucket
+      const bucket = admin.storage().bucket();
 
-    return { profileImageUrl: saveUrl };
-  }
+      // Generate unique filename
+      const ext = extname(file.originalname);
+      const filename = `profile-pictures/${user.id}-${Date.now()}${ext}`;
 
-  @Get('profile/:filename')
-  async serveProfileImage(
-    @Param('filename') filename: string,
-    @Res() res: Response,
-  ) {
-    const fullPath = join(UPLOAD_DIR, filename);
-    
-    // Check if file exists
-    if (!existsSync(fullPath)) {
-      throw new HttpException('Image not found', HttpStatus.NOT_FOUND);
+      // Create file reference in Firebase Storage
+      const fileUpload = bucket.file(filename);
+
+      // Upload file buffer to Firebase
+      await fileUpload.save(file.buffer, {
+        metadata: {
+          contentType: file.mimetype,
+          metadata: {
+            userId: user.id,
+            originalName: file.originalname,
+          },
+        },
+      });
+
+      // Make the file publicly accessible
+      await fileUpload.makePublic();
+
+      // Get the public URL
+      const publicUrl = `https://storage.googleapis.com/${bucket.name}/${filename}`;
+
+      // Delete old profile picture from Firebase if exists
+      if (user.profileImage && user.profileImage.includes('storage.googleapis.com')) {
+        try {
+          const oldFilename = user.profileImage.split('/').slice(-2).join('/');
+          await bucket.file(oldFilename).delete();
+        } catch (error) {
+          console.log('Old profile image not found or already deleted');
+        }
+      }
+
+      // Update user profile image URL
+      user.profileImage = publicUrl;
+      await user.save();
+
+      return { profileImageUrl: publicUrl };
+    } catch (error) {
+      console.error('Firebase upload error:', error);
+      throw new HttpException(
+        'Failed to upload profile image',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
     }
-
-    // Set proper cache headers
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
-    
-    return res.sendFile(fullPath);
   }
 
   @UseGuards(JwtGuard)

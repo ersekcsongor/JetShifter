@@ -17,6 +17,9 @@ interface Config {
     service_account: FirebaseServiceAccount;
     storage_bucket: string;
   };
+  lufthansa_client_id: string;
+  lufthansa_client_secret: string;
+  enable_ryanair_api: boolean;
 }
 
 interface FirebaseServiceAccount{
@@ -76,6 +79,25 @@ export const config = convict<Config>({
     default: '',
     env: 'GEMINI_API_KEY',
     sensitive: true,
+  },
+  lufthansa_client_id: {
+    doc: 'Lufthansa API Client ID',
+    format: String,
+    default: '',
+    env: 'LUFTHANSA_CLIENT_ID',
+  },
+  lufthansa_client_secret: {
+    doc: 'Lufthansa API Client Secret',
+    format: String,
+    default: '',
+    env: 'LUFTHANSA_CLIENT_SECRET',
+    sensitive: true,
+  },
+  enable_ryanair_api: {
+    doc: 'Enable or disable Ryanair API flight fetching',
+    format: Boolean,
+    default: true,
+    env: 'ENABLE_RYANAIR_API',
   },
 
 });

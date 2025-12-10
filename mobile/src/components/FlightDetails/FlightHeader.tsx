@@ -89,6 +89,7 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
           {!!originCountry && (
             <Text style={[styles.cityName, { color: subtextColor }]}>{originCountry}</Text>
           )}
+          <Text style={[styles.timeText, { color: textColor }]}>{formatTime(flight.time[0])}</Text>
         </View>
 
         <View style={styles.flightInfoCenter}>
@@ -108,11 +109,16 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
           {!!destinationCountry && (
             <Text style={[styles.cityName, { color: subtextColor }]}>{destinationCountry}</Text>
           )}
+          <Text style={[styles.timeText, { color: textColor }]}>{formatTime(flight.time[1])}</Text>
+          {!sameDay && (
+            <Text style={[styles.nextDayBadge, { color: '#ff6b6b' }]}>+1 day</Text>
+          )}
         </View>
       </View>
 
       <Text style={[styles.dateText, { color: subtextColor }]}>
         {formatDate(flight.time[0])}
+        {!sameDay && ` → ${formatDate(flight.time[1])}`}
       </Text>
     </View>
   );
@@ -168,6 +174,17 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  timeText: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginTop: 8,
+  },
+  nextDayBadge: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 4,
+    textTransform: 'uppercase',
   },
 });
 

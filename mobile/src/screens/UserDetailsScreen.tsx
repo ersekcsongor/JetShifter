@@ -586,46 +586,46 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                       
                       <TouchableOpacity
                         style={[
-                          localStyles.button, 
-                          { backgroundColor: theme === 'light' ? colors.primary : colors.surface },
-                          { borderWidth: 1, borderColor: colors.border }
+                          localStyles.button,
+                          { backgroundColor: theme === 'light' ? (isDarkMode ? '#404040' : '#e0e0e0') : colors.surface },
+                          { borderWidth: 1, borderColor: theme === 'light' ? (isDarkMode ? '#666666' : '#b0b0b0') : colors.border }
                         ]}
                         onPress={() => { setTheme('light'); setThemeModalVisible(false); }}
                       >
                         <Ionicons name="sunny" size={24} color={colors.text} style={{ marginRight: 8 }} />
                         <Text style={[localStyles.buttonText, { color: colors.text }]}>Light</Text>
                         {theme === 'light' && (
-                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                          <Ionicons name="checkmark-circle" size={24} color={isDarkMode ? '#3b82f6' : '#2563eb'} style={{ marginLeft: 'auto' }} />
                         )}
                       </TouchableOpacity>
-                      
+
                       <TouchableOpacity
                         style={[
-                          localStyles.button, 
-                          { backgroundColor: theme === 'dark' ? colors.primary : colors.surface },
-                          { borderWidth: 1, borderColor: colors.border }
+                          localStyles.button,
+                          { backgroundColor: theme === 'dark' ? (isDarkMode ? '#404040' : '#e0e0e0') : colors.surface },
+                          { borderWidth: 1, borderColor: theme === 'dark' ? (isDarkMode ? '#666666' : '#b0b0b0') : colors.border }
                         ]}
                         onPress={() => { setTheme('dark'); setThemeModalVisible(false); }}
                       >
                         <Ionicons name="moon" size={24} color={colors.text} style={{ marginRight: 8 }} />
                         <Text style={[localStyles.buttonText, { color: colors.text }]}>Dark</Text>
                         {theme === 'dark' && (
-                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                          <Ionicons name="checkmark-circle" size={24} color={isDarkMode ? '#3b82f6' : '#2563eb'} style={{ marginLeft: 'auto' }} />
                         )}
                       </TouchableOpacity>
-                      
+
                       <TouchableOpacity
                         style={[
-                          localStyles.button, 
-                          { backgroundColor: theme === 'system' ? colors.primary : colors.surface },
-                          { borderWidth: 1, borderColor: colors.border }
+                          localStyles.button,
+                          { backgroundColor: theme === 'system' ? (isDarkMode ? '#404040' : '#e0e0e0') : colors.surface },
+                          { borderWidth: 1, borderColor: theme === 'system' ? (isDarkMode ? '#666666' : '#b0b0b0') : colors.border }
                         ]}
                         onPress={() => { setTheme('system'); setThemeModalVisible(false); }}
                       >
                         <Ionicons name="phone-portrait" size={24} color={colors.text} style={{ marginRight: 8 }} />
                         <Text style={[localStyles.buttonText, { color: colors.text }]}>System</Text>
                         {theme === 'system' && (
-                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                          <Ionicons name="checkmark-circle" size={24} color={isDarkMode ? '#3b82f6' : '#2563eb'} style={{ marginLeft: 'auto' }} />
                         )}
                       </TouchableOpacity>
                     </TouchableOpacity>
@@ -655,10 +655,10 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                       
                       <Text style={[localStyles.inputLabel, { color: colors.text }]}>Bed Time:</Text>
                       <TouchableOpacity
-                        style={[localStyles.button, { backgroundColor: colors.primary }]}
+                        style={[localStyles.button, { backgroundColor: isDarkMode ? '#404040' : '#e0e0e0' }]}
                         onPress={() => setShowBedTimePicker(true)}
                       >
-                        <Text style={[localStyles.buttonText, { color: colors.primaryDark }]}>{bedTime}</Text>
+                        <Text style={[localStyles.buttonText, { color: colors.text }]}>{bedTime}</Text>
                       </TouchableOpacity>
                       {showBedTimePicker && (
                         <DateTimePicker
@@ -679,10 +679,10 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                       
                       <Text style={[localStyles.inputLabel, { color: colors.text }]}>Wake Time:</Text>
                       <TouchableOpacity
-                        style={[localStyles.button, { backgroundColor: colors.primary }]}
+                        style={[localStyles.button, { backgroundColor: isDarkMode ? '#404040' : '#e0e0e0' }]}
                         onPress={() => setShowWakeTimePicker(true)}
                       >
-                        <Text style={[localStyles.buttonText, { color: colors.primaryDark }]}>{wakeTime}</Text>
+                        <Text style={[localStyles.buttonText, { color: colors.text }]}>{wakeTime}</Text>
                       </TouchableOpacity>
                       {showWakeTimePicker && (
                         <DateTimePicker
@@ -702,13 +702,13 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                       )}
                       
                       <TouchableOpacity
-                        style={[localStyles.button, { backgroundColor: colors.primary }]}
+                        style={[localStyles.button, { backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb' }]}
                         onPress={() => {
                           saveSleepTimes(bedTime, wakeTime);
                           setSleepModalVisible(false);
                         }}
                       >
-                        <Text style={[localStyles.buttonText, { color: colors.primaryDark }]}>Save</Text>
+                        <Text style={[localStyles.buttonText, { color: '#ffffff' }]}>Save</Text>
                       </TouchableOpacity>
                     </TouchableOpacity>
                   </View>
@@ -741,8 +741,8 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                       <TouchableOpacity
                         style={[
                           localStyles.button,
-                          { backgroundColor: chronotype === 'morning' ? colors.primary : colors.surface },
-                          { borderWidth: 1, borderColor: colors.border }
+                          { backgroundColor: chronotype === 'morning' ? (isDarkMode ? '#404040' : '#e0e0e0') : colors.surface },
+                          { borderWidth: 1, borderColor: chronotype === 'morning' ? (isDarkMode ? '#666666' : '#b0b0b0') : colors.border }
                         ]}
                         onPress={() => {
                           saveChronotype('morning');
@@ -752,15 +752,15 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                         <Ionicons name="sunny" size={24} color={colors.text} style={{ marginRight: 8 }} />
                         <Text style={[localStyles.buttonText, { color: colors.text }]}>Morning Bird</Text>
                         {chronotype === 'morning' && (
-                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                          <Ionicons name="checkmark-circle" size={24} color={isDarkMode ? '#3b82f6' : '#2563eb'} style={{ marginLeft: 'auto' }} />
                         )}
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         style={[
                           localStyles.button,
-                          { backgroundColor: chronotype === 'intermediate' ? colors.primary : colors.surface },
-                          { borderWidth: 1, borderColor: colors.border }
+                          { backgroundColor: chronotype === 'intermediate' ? (isDarkMode ? '#404040' : '#e0e0e0') : colors.surface },
+                          { borderWidth: 1, borderColor: chronotype === 'intermediate' ? (isDarkMode ? '#666666' : '#b0b0b0') : colors.border }
                         ]}
                         onPress={() => {
                           saveChronotype('intermediate');
@@ -770,15 +770,15 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                         <Ionicons name="partly-sunny" size={24} color={colors.text} style={{ marginRight: 8 }} />
                         <Text style={[localStyles.buttonText, { color: colors.text }]}>In Between</Text>
                         {chronotype === 'intermediate' && (
-                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                          <Ionicons name="checkmark-circle" size={24} color={isDarkMode ? '#3b82f6' : '#2563eb'} style={{ marginLeft: 'auto' }} />
                         )}
                       </TouchableOpacity>
 
                       <TouchableOpacity
                         style={[
                           localStyles.button,
-                          { backgroundColor: chronotype === 'evening' ? colors.primary : colors.surface },
-                          { borderWidth: 1, borderColor: colors.border }
+                          { backgroundColor: chronotype === 'evening' ? (isDarkMode ? '#404040' : '#e0e0e0') : colors.surface },
+                          { borderWidth: 1, borderColor: chronotype === 'evening' ? (isDarkMode ? '#666666' : '#b0b0b0') : colors.border }
                         ]}
                         onPress={() => {
                           saveChronotype('evening');
@@ -788,7 +788,7 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                         <Ionicons name="moon" size={24} color={colors.text} style={{ marginRight: 8 }} />
                         <Text style={[localStyles.buttonText, { color: colors.text }]}>Night Owl</Text>
                         {chronotype === 'evening' && (
-                          <Ionicons name="checkmark-circle" size={24} color={colors.primaryDark} style={{ marginLeft: 'auto' }} />
+                          <Ionicons name="checkmark-circle" size={24} color={isDarkMode ? '#3b82f6' : '#2563eb'} style={{ marginLeft: 'auto' }} />
                         )}
                       </TouchableOpacity>
                     </TouchableOpacity>
@@ -851,14 +851,14 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                           setConfirmPassword('');
                         }}
                       >
-                        <Text style={[localStyles.buttonText, { color: '#000' }]}>Cancel</Text>
+                        <Text style={[localStyles.buttonText, { color: isDarkMode ? '#ffffff' : colors.text }]}>Cancel</Text>
                       </TouchableOpacity>
                       
                       <TouchableOpacity
-                        style={[localStyles.button, localStyles.submitButton, { backgroundColor: colors.primary }]}
+                        style={[localStyles.button, localStyles.button, { backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb' }]}
                         onPress={handlePasswordChange}
                       >
-                        <Text style={[localStyles.buttonText, { color: colors.primaryDark }]}>Update</Text>
+                        <Text style={[localStyles.buttonText, { color: isDarkMode ? '#ffffff' : '#fff' }]}>Update</Text>
                       </TouchableOpacity>
                     </View>
                   </View>

@@ -99,8 +99,8 @@ export const PHARMACOLOGY_CONSTANTS = {
 };
 
   const ENV = {
-  API_BASE_URL: 'http://172.20.10.2:3000',
-  //192.168.56.1:3000,172.20.10.2:3000,http://192.168.1.14:3000,http://192.168.1.3:3000
+  API_BASE_URL: 'http://192.168.1.129:3000',
+  //localhost:3000,192.168.56.1:3000,172.20.10.2:3000,http://192.168.1.14:3000,http://192.168.1.3:3000,http://192.168.1.129:3000
 };
 
 export default ENV;

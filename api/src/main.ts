@@ -11,11 +11,12 @@ async function bootstrap() {
     const serviceAccount = require('../jetshifter-dcf02-firebase-adminsdk-fbsvc-ec0ba1e1e6.json');
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
+      storageBucket: 'jetshifter-dcf02.firebasestorage.app', // Your Firebase Storage bucket
     });
-    console.log('✅ Firebase Admin SDK initialized');
+    console.log('✅ Firebase Admin SDK initialized with Storage');
   } catch (error) {
     console.error('⚠️ Firebase Admin SDK initialization failed:', error.message);
-    console.log('Push notifications will not work until Firebase is configured.');
+    console.log('Push notifications and storage will not work until Firebase is configured.');
     console.log('See FIREBASE_SETUP_GUIDE.md for setup instructions.');
   }
 

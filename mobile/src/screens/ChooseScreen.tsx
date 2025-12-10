@@ -82,6 +82,49 @@ const ChooseScreen = () => {
           </View>
         </TouchableOpacity>
 
+        {/* Transatlantic Flights Card */}
+        <TouchableOpacity
+          style={styles.transatlanticCard}
+          onPress={() => navigation.navigate("TransatlanticFlightListScreen")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.iconWrapper}>
+              <MaterialCommunityIcons
+                name="earth"
+                size={32}
+                color={iconColor}
+              />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Transatlantic Flights</Text>
+              <Text style={styles.cardDescription}>
+                Long-haul flights between Europe and North America
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={iconColor}
+            />
+          </View>
+
+          <View style={styles.cardFeatures}>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>30+ major routes</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Multiple airlines</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Real-time schedules</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
         {/* Custom Flight Card */}
         <TouchableOpacity
           style={styles.secondaryCard}

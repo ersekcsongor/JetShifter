@@ -18,7 +18,9 @@ export class FlightDataModel extends Document {
     flightNumber: String,
     time: [String],
     timeUTC: [String],
-    duration: String
+    duration: String,
+    departureDate: String,
+    arrivalDate: String
   }], required: true })
   flights: Array<Record<string, any>>;
 
