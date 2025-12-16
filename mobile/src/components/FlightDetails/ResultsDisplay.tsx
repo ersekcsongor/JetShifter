@@ -136,6 +136,14 @@ export const ResultsDisplay = ({
     }
 
     // === KRONAUER MODEL-BASED CAFFEINE CALCULATION ===
+    console.log('☕ Coffee calculation:', {
+      useCoffee,
+      sleepEndTime: sleepEnd.format('YYYY-MM-DD HH:mm'),
+      landingTime: landingTime.format('YYYY-MM-DD HH:mm'),
+      sleepEndAfterLanding: sleepEnd.isAfter(landingTime),
+      isAdvancing,
+    });
+
     if (useCoffee && sleepEnd.isAfter(landingTime)) {
       // Only calculate caffeine for wake times that are after landing
       // Calculate caffeine cutoff using pharmacokinetic model
@@ -146,36 +154,55 @@ export const ResultsDisplay = ({
         PHARMACOLOGY_CONSTANTS.CAFFEINE.K_SENSITIVITY
       );
 
+      console.log(`☕ Caffeine cutoff hours: ${cutoffHours}`);
+
       // Calculate cutoff time for this sleep period
       const avoidAfter = sleepStart.clone().subtract(cutoffHours, 'hours');
+      console.log(`☕ Avoid caffeine after: ${avoidAfter.format('YYYY-MM-DD HH:mm')}`);
 
       // Calculate caffeine times based on travel direction
       const recommendedTimes: moment.Moment[] = [];
 
       if (isAdvancing) {
+        console.log('☕ Eastbound flight - calculating morning caffeine times');
         // For eastward travel, caffeine at wake time helps advance the clock
         const morningCaffeine = sleepEnd.clone();
+        console.log(`☕ Morning caffeine time: ${morningCaffeine.format('YYYY-MM-DD HH:mm')}`);
+        console.log(`☕ Checks: afterLanding=${morningCaffeine.isAfter(landingTime)}, beforeScheduleEnd=${morningCaffeine.isBefore(scheduleEnd)}`);
+
         if (morningCaffeine.isAfter(landingTime) && morningCaffeine.isBefore(scheduleEnd)) {
+          console.log('✓ Adding morning caffeine');
           recommendedTimes.push(morningCaffeine);
         }
 
         // Additional dose 3-4 hours after wake for sustained alertness
         const midMorningCaffeine = sleepEnd.clone().add(3.5, 'hours');
+        console.log(`☕ Mid-morning caffeine time: ${midMorningCaffeine.format('YYYY-MM-DD HH:mm')}`);
+        console.log(`☕ Checks: afterLanding=${midMorningCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${midMorningCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${midMorningCaffeine.isBefore(scheduleEnd)}`);
+
         if (midMorningCaffeine.isAfter(landingTime) &&
             midMorningCaffeine.isBefore(avoidAfter) &&
             midMorningCaffeine.isBefore(scheduleEnd)) {
+          console.log('✓ Adding mid-morning caffeine');
           recommendedTimes.push(midMorningCaffeine);
         }
       } else {
+        console.log('☕ Westbound flight - calculating afternoon caffeine times');
         // For westward travel, caffeine helps delay the clock
         // Use later in the day to extend wake period
         const afternoonCaffeine = sleepEnd.clone().add(8, 'hours');
+        console.log(`☕ Afternoon caffeine time: ${afternoonCaffeine.format('YYYY-MM-DD HH:mm')}`);
+        console.log(`☕ Checks: afterLanding=${afternoonCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${afternoonCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${afternoonCaffeine.isBefore(scheduleEnd)}`);
+
         if (afternoonCaffeine.isAfter(landingTime) &&
             afternoonCaffeine.isBefore(avoidAfter) &&
             afternoonCaffeine.isBefore(scheduleEnd)) {
+          console.log('✓ Adding afternoon caffeine');
           recommendedTimes.push(afternoonCaffeine);
         }
       }
+
+      console.log(`☕ Total recommended coffee times: ${recommendedTimes.length}`);
 
       const rationale = isAdvancing
         ? "Caffeine at wake time reinforces phase advance by strengthening wake signals during the new morning"
@@ -183,6 +210,7 @@ export const ResultsDisplay = ({
 
       // Add recommended caffeine times
       recommendedTimes.forEach((coffeeTime) => {
+        console.log(`☕ Adding coffee to allActivities at ${coffeeTime.format('YYYY-MM-DD HH:mm')}`);
         allActivities.push({
           time: coffeeTime,
           type: 'coffee',
@@ -190,6 +218,10 @@ export const ResultsDisplay = ({
           rationale: rationale,
         });
       });
+    } else {
+      if (useCoffee) {
+        console.log('⚠️ Coffee enabled but sleepEnd is not after landing time');
+      }
     }
 
     currentDay.add(1, 'day');
@@ -197,6 +229,15 @@ export const ResultsDisplay = ({
 
   // Sort all activities by time
   allActivities.sort((a, b) => a.time.diff(b.time));
+
+  console.log(`📊 Total activities generated: ${allActivities.length}`);
+  console.log('📊 Activity breakdown:', {
+    melatonin: allActivities.filter(a => a.isMelatonin).length,
+    coffee: allActivities.filter(a => a.isCoffee).length,
+    light: allActivities.filter(a => a.type === 'light' && !a.isSleep).length,
+    dark: allActivities.filter(a => a.type === 'dark' && !a.isSleep).length,
+    sleep: allActivities.filter(a => a.isSleep).length,
+  });
 
   // Separate instant recommendations (melatonin/coffee) from duration segments
   const instantRecommendations: any[] = [];
@@ -209,6 +250,9 @@ export const ResultsDisplay = ({
       durationActivities.push(activity);
     }
   });
+
+  console.log(`📊 Instant recommendations (melatonin + coffee): ${instantRecommendations.length}`);
+  console.log(`📊 Duration activities (light/dark/sleep): ${durationActivities.length}`);
 
   // Create segments from duration activities (light exposure and sleep)
   const segments: any[] = [];
@@ -311,8 +355,13 @@ export const ResultsDisplay = ({
       group.sort((a, b) => a.startTime.diff(b.startTime));
 
       // Assign lane index to each segment
+      // Coffee and melatonin always get the same lane (0) to appear on the same side
       group.forEach((segment: any, index: number) => {
-        segment.lane = index;
+        if (segment.isMelatonin || segment.isCoffee) {
+          segment.lane = 1; // Always use lane 0 for instant recommendations
+        } else {
+          segment.lane = index;
+        }
         segment.totalLanes = totalLanes;
       });
     });

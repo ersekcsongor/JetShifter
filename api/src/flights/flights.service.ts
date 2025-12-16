@@ -9,6 +9,7 @@ import { FlightDataModel } from '../schemas/flights.schema';
 import { AirportsService } from '../airports/airports.service';
 import { SavedFlight } from '../schemas/saved-flight.schema';
 import { config } from '../shared/config/config';
+import { RyanairFlightScraper } from './ryanair-flight-scraper';
 
 
 export interface FlightDetails {
@@ -407,4 +408,51 @@ export class FlightsService {
     }
     return savedFlights;
 }
+
+  // Search flight by flight number using web scraping
+  async searchByFlightNumber(flightNumber: string, date: string) {
+    console.log(`Searching for flight ${flightNumber} on ${date}`);
+
+    const scraper = new RyanairFlightScraper();
+
+    try {
+      const flightDetails = await scraper.scrapeFlightByNumber(flightNumber, date);
+
+      // Validate that we have complete flight data
+      if (!flightDetails ||
+          !flightDetails.origin ||
+          !flightDetails.destination ||
+          !flightDetails.departureTime ||
+          !flightDetails.arrivalTime) {
+        console.log('Flight data incomplete or not found:', flightDetails);
+        return {
+          success: false,
+          message: `Flight ${flightNumber} not found for date ${date}.\n\nPlease check:\n• Flight number is correct\n• Flight operates on this date\n• Try searching a day before/after`,
+        };
+      }
+
+      console.log(`✓ Found flight ${flightNumber}:`, flightDetails);
+
+      // Return flight in the format expected by the mobile app
+      return {
+        success: true,
+        flight: {
+          flightNumber: flightDetails.flightNumber,
+          origin: flightDetails.origin,
+          destination: flightDetails.destination,
+          time: [flightDetails.departureDate, flightDetails.arrivalDate],
+          duration: flightDetails.duration,
+          date: date,
+        },
+      };
+    } catch (error) {
+      console.error(`Error searching for flight ${flightNumber}:`, error);
+      return {
+        success: false,
+        message: `Error searching for flight: ${error.message}`,
+      };
+    } finally {
+      await scraper.close();
+    }
+  }
 }

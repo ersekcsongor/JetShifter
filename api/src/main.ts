@@ -31,8 +31,9 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
-  await app.listen(3000, '0.0.0.0');
-  console.log('🚀 Server running on http://0.0.0.0:3000');
+  const port = process.env.PORT || 3000;
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 Server running on http://0.0.0.0:${port}`);
 }
 bootstrap();
 

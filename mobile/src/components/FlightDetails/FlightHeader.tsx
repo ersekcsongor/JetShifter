@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { format, parseISO, isSameDay } from 'date-fns';
+import moment from 'moment-timezone';
 import ENV from '~/utils/constants';
 import { useTheme } from '~/contexts/ThemeContext';
 
@@ -12,6 +13,10 @@ type FlightHeaderProps = {
     destination: string;   // e.g. "SFO"
     duration: string;      // e.g. "2h 10m"
     time: string[];        // [departureTimeISO, arrivalTimeISO]
+  };
+  timezones?: {
+    originTz?: string;
+    destTz?: string;
   };
 };
 
@@ -29,7 +34,21 @@ const formatTime = (dateString: string) => {
   return format(parseISO(dateString), 'HH:mm');
 };
 
-export const FlightHeader = ({ flight }: FlightHeaderProps) => {
+const formatTimeInTimezone = (dateString: string, timezone?: string) => {
+  if (!timezone) {
+    return formatTime(dateString);
+  }
+  return moment(dateString).tz(timezone).format('HH:mm');
+};
+
+const formatDateInTimezone = (dateString: string, timezone?: string) => {
+  if (!timezone) {
+    return format(parseISO(dateString), 'dd MMM yyyy');
+  }
+  return moment(dateString).tz(timezone).format('DD MMM YYYY');
+};
+
+export const FlightHeader = ({ flight, timezones }: FlightHeaderProps) => {
   const { effectiveTheme } = useTheme();
   const isDarkMode = effectiveTheme === 'dark';
   const [originCountry, setOriginCountry] = useState('');
@@ -89,7 +108,14 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
           {!!originCountry && (
             <Text style={[styles.cityName, { color: subtextColor }]}>{originCountry}</Text>
           )}
-          <Text style={[styles.timeText, { color: textColor }]}>{formatTime(flight.time[0])}</Text>
+          <Text style={[styles.timeText, { color: textColor }]}>
+            {formatTimeInTimezone(flight.time[0], timezones?.originTz)}
+          </Text>
+          {timezones?.originTz && (
+            <Text style={[styles.timezoneText, { color: subtextColor }]}>
+              {moment.tz(timezones.originTz).format('z')}
+            </Text>
+          )}
         </View>
 
         <View style={styles.flightInfoCenter}>
@@ -109,7 +135,14 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
           {!!destinationCountry && (
             <Text style={[styles.cityName, { color: subtextColor }]}>{destinationCountry}</Text>
           )}
-          <Text style={[styles.timeText, { color: textColor }]}>{formatTime(flight.time[1])}</Text>
+          <Text style={[styles.timeText, { color: textColor }]}>
+            {formatTimeInTimezone(flight.time[1], timezones?.destTz)}
+          </Text>
+          {timezones?.destTz && (
+            <Text style={[styles.timezoneText, { color: subtextColor }]}>
+              {moment.tz(timezones.destTz).format('z')}
+            </Text>
+          )}
           {!sameDay && (
             <Text style={[styles.nextDayBadge, { color: '#ff6b6b' }]}>+1 day</Text>
           )}
@@ -117,8 +150,8 @@ export const FlightHeader = ({ flight }: FlightHeaderProps) => {
       </View>
 
       <Text style={[styles.dateText, { color: subtextColor }]}>
-        {formatDate(flight.time[0])}
-        {!sameDay && ` → ${formatDate(flight.time[1])}`}
+        {formatDateInTimezone(flight.time[0], timezones?.originTz)}
+        {!sameDay && ` → ${formatDateInTimezone(flight.time[1], timezones?.destTz)}`}
       </Text>
     </View>
   );
@@ -179,6 +212,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginTop: 8,
+  },
+  timezoneText: {
+    fontSize: 11,
+    fontWeight: '500',
+    marginTop: 2,
   },
   nextDayBadge: {
     fontSize: 11,

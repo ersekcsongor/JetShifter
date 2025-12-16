@@ -68,4 +68,15 @@ export class FlightsController {
       ...result
     };
   }
+
+  @Get('search-by-number')
+  async searchByFlightNumber(
+    @Query('flightNumber') flightNumber: string,
+    @Query('date') date: string,
+  ) {
+    if (!flightNumber || !date) {
+      throw new BadRequestException('Flight number and date are required');
+    }
+    return await this.flightsService.searchByFlightNumber(flightNumber, date);
+  }
 }

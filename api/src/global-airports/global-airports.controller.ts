@@ -32,4 +32,16 @@ export class GlobalAirportsController {
     const name = await this.globalAirportsService.getNameByIataCode(iataCode);
     return { name };
   }
+
+  @Post('add-single')
+  async addSingleAirport(@Body() airportData: {
+    iataCode: string;
+    name: string;
+    countryCode: string;
+    cityCode: string;
+    timeZone: string;
+    countryName: string;
+  }) {
+    return await this.globalAirportsService.addSingleAirport(airportData);
+  }
 }

@@ -125,6 +125,49 @@ const ChooseScreen = () => {
           </View>
         </TouchableOpacity>
 
+        {/* Flight Number Search Card */}
+        <TouchableOpacity
+          style={styles.flightNumberCard}
+          onPress={() => navigation.navigate("FlightNumberSearchScreen")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.cardHeader}>
+            <View style={styles.iconWrapper}>
+              <MaterialIcons
+                name="search"
+                size={32}
+                color={iconColor}
+              />
+            </View>
+            <View style={styles.cardContent}>
+              <Text style={styles.cardTitle}>Flight Number Search</Text>
+              <Text style={styles.cardDescription}>
+                Find any flight by its flight number
+              </Text>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={iconColor}
+            />
+          </View>
+
+          <View style={styles.cardFeatures}>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>All airlines supported</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Automatic flight details</Text>
+            </View>
+            <View style={styles.featureItem}>
+              <Ionicons name="checkmark-circle" size={18} color={iconColor} />
+              <Text style={styles.featureText}>Quick and easy</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
         {/* Custom Flight Card */}
         <TouchableOpacity
           style={styles.secondaryCard}

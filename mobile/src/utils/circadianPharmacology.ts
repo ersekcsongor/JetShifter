@@ -224,11 +224,26 @@ export function calculateCaffeineCutoff(
   sensitivity: number = PHARMACOLOGY_CONSTANTS.CAFFEINE.K_SENSITIVITY
 ): number {
   // Calculate how long it takes for caffeine to decay below threshold
-  // Threshold concentration that still interferes with sleep
-  const C_threshold = sleepThreshold / sensitivity;
+  //
+  // Caffeine decay: C(t) = C₀ * e^(-ln(2) * t / t_half)
+  // We want to find t when C(t) = C_threshold
+  //
+  // Rearranging: t = t_half * ln(C₀ / C_threshold) / ln(2)
+  //            = t_half * log₂(C₀ / C_threshold)
+  //
+  // C₀ = initial concentration after consuming dose
+  // C_threshold = minimum concentration that still interferes with sleep
+  //
+  // For simplicity: C₀ = dose, C_threshold = sleepThreshold / sensitivity
+  // This gives us a reasonable cutoff window (typically 5-8 hours for 100mg dose)
 
-  // Initial concentration proportional to dose (normalized to 100mg)
-  const C0 = doseStrength / 100;
+  const C0 = doseStrength;  // Treat dose itself as initial concentration
+  const C_threshold = sleepThreshold / sensitivity;  // Threshold in same units
+
+  // If dose is already below threshold, no cutoff needed
+  if (C0 <= C_threshold) {
+    return 0;
+  }
 
   // Time to decay to threshold: t = t_half * log₂(C₀ / C_threshold)
   const cutoffHours = halfLife * Math.log2(C0 / C_threshold);

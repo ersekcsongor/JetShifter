@@ -183,21 +183,49 @@ const FlightDetailsScreen = ({ route }: Props) => {
 
         // Helper function to fetch timezone with fallback
         const fetchTimezone = async (iataCode: string) => {
+          console.log(`Fetching timezone for ${iataCode}...`);
+
           try {
             // Try transatlantic endpoint first
             const transatlanticRes = await fetch(`${ENV.API_BASE_URL}/transatlantic-flights/timezone/${iataCode}`);
             if (transatlanticRes.ok) {
               const data = await transatlanticRes.json();
+              console.log(`✓ Got timezone for ${iataCode} from transatlantic: ${data.timeZone}`);
               return data.timeZone;
             }
+            console.log(`Transatlantic endpoint failed for ${iataCode}, trying regular airports...`);
           } catch (e) {
-            // Fallback to regular airports endpoint
+            console.log(`Transatlantic endpoint error for ${iataCode}:`, e);
           }
 
-          // Fallback to regular airports endpoint
-          const airportsRes = await fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${iataCode}`);
-          const data = await airportsRes.json();
-          return data.timeZone;
+          try {
+            // Fallback to regular airports endpoint
+            const airportsRes = await fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${iataCode}`);
+            if (airportsRes.ok) {
+              const data = await airportsRes.json();
+              console.log(`✓ Got timezone for ${iataCode} from airports: ${data.timeZone}`);
+              return data.timeZone;
+            }
+            console.log(`Regular airports endpoint failed for ${iataCode}, status: ${airportsRes.status}`);
+          } catch (e) {
+            console.log(`Regular airports endpoint error for ${iataCode}:`, e);
+          }
+
+          // Last resort: try global-airports endpoint
+          try {
+            const globalRes = await fetch(`${ENV.API_BASE_URL}/global-airports/getTimezoneByIataCode/${iataCode}`);
+            if (globalRes.ok) {
+              const data = await globalRes.json();
+              console.log(`✓ Got timezone for ${iataCode} from global-airports: ${data.timeZone}`);
+              return data.timeZone;
+            }
+            console.log(`Global airports endpoint failed for ${iataCode}, status: ${globalRes.status}`);
+          } catch (e) {
+            console.log(`Global airports endpoint error for ${iataCode}:`, e);
+          }
+
+          console.error(`❌ Could not fetch timezone for ${iataCode} from any source`);
+          return null;
         };
 
         const [originTz, destTz] = await Promise.all([
@@ -205,12 +233,18 @@ const FlightDetailsScreen = ({ route }: Props) => {
           fetchTimezone(flight.destination)
         ]);
 
-        updateState({
-          timezones: {
-            originTz,
-            destTz
-          }
-        });
+        console.log('Timezone fetch results:', { originTz, destTz });
+
+        if (originTz && destTz) {
+          updateState({
+            timezones: {
+              originTz,
+              destTz
+            }
+          });
+        } else {
+          console.error('Missing timezones:', { origin: flight.origin, originTz, destination: flight.destination, destTz });
+        }
       } catch (error) {
         console.error('Failed to fetch timezones:', error);
       } finally {
@@ -487,7 +521,7 @@ const FlightDetailsScreen = ({ route }: Props) => {
         </View>
       )}
 
-      <FlightHeader flight={flight} />
+      <FlightHeader flight={flight} timezones={timezones} />
 
       <TouchableOpacity
         onPress={isFlightSaved ? handleUnsaveFlight : handleSaveFlight}

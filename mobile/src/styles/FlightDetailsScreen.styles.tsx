@@ -14,7 +14,7 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginBottom: 12, 
     color: isDarkMode ? '#ffffff' : '#1a1a1a',
   },
   detailRow: {

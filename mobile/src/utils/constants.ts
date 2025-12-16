@@ -64,7 +64,7 @@ export const PHARMACOLOGY_CONSTANTS = {
 
     // Pharmacodynamics: S(t) = S₀ + k * C(t)
     K_SENSITIVITY: 0.8,  // Sensitivity factor for sleep pressure increase
-    SLEEP_THRESHOLD: 1.5,  // Threshold above which sleep is impaired
+    SLEEP_THRESHOLD: 35.0,  // Threshold above which sleep is impaired (in mg equivalents)
 
     // Dosing parameters
     TYPICAL_DOSE_MG: 100,  // Typical dose per cup of coffee (mg)
@@ -99,7 +99,7 @@ export const PHARMACOLOGY_CONSTANTS = {
 };
 
   const ENV = {
-  API_BASE_URL: 'http://192.168.1.129:3000',
+  API_BASE_URL: 'http://172.20.10.2:3000',
   //localhost:3000,192.168.56.1:3000,172.20.10.2:3000,http://192.168.1.14:3000,http://192.168.1.3:3000,http://192.168.1.129:3000
 };
 
