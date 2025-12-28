@@ -15,8 +15,11 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { TransatlanticFlightsModule } from './transatlantic-flights/transatlantic-flights.module';
 const YAML_CONFIG_FILENAME = '.env.yml';
 
-// Load the YAML config file
-const yamlConfig = yaml.parse(fs.readFileSync(YAML_CONFIG_FILENAME, 'utf8'));
+// Make yamlConfig optional - only load if file exists
+let yamlConfig = {};
+if (fs.existsSync(YAML_CONFIG_FILENAME)) {
+  yamlConfig = yaml.parse(fs.readFileSync(YAML_CONFIG_FILENAME, 'utf8'));
+}
 
 @Module({
   imports: [
