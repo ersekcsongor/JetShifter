@@ -416,7 +416,18 @@ export class FlightsService {
     const scraper = new RyanairFlightScraper();
 
     try {
-      const flightDetails = await scraper.scrapeFlightByNumber(flightNumber, date);
+      // Set a maximum timeout of 45 seconds for the entire scraping operation
+      const timeoutPromise = new Promise<null>((resolve) =>
+        setTimeout(() => {
+          console.log('⏱️ Scraping timeout reached (45s)');
+          resolve(null);
+        }, 45000)
+      );
+
+      const scrapingPromise = scraper.scrapeFlightByNumber(flightNumber, date);
+
+      // Race between scraping and timeout
+      const flightDetails = await Promise.race([scrapingPromise, timeoutPromise]);
 
       // Validate that we have complete flight data
       if (!flightDetails ||
@@ -452,7 +463,8 @@ export class FlightsService {
         message: `Error searching for flight: ${error.message}`,
       };
     } finally {
-      await scraper.close();
+      // Ensure browser is closed even if timeout occurs
+      await scraper.close().catch(err => console.log('Error closing scraper:', err));
     }
   }
 }

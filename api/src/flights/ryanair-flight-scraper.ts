@@ -85,10 +85,15 @@ export class RyanairFlightScraper {
   }
 
   async scrapeFlightByNumber(flightNumber: string, date: string): Promise<ScrapedFlightDetails | null> {
+    let page: puppeteer.Page | null = null;
+
     try {
       await this.initialize();
 
-      const page = await this.browser!.newPage();
+      page = await this.browser!.newPage();
+
+      // Set shorter timeout for page operations to fail fast
+      page.setDefaultTimeout(30000); // 30 seconds max per operation
 
       // Set user agent to avoid detection
       await page.setUserAgent(
@@ -100,10 +105,14 @@ export class RyanairFlightScraper {
 
       console.log(`Searching for flight ${flightNumber} on ${searchDate}`);
 
-      // Get alternate flight codes from FlightRadar24 API
-      const flightCodes = await this.getAlternateFlightCodes(flightNumber);
+      // Get alternate flight codes from FlightRadar24 API (with timeout)
+      const flightCodesPromise = this.getAlternateFlightCodes(flightNumber);
+      const timeoutPromise = new Promise<string[]>((resolve) =>
+        setTimeout(() => resolve([flightNumber]), 5000)
+      );
+      const flightCodes = await Promise.race([flightCodesPromise, timeoutPromise]);
 
-      // Try each flight code with FlightRadar24
+      // Try each flight code with FlightRadar24 (primary source - most reliable)
       console.log('=== Attempting FlightRadar24 ===');
       for (const code of flightCodes) {
         console.log(`Trying flight code: ${code}`);
@@ -111,42 +120,23 @@ export class RyanairFlightScraper {
 
         if (flightDetails) {
           console.log(`✓ FlightRadar24 succeeded with code: ${code}`);
-          await page.close();
+          await page.close().catch(err => console.log('Error closing page:', err));
           return flightDetails;
         }
       }
 
-      // Fallback: Try FlightAware with all codes
-      console.log('=== Attempting FlightAware ===');
-      for (const code of flightCodes) {
-        console.log(`Trying flight code: ${code}`);
-        const flightAwareDetails = await this.scrapeFromFlightAware(page, code, searchDate);
+      // Skip FlightAware and Google Flights to reduce scraping time
+      // They are unreliable and slow. FlightRadar24 is the best source.
+      console.log('⚠️ FlightRadar24 failed for all flight codes. Skipping other sources to save time.');
 
-        if (flightAwareDetails) {
-          console.log(`✓ FlightAware succeeded with code: ${code}`);
-          await page.close();
-          return flightAwareDetails;
-        }
-      }
-
-      // Last resort: Try Google Flights with all codes
-      console.log('=== Attempting Google Flights ===');
-      for (const code of flightCodes) {
-        console.log(`Trying flight code: ${code}`);
-        const googleFlightsDetails = await this.scrapeFromGoogleFlights(page, code, searchDate);
-
-        if (googleFlightsDetails) {
-          console.log(`✓ Google Flights succeeded with code: ${code}`);
-          await page.close();
-          return googleFlightsDetails;
-        }
-      }
-
-      await page.close();
+      await page.close().catch(err => console.log('Error closing page:', err));
       return null;
 
     } catch (error) {
       console.error('Error scraping flight details:', error);
+      if (page) {
+        await page.close().catch(err => console.log('Error closing page:', err));
+      }
       return null;
     }
   }
@@ -163,39 +153,28 @@ export class RyanairFlightScraper {
 
       console.log(`Trying FlightRadar24: ${url} (filtering for date: ${date})`);
 
-      // Capture browser console logs for debugging
-      page.on('console', msg => console.log('Browser:', msg.text()));
+      // Capture browser console logs for debugging (suppress to reduce noise)
+      // page.on('console', msg => console.log('Browser:', msg.text()));
 
-      // Increase timeout to 60 seconds for slow connections
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+      // Reduced timeout to 20 seconds to fail fast
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
 
-      // Handle cookie consent popup
+      // Handle cookie consent popup (skip to save time - usually not needed)
       try {
-        console.log('Checking for cookie consent...');
-        const consentButton = await page.$('button:contains("Agree and close"), button:contains("Accept"), button[class*="consent"]');
-        if (consentButton) {
-          console.log('Clicking cookie consent button...');
-          await consentButton.click();
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        } else {
-          // Try alternative selectors
-          const buttons = await page.$$('button');
-          for (const button of buttons) {
-            const text = await page.evaluate(el => el.textContent, button);
-            if (text && (text.includes('Agree') || text.includes('Accept') || text.includes('close'))) {
-              console.log(`Found consent button with text: ${text}`);
-              await button.click();
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              break;
-            }
+        const buttons = await page.$$('button');
+        for (const button of buttons) {
+          const text = await page.evaluate(el => el.textContent, button);
+          if (text && (text.includes('Agree') || text.includes('Accept'))) {
+            await button.click();
+            break;
           }
         }
       } catch (e) {
-        console.log('No cookie consent found or already accepted');
+        // Ignore errors
       }
 
-      // Wait a bit longer for dynamic content
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Reduced wait time for dynamic content
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Try multiple possible selectors (FlightRadar24 changes their HTML)
       const possibleSelectors = [
@@ -394,119 +373,7 @@ export class RyanairFlightScraper {
     }
   }
 
-  private async scrapeFromFlightAware(
-    page: puppeteer.Page,
-    flightNumber: string,
-    date: string
-  ): Promise<ScrapedFlightDetails | null> {
-    try {
-      // First, use FlightAware omnisearch API to get the correct flight identifier
-      const flightIdent = await this.getFlightAwareIdentifier(flightNumber);
-
-      if (!flightIdent) {
-        console.log(`FlightAware omnisearch: No identifier found for ${flightNumber}`);
-        return null;
-      }
-
-      console.log(`FlightAware omnisearch: Found identifier ${flightIdent} for ${flightNumber}`);
-
-      // FlightAware URL format with the correct identifier
-      const url = `https://flightaware.com/live/flight/${flightIdent}`;
-
-      console.log(`Trying FlightAware: ${url} (filtering for date: ${date})`);
-
-      // Increase timeout and use domcontentloaded for faster response
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
-
-      // Wait for flight data with increased timeout
-      await page.waitForSelector('.flightPageSummaryCity, .flightPageSummary, [class*="flight"]', { timeout: 15000 }).catch(() => null);
-
-      const flightData = await page.evaluate(() => {
-        const originEl = document.querySelector('.flightPageSummaryCity.origin');
-        const destEl = document.querySelector('.flightPageSummaryCity.destination');
-        const timeEls = document.querySelectorAll('.flightPageSummaryDateTime');
-
-        const origin = originEl?.querySelector('.flightPageIdent')?.textContent?.trim() || '';
-        const destination = destEl?.querySelector('.flightPageIdent')?.textContent?.trim() || '';
-
-        const depTime = timeEls[0]?.textContent?.trim() || '';
-        const arrTime = timeEls[1]?.textContent?.trim() || '';
-
-        return {
-          origin,
-          destination,
-          departureTime: depTime,
-          arrivalTime: arrTime,
-        };
-      });
-
-      if (!flightData.origin) {
-        return null;
-      }
-
-      // Parse the times from FlightAware format
-      const departureDateTime = `${date}T${this.parseFlightAwareTime(flightData.departureTime)}:00`;
-      const arrivalDateTime = `${date}T${this.parseFlightAwareTime(flightData.arrivalTime)}:00`;
-
-      return {
-        flightNumber: flightNumber.toUpperCase(),
-        origin: flightData.origin,
-        destination: flightData.destination,
-        departureTime: this.parseFlightAwareTime(flightData.departureTime),
-        arrivalTime: this.parseFlightAwareTime(flightData.arrivalTime),
-        departureDate: departureDateTime,
-        arrivalDate: arrivalDateTime,
-        duration: 'N/A',
-      };
-
-    } catch (error) {
-      console.error('FlightAware scraping failed:', error);
-      return null;
-    }
-  }
-
-  /**
-   * Use FlightAware omnisearch API to get the correct flight identifier
-   * Example: "de1572" -> "CFG1572"
-   */
-  private async getFlightAwareIdentifier(flightNumber: string): Promise<string | null> {
-    try {
-      const searchUrl = `https://www.flightaware.com/ajax/ignoreall/omnisearch/flight.rvt?v=50&locale=en_US&searchterm=${flightNumber}&q=${flightNumber}`;
-      console.log(`FlightAware omnisearch API: ${searchUrl}`);
-
-      const response = await fetch(searchUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-          'Accept': 'application/json',
-        },
-        signal: AbortSignal.timeout(10000), // 10 second timeout
-      });
-
-      if (!response.ok) {
-        console.error(`FlightAware API returned status ${response.status}`);
-        return null;
-      }
-
-      const data = await response.json();
-
-      if (data.data && data.data.length > 0) {
-        const result = data.data[0];
-        const ident = result.ident;
-
-        if (ident) {
-          console.log(`✓ FlightAware omnisearch: Found ${ident} for ${flightNumber}`);
-          console.log(`  Description: ${result.description || 'N/A'}`);
-          return ident;
-        }
-      }
-
-      console.log(`⚠ FlightAware omnisearch: No results for ${flightNumber}`);
-      return null;
-    } catch (error) {
-      console.error('❌ FlightAware omnisearch API error:', error);
-      return null;
-    }
-  }
+  // FlightAware scraper removed - FlightRadar24 is more reliable and faster
 
   private parseTime(timeStr: string): string {
     // Convert time strings like "14:30" or "8:05 PM" to 24-hour format
@@ -534,183 +401,7 @@ export class RyanairFlightScraper {
     return '00:00';
   }
 
-  private parseFlightAwareTime(timeStr: string): string {
-    // Parse FlightAware time format (e.g., "2:30PM EST")
-    const match = timeStr.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-    if (match) {
-      let hour = parseInt(match[1]);
-      const minute = match[2];
-      const period = match[3].toUpperCase();
-
-      if (period === 'PM' && hour !== 12) {
-        hour += 12;
-      } else if (period === 'AM' && hour === 12) {
-        hour = 0;
-      }
-
-      return `${hour.toString().padStart(2, '0')}:${minute}`;
-    }
-    return '00:00';
-  }
-
-  private async scrapeFromGoogleFlights(
-    page: puppeteer.Page,
-    flightNumber: string,
-    date: string
-  ): Promise<ScrapedFlightDetails | null> {
-    try {
-      // Extract airline code and number (e.g., "FR713" -> "FR" and "713")
-      const match = flightNumber.match(/([A-Z]{2,3})(\d+)/i);
-      if (!match) {
-        console.log('Invalid flight number format');
-        return null;
-      }
-
-      const airlineCode = match[1].toUpperCase();
-      const flightNum = match[2];
-
-      // Google Flights search URL
-      const url = `https://www.google.com/travel/flights?q=${airlineCode}%20${flightNum}`;
-
-      console.log(`Trying Google Flights: ${url}`);
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
-
-      // Handle cookie consent (Google often shows this)
-      try {
-        console.log('Checking for Google cookie consent...');
-        const buttons = await page.$$('button');
-        for (const button of buttons) {
-          const text = await page.evaluate(el => el.textContent, button);
-          if (text && (text.includes('Accept') || text.includes('agree') || text.includes('I agree'))) {
-            console.log(`Clicking Google consent: ${text}`);
-            await button.click();
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            break;
-          }
-        }
-      } catch (e) {
-        console.log('No Google consent popup');
-      }
-
-      // Wait for flight data to load
-      await new Promise(resolve => setTimeout(resolve, 4000));
-
-      // Take screenshot for debugging
-      try {
-        await page.screenshot({ path: `debug-google-${flightNumber}.png`, fullPage: false });
-        console.log(`Google screenshot saved: debug-google-${flightNumber}.png`);
-      } catch (e) {
-        console.log('Could not save Google screenshot');
-      }
-
-      // Extract flight details from Google Flights
-      const flightData = await page.evaluate(() => {
-        // Google Flights uses various selectors
-        const getText = (selector: string): string => {
-          const el = document.querySelector(selector);
-          return el?.textContent?.trim() || '';
-        };
-
-        // Try to find airport codes (usually in format "XXX - City Name")
-        const airportElements = document.querySelectorAll('[class*="airport"], [class*="city"]');
-        const airports: string[] = [];
-
-        airportElements.forEach(el => {
-          const text = el.textContent?.trim() || '';
-          const match = text.match(/([A-Z]{3})/);
-          if (match && airports.length < 2) {
-            airports.push(match[1]);
-          }
-        });
-
-        // Try to find times
-        const timeElements = document.querySelectorAll('[class*="time"], [class*="departure"], [class*="arrival"]');
-        const times: string[] = [];
-
-        timeElements.forEach(el => {
-          const text = el.textContent?.trim() || '';
-          const timeMatch = text.match(/(\d{1,2}:\d{2})/);
-          if (timeMatch && times.length < 2) {
-            times.push(timeMatch[1]);
-          }
-        });
-
-        // Try to find duration
-        let duration = '';
-        const durationElements = document.querySelectorAll('[class*="duration"], [class*="time"]');
-
-        for (const el of durationElements) {
-          const text = el.textContent?.trim() || '';
-          if (text.match(/\d+\s*(hr|hour|h)\s*\d*\s*(min|m)?/i)) {
-            duration = text;
-            break;
-          }
-        }
-
-        // Get all text content as fallback
-        const bodyText = document.body.textContent || '';
-
-        // Try to extract from body text if structured data not found
-        if (airports.length < 2) {
-          const airportMatches = bodyText.match(/\b([A-Z]{3})\b/g);
-          if (airportMatches && airportMatches.length >= 2) {
-            airports.push(...airportMatches.slice(0, 2));
-          }
-        }
-
-        if (times.length < 2) {
-          const timeMatches = bodyText.match(/\b(\d{1,2}:\d{2})\b/g);
-          if (timeMatches && timeMatches.length >= 2) {
-            times.push(...timeMatches.slice(0, 2));
-          }
-        }
-
-        return {
-          origin: airports[0] || '',
-          destination: airports[1] || '',
-          departureTime: times[0] || '',
-          arrivalTime: times[1] || '',
-          duration: duration || 'N/A',
-          bodyPreview: bodyText.substring(0, 300),
-        };
-      });
-
-      console.log('Google Flights data:', flightData);
-
-      if (!flightData.origin || !flightData.destination) {
-        console.log('Could not extract flight data from Google Flights');
-        console.log('Body preview:', flightData.bodyPreview);
-        return null;
-      }
-
-      // Parse times and create ISO datetime strings
-      const departureDateTime = `${date}T${this.parseTime(flightData.departureTime)}:00`;
-      let arrivalDateTime = `${date}T${this.parseTime(flightData.arrivalTime)}:00`;
-
-      // If arrival time is before departure, it's next day
-      if (flightData.arrivalTime < flightData.departureTime) {
-        const nextDay = new Date(date);
-        nextDay.setDate(nextDay.getDate() + 1);
-        const pad = (n: number) => n.toString().padStart(2, '0');
-        arrivalDateTime = `${nextDay.getFullYear()}-${pad(nextDay.getMonth() + 1)}-${pad(nextDay.getDate())}T${this.parseTime(flightData.arrivalTime)}:00`;
-      }
-
-      return {
-        flightNumber: flightNumber.toUpperCase(),
-        origin: flightData.origin,
-        destination: flightData.destination,
-        departureTime: flightData.departureTime,
-        arrivalTime: flightData.arrivalTime,
-        departureDate: departureDateTime,
-        arrivalDate: arrivalDateTime,
-        duration: flightData.duration,
-      };
-
-    } catch (error) {
-      console.error('Google Flights scraping failed:', error);
-      return null;
-    }
-  }
+  // Google Flights and FlightAware scrapers removed - FlightRadar24 is more reliable and faster
 
   async close() {
     if (this.browser) {
