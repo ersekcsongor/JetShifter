@@ -157,15 +157,17 @@ export class RyanairFlightScraper {
     date: string
   ): Promise<ScrapedFlightDetails | null> {
     try {
-      // FlightRadar24 URL format
+      // FlightRadar24 URL format - Note: FR24 doesn't support date-specific URLs
+      // The page shows a table with multiple dates, we filter client-side
       const url = `https://www.flightradar24.com/data/flights/${flightNumber.toLowerCase()}`;
 
-      console.log(`Trying FlightRadar24: ${url}`);
+      console.log(`Trying FlightRadar24: ${url} (filtering for date: ${date})`);
 
       // Capture browser console logs for debugging
       page.on('console', msg => console.log('Browser:', msg.text()));
 
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+      // Increase timeout to 60 seconds for slow connections
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
 
       // Handle cookie consent popup
       try {
@@ -411,11 +413,13 @@ export class RyanairFlightScraper {
       // FlightAware URL format with the correct identifier
       const url = `https://flightaware.com/live/flight/${flightIdent}`;
 
-      console.log(`Trying FlightAware: ${url}`);
-      await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+      console.log(`Trying FlightAware: ${url} (filtering for date: ${date})`);
 
-      // Wait for flight data
-      await page.waitForSelector('.flightPageSummaryCity', { timeout: 10000 }).catch(() => null);
+      // Increase timeout and use domcontentloaded for faster response
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+
+      // Wait for flight data with increased timeout
+      await page.waitForSelector('.flightPageSummaryCity, .flightPageSummary, [class*="flight"]', { timeout: 15000 }).catch(() => null);
 
       const flightData = await page.evaluate(() => {
         const originEl = document.querySelector('.flightPageSummaryCity.origin');
@@ -470,7 +474,19 @@ export class RyanairFlightScraper {
       const searchUrl = `https://www.flightaware.com/ajax/ignoreall/omnisearch/flight.rvt?v=50&locale=en_US&searchterm=${flightNumber}&q=${flightNumber}`;
       console.log(`FlightAware omnisearch API: ${searchUrl}`);
 
-      const response = await fetch(searchUrl);
+      const response = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+          'Accept': 'application/json',
+        },
+        signal: AbortSignal.timeout(10000), // 10 second timeout
+      });
+
+      if (!response.ok) {
+        console.error(`FlightAware API returned status ${response.status}`);
+        return null;
+      }
+
       const data = await response.json();
 
       if (data.data && data.data.length > 0) {
@@ -479,6 +495,7 @@ export class RyanairFlightScraper {
 
         if (ident) {
           console.log(`✓ FlightAware omnisearch: Found ${ident} for ${flightNumber}`);
+          console.log(`  Description: ${result.description || 'N/A'}`);
           return ident;
         }
       }
