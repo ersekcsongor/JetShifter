@@ -398,8 +398,18 @@ export class RyanairFlightScraper {
     date: string
   ): Promise<ScrapedFlightDetails | null> {
     try {
-      // FlightAware URL format
-      const url = `https://flightaware.com/live/flight/${flightNumber}`;
+      // First, use FlightAware omnisearch API to get the correct flight identifier
+      const flightIdent = await this.getFlightAwareIdentifier(flightNumber);
+
+      if (!flightIdent) {
+        console.log(`FlightAware omnisearch: No identifier found for ${flightNumber}`);
+        return null;
+      }
+
+      console.log(`FlightAware omnisearch: Found identifier ${flightIdent} for ${flightNumber}`);
+
+      // FlightAware URL format with the correct identifier
+      const url = `https://flightaware.com/live/flight/${flightIdent}`;
 
       console.log(`Trying FlightAware: ${url}`);
       await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
@@ -447,6 +457,36 @@ export class RyanairFlightScraper {
 
     } catch (error) {
       console.error('FlightAware scraping failed:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Use FlightAware omnisearch API to get the correct flight identifier
+   * Example: "de1572" -> "CFG1572"
+   */
+  private async getFlightAwareIdentifier(flightNumber: string): Promise<string | null> {
+    try {
+      const searchUrl = `https://www.flightaware.com/ajax/ignoreall/omnisearch/flight.rvt?v=50&locale=en_US&searchterm=${flightNumber}&q=${flightNumber}`;
+      console.log(`FlightAware omnisearch API: ${searchUrl}`);
+
+      const response = await fetch(searchUrl);
+      const data = await response.json();
+
+      if (data.data && data.data.length > 0) {
+        const result = data.data[0];
+        const ident = result.ident;
+
+        if (ident) {
+          console.log(`✓ FlightAware omnisearch: Found ${ident} for ${flightNumber}`);
+          return ident;
+        }
+      }
+
+      console.log(`⚠ FlightAware omnisearch: No results for ${flightNumber}`);
+      return null;
+    } catch (error) {
+      console.error('❌ FlightAware omnisearch API error:', error);
       return null;
     }
   }
