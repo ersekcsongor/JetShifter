@@ -1,4 +1,9 @@
-import * as puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-extra';
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+import type { Page, Browser } from 'puppeteer';
+
+// Add stealth plugin to evade bot detection
+puppeteer.use(StealthPlugin());
 
 export interface ScrapedFlightDetails {
   flightNumber: string;
@@ -13,40 +18,19 @@ export interface ScrapedFlightDetails {
 }
 
 export class RyanairFlightScraper {
-  private browser: puppeteer.Browser | null = null;
+  private browser: Browser | null = null;
 
   async initialize() {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
-        headless: true, // Standard headless mode for better compatibility
+        headless: true,
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
-          '--disable-accelerated-2d-canvas',
           '--disable-gpu',
-          '--disable-blink-features=AutomationControlled', // Hide automation
-          '--disable-features=IsolateOrigins,site-per-process',
           '--window-size=1920,1080',
-          // Additional memory optimizations for container environments
-          '--single-process',
-          '--no-zygote',
-          '--disable-background-networking',
-          '--disable-background-timer-throttling',
-          '--disable-backgrounding-occluded-windows',
-          '--disable-breakpad',
-          '--disable-component-extensions-with-background-pages',
-          '--disable-extensions',
-          '--disable-features=TranslateUI',
-          '--disable-ipc-flooding-protection',
-          '--disable-renderer-backgrounding',
-          '--enable-features=NetworkService,NetworkServiceInProcess',
-          '--force-color-profile=srgb',
-          '--hide-scrollbars',
-          '--metrics-recording-only',
-          '--mute-audio',
         ],
-        // Set timeout for browser launch
         timeout: 30000,
       });
     }
@@ -107,34 +91,20 @@ export class RyanairFlightScraper {
   }
 
   async scrapeFlightByNumber(flightNumber: string, date: string): Promise<ScrapedFlightDetails | null> {
-    let page: puppeteer.Page | null = null;
+    let page: Page | null = null;
 
     try {
       await this.initialize();
 
       page = await this.browser!.newPage();
 
-      // Set shorter timeout for page operations to fail fast
-      page.setDefaultTimeout(30000); // 30 seconds max per operation
-
-      // Set realistic user agent
-      await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-      );
+      // Set longer timeout since we're using stealth (slower but more reliable)
+      page.setDefaultTimeout(60000); // 60 seconds max per operation
 
       // Set extra headers to look more like a real browser
       await page.setExtraHTTPHeaders({
         'Accept-Language': 'en-US,en;q=0.9',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Encoding': 'gzip, deflate, br',
         'Referer': 'https://www.flightradar24.com/',
-      });
-
-      // Hide webdriver property
-      await page.evaluateOnNewDocument(() => {
-        Object.defineProperty(navigator, 'webdriver', {
-          get: () => false,
-        });
       });
 
       // Format date as YYYY-MM-DD
@@ -179,7 +149,7 @@ export class RyanairFlightScraper {
   }
 
   private async scrapeFromFlightRadar24(
-    page: puppeteer.Page,
+    page: Page,
     flightNumber: string,
     date: string
   ): Promise<ScrapedFlightDetails | null> {
@@ -193,8 +163,20 @@ export class RyanairFlightScraper {
       // Capture browser console logs for debugging (suppress to reduce noise)
       // page.on('console', msg => console.log('Browser:', msg.text()));
 
-      // Increased timeout to 40 seconds for slow connections/container environments
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+      // Try to load the page with multiple fallback strategies
+      try {
+        // First attempt: domcontentloaded (faster)
+        await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
+      } catch (error) {
+        console.log(`⚠️ domcontentloaded failed, trying networkidle2...`);
+        try {
+          // Second attempt: networkidle2
+          await page.goto(url, { waitUntil: 'networkidle2', timeout: 60000 });
+        } catch (error2) {
+          console.error(`❌ Both navigation strategies failed for ${url}`);
+          throw error2;
+        }
+      }
 
       // Handle cookie consent popup (skip to save time - usually not needed)
       try {
