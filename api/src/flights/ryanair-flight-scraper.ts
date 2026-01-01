@@ -18,14 +18,36 @@ export class RyanairFlightScraper {
   async initialize() {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
-        headless: true,
+        headless: true, // Standard headless mode for better compatibility
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-accelerated-2d-canvas',
           '--disable-gpu',
+          '--disable-blink-features=AutomationControlled', // Hide automation
+          '--disable-features=IsolateOrigins,site-per-process',
+          '--window-size=1920,1080',
+          // Additional memory optimizations for container environments
+          '--single-process',
+          '--no-zygote',
+          '--disable-background-networking',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-breakpad',
+          '--disable-component-extensions-with-background-pages',
+          '--disable-extensions',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--disable-renderer-backgrounding',
+          '--enable-features=NetworkService,NetworkServiceInProcess',
+          '--force-color-profile=srgb',
+          '--hide-scrollbars',
+          '--metrics-recording-only',
+          '--mute-audio',
         ],
+        // Set timeout for browser launch
+        timeout: 30000,
       });
     }
   }
@@ -95,10 +117,25 @@ export class RyanairFlightScraper {
       // Set shorter timeout for page operations to fail fast
       page.setDefaultTimeout(30000); // 30 seconds max per operation
 
-      // Set user agent to avoid detection
+      // Set realistic user agent
       await page.setUserAgent(
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
       );
+
+      // Set extra headers to look more like a real browser
+      await page.setExtraHTTPHeaders({
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': 'https://www.flightradar24.com/',
+      });
+
+      // Hide webdriver property
+      await page.evaluateOnNewDocument(() => {
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+        });
+      });
 
       // Format date as YYYY-MM-DD
       const searchDate = date;
@@ -156,8 +193,8 @@ export class RyanairFlightScraper {
       // Capture browser console logs for debugging (suppress to reduce noise)
       // page.on('console', msg => console.log('Browser:', msg.text()));
 
-      // Reduced timeout to 20 seconds to fail fast
-      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+      // Increased timeout to 40 seconds for slow connections/container environments
+      await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 40000 });
 
       // Handle cookie consent popup (skip to save time - usually not needed)
       try {
