@@ -3,15 +3,29 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common/pipes/validation.pipe';
 import { ClassSerializerInterceptor } from '@nestjs/common';
 import * as admin from 'firebase-admin';
+import { config } from './shared/config/config';
 
 
 async function bootstrap() {
   // Initialize Firebase Admin SDK
   try {
-    const serviceAccount = require('../jetshifter-dcf02-firebase-adminsdk-fbsvc-ec0ba1e1e6.json');
+    const firebaseConfig = config.get('firebase');
+    const serviceAccount = firebaseConfig.service_account;
+
+    // Check if we have Firebase credentials
+    if (!serviceAccount.project_id || !serviceAccount.client_email || !serviceAccount.private_key) {
+      throw new Error('Firebase credentials not configured. Set FIREBASE_SERVICE_ACCOUNT_PROJECT_ID, FIREBASE_SERVICE_ACCOUNT_CLIENT_EMAIL, and FIREBASE_SERVICE_ACCOUNT_PRIVATE_KEY environment variables.');
+    }
+
+    // Initialize with environment variables
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount),
-      storageBucket: 'jetshifter-dcf02.firebasestorage.app', // Your Firebase Storage bucket
+      credential: admin.credential.cert({
+        projectId: serviceAccount.project_id,
+        clientEmail: serviceAccount.client_email,
+        // Handle escaped newlines in private key
+        privateKey: serviceAccount.private_key.replace(/\\n/g, '\n'),
+      }),
+      storageBucket: firebaseConfig.storage_bucket || 'jetshifter-dcf02.firebasestorage.app',
     });
     console.log('✅ Firebase Admin SDK initialized with Storage');
   } catch (error) {
