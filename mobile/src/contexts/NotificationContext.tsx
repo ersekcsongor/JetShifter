@@ -4,8 +4,8 @@ import * as Notifications from 'expo-notifications';
 import {
   initializeFirebaseMessaging,
   onForegroundMessage,
-  onNotificationOpenedApp,
-  onTokenRefresh,
+  onNotificationOpenedAppListener,
+  onTokenRefreshListener,
 } from '~/services/firebaseNotificationService';
 import axios from 'axios';
 import ENV from '~/utils/constants';
@@ -74,7 +74,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
 
     // Listen for notification opened (user tapped)
-    onNotificationOpenedApp((message) => {
+    onNotificationOpenedAppListener((message) => {
       console.log('Notification opened:', message);
       // Handle navigation based on notification data
       if (message.data?.flightNumber) {
@@ -83,7 +83,7 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     });
 
     // Listen for token refresh
-    const unsubscribeTokenRefresh = onTokenRefresh(async (newToken) => {
+    const unsubscribeTokenRefresh = onTokenRefreshListener(async (newToken) => {
       setFcmToken(newToken);
       console.log('FCM Token refreshed:', newToken);
 
@@ -123,10 +123,10 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
       unsubscribeForeground();
       unsubscribeTokenRefresh();
       if (notificationListener.current) {
-        Notifications.removeNotificationSubscription(notificationListener.current);
+        notificationListener.current.remove();
       }
       if (responseListener.current) {
-        Notifications.removeNotificationSubscription(responseListener.current);
+        responseListener.current.remove();
       }
     };
   }, [authState?.user?.email]);
