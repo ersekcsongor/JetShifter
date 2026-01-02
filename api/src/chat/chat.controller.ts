@@ -35,4 +35,9 @@ export class ChatController {
   async healthCheck() {
     return await this.chatService.healthCheck();
   }
+
+  @Get('suggested-prompts')
+  async getSuggestedPrompts() {
+    return this.chatService.getSuggestedPrompts();
+  }
 }

@@ -1,17 +1,17 @@
 import React, { useState, useRef, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
   TextInput,
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  SafeAreaView,
   StatusBar
 } from "react-native";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import ENV from '~/utils/constants';

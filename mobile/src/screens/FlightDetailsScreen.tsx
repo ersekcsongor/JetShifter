@@ -34,6 +34,8 @@ import { PERTURBATION_CONSTANTS } from '~/utils/constants';
 import { useTheme } from '~/contexts/ThemeContext';
 import { scheduleFlightScheduleNotifications, cancelAllScheduledNotifications } from '~/services/scheduleNotificationService';
 import { useNotifications } from '~/contexts/NotificationContext';
+import { addSwitchingTimesToCalendar } from '~/services/calendarService';
+import { calculatePharmacologySchedule } from '~/utils/circadianPharmacology';
 
 type Props = {
   route: RouteProp<AppStackParamList, 'FlightDetailsScreen'>;
@@ -492,6 +494,84 @@ const FlightDetailsScreen = ({ route }: Props) => {
     }
   };
 
+  const handleAddToCalendar = async () => {
+    try {
+      if (!switchingTimes) {
+        Alert.alert('Error', 'Please calculate the schedule first.');
+        return;
+      }
+
+      const finalSwitchingTimes = updatedSwitchingTimes || switchingTimes;
+
+      // Calculate interventions (melatonin/caffeine) if enabled
+      let interventions: any[] = [];
+      if (useMelatonin || useCoffee) {
+        // Parse switching times to get light switching points in moment format
+        const lightSwitchingPoints = finalSwitchingTimes.switchingPoints.map(sp => ({
+          time: moment(sp.time),
+          type: sp.type
+        }));
+
+        // Parse sleep schedule
+        const sleepScheduleMoment = {
+          bedtime: moment(sleepSchedule.bedtime, 'HH:mm'),
+          wakeTime: moment(sleepSchedule.wakeupTime, 'HH:mm')
+        };
+
+        const departureTime = moment(flight.time[0]);
+        const arrivalTime = moment(flight.time[1]);
+
+        const pharmacologySchedule = calculatePharmacologySchedule(
+          lightSwitchingPoints,
+          sleepScheduleMoment,
+          departureTime,
+          arrivalTime,
+          finalSwitchingTimes.timezoneDiff,
+          useMelatonin,
+          useCoffee
+        );
+
+        // Convert to intervention format
+        pharmacologySchedule.melatoninDoses.forEach(dose => {
+          interventions.push({
+            time: dose.time,
+            type: 'melatonin',
+            dose: dose.dose
+          });
+        });
+
+        pharmacologySchedule.caffeineDoses.forEach(dose => {
+          interventions.push({
+            time: dose.time,
+            type: 'caffeine',
+            dose: dose.dose
+          });
+        });
+      }
+
+      // Add to calendar
+      const result = await addSwitchingTimesToCalendar(
+        finalSwitchingTimes,
+        flight.flightNumber,
+        interventions.length > 0 ? interventions : undefined
+      );
+
+      if (result.success) {
+        Alert.alert(
+          'Calendar Updated!',
+          result.message + '\n\nEvents include:\n• Light exposure times ☀️\n• Dark periods 🌙' +
+          (interventions.length > 0 ? '\n• Melatonin/Caffeine reminders' : ''),
+          [{ text: 'OK' }]
+        );
+      } else {
+        Alert.alert('Error', result.message);
+      }
+    } catch (error) {
+      console.error('Failed to add to calendar:', error);
+      Alert.alert('Error', 'Failed to add events to calendar.');
+    }
+  };
+
   // Error handling
   if (!route.params?.flight) {
     return (
@@ -587,6 +667,25 @@ const FlightDetailsScreen = ({ route }: Props) => {
                 ✓ You'll receive reminders for light exposure and dark periods
               </Text>
             )}
+
+            {/* Calendar Integration Button */}
+            <TouchableOpacity
+              onPress={handleAddToCalendar}
+              style={[styles.saveButton, { marginTop: 10 }]}
+            >
+              <Text style={styles.saveButtonText}>
+                📅 Add to Calendar
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={{
+              textAlign: 'center',
+              marginTop: 8,
+              color: colors.textSecondary,
+              fontSize: 11
+            }}>
+              Add all switching times and interventions to your device calendar
+            </Text>
           </View>
         </>
       )}

@@ -11,7 +11,13 @@
     },
     "plugins": [
       "expo-secure-store",
-      "@react-native-firebase/app"
+      "@react-native-firebase/app",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Allow JetShifter to add your light/dark schedule to your calendar for easier tracking."
+        }
+      ]
     ],
     "orientation": "portrait",
     "icon": "./assets/icon.png",

@@ -15,6 +15,7 @@
     "axios": "^1.10.0",
     "date-fns": "^4.1.0",
     "expo": "~54.0.0",
+    "expo-calendar": "^15.0.8",
     "expo-constants": "~18.0.12",
     "expo-device": "~8.0.10",
     "expo-image-picker": "~17.0.10",
