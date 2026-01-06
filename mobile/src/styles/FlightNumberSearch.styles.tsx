@@ -105,7 +105,7 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
 
   // Search Button
   searchButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: isDarkMode ? '#3b82f6' : '#2563eb',
     padding: 18,
     borderRadius: 16,
     flexDirection: 'row',

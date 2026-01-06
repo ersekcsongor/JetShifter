@@ -226,6 +226,24 @@ const FlightDetailsScreen = ({ route }: Props) => {
             console.log(`Global airports endpoint error for ${iataCode}:`, e);
           }
 
+          // Fallback: hardcoded timezone map for common airports not in DB
+          const fallbackTimezones: { [key: string]: string } = {
+            'TAS': 'Asia/Tashkent',
+            'VKO': 'Europe/Moscow',
+            'DME': 'Europe/Moscow',
+            'SVO': 'Europe/Moscow',
+            'LED': 'Europe/Moscow',
+            'KBP': 'Europe/Kiev',
+            'OTP': 'Europe/Bucharest',
+            'SOF': 'Europe/Sofia',
+            'BCT': 'America/New_York'
+          };
+
+          if (fallbackTimezones[iataCode]) {
+            console.log(`✓ Using fallback timezone for ${iataCode}: ${fallbackTimezones[iataCode]}`);
+            return fallbackTimezones[iataCode];
+          }
+
           console.error(`❌ Could not fetch timezone for ${iataCode} from any source`);
           return null;
         };
@@ -409,7 +427,24 @@ const FlightDetailsScreen = ({ route }: Props) => {
         Alert.alert('Error', 'Flight number not found.');
         return;
       }
-      await axios.post(`${API_URL}/save`, { email: userEmail, flightNumber: flight.flightNumber });
+
+      // Send full flight data to backend for storage
+      const flightDataToSave = {
+        origin: flight.origin,
+        destination: flight.destination,
+        departureTime: flight.time[0],
+        arrivalTime: flight.time[1],
+        duration: flight.duration,
+        flightNumber: flight.flightNumber
+      };
+
+      await axios.post(`${API_URL}/save`, {
+        email: userEmail,
+        flightNumber: flight.flightNumber,
+        flightData: flightDataToSave,
+        source: 'ryanair' // Mark as Ryanair flight
+      });
+
       setIsFlightSaved(true);
       Alert.alert('Success', 'Flight saved!');
     } catch (error: any) {

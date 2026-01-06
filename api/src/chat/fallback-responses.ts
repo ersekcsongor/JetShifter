@@ -10,14 +10,52 @@ export interface FallbackResponse {
 export const FALLBACK_RESPONSES: FallbackResponse[] = [
   // NAVIGATION & HOW-TO
   {
-    keywords: ['search', 'find', 'flight', 'look for'],
+    keywords: ['navigate', 'how to use', 'getting started', 'where is', 'where do i'],
+    category: 'App Navigation',
+    response: `**JetShifter Navigation Guide** 🧭
+
+**3 Bottom Tabs:**
+• 🏠 **"Home"** tab → StartScreen (main hub)
+• 📑 **"Saved"** tab → SavedFlightsScreen (your saved flights)
+• 👤 **"Account"** tab → UserDetailsScreen (settings & profile)
+
+**To Plan a Trip:**
+1. Go to **"Home"** tab
+2. Tap **"Plan Your Trip"** button → Goes to ChooseScreen
+3. Choose from 4 flight search options:
+   - "RyanAir Flights" - Real-time RyanAir data
+   - "Transatlantic Flights" - 30+ pre-loaded routes
+   - "Flight Number Search" - ANY airline (enter code + date, tap "Search Flight")
+   - "Custom Flight" - Manual entry
+4. Select your flight → Goes to FlightDetailsScreen
+5. Set sleep schedule → Tap **"Calculate Light Schedule"**
+6. Use **"Schedule Notifications"** or **"Add to Calendar"** buttons
+
+Start from the Home tab! ✈️`
+  },
+  {
+    keywords: ['search', 'find', 'flight', 'look for', 'plan trip', 'flight number', 'add flight', 'enter flight'],
     category: 'Flight Search',
-    response: `To search for flights in JetShifter:
+    response: `**How to Search for Flights** 🔍
 
-1️⃣ **By Route**: On the home screen, select departure and arrival airports, pick a date, then search
-2️⃣ **By Flight Number**: Tap "Flight Number" tab, enter your flight code (like "AA100"), pick the date
+**Step-by-step:**
+1. Go to **"Home"** tab (bottom navigation)
+2. Tap **"Plan Your Trip"** button
+3. This shows ChooseScreen with 4 search options:
 
-After finding your flight, tap it to view details and calculate your light schedule! ✈️`
+1️⃣ **"RyanAir Flights"**
+   → SelectAirportScreen → pick airports/date → **"Find Flights"** → FlightListScreen → tap flight
+
+2️⃣ **"Transatlantic Flights"**
+   → TransatlanticFlightListScreen → 30+ pre-loaded routes → tap route
+
+3️⃣ **"Flight Number Search"** (ANY airline!)
+   → FlightNumberSearchScreen → enter code (AA100, BA178) + date → **"Search Flight"** → FlightDetailsScreen
+
+4️⃣ **"Custom Flight"**
+   → CustomFlightScreen → manual entry → FlightDetailsScreenCustom
+
+All paths lead to FlightDetailsScreen where you calculate your light schedule! ✈️`
   },
   {
     keywords: ['calculate', 'schedule', 'light', 'switching'],

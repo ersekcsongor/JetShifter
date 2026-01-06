@@ -366,9 +366,14 @@ export class FlightsService {
     return await newFlight.save();
   }
 
-  async saveFlightForUser(email: string, flightNumber: string) {
+  async saveFlightForUser(email: string, flightNumber: string, flightData?: any, source?: string) {
     try {
-      const doc = await this.savedFlightModel.create({ email, flightNumber });
+      const doc = await this.savedFlightModel.create({
+        email,
+        flightNumber,
+        flightData: flightData || undefined, // Store flight data if provided
+        source: source || 'ryanair' // Default to 'ryanair' for backward compatibility
+      });
       return doc.toObject();
     } catch (err) {
       if (err.code === 11000) {
@@ -388,24 +393,63 @@ export class FlightsService {
 
   async getSavedFlightsForUser(email: string) {
     const saved = await this.savedFlightModel.find({ email }).lean().exec();
+
+    if (saved.length === 0) {
+      return [];
+    }
+
     const flightNumbers = saved.map(s => s.flightNumber);
     const flightsData = await this.flightDataModel.find({ 'flights.flightNumber': { $in: flightNumbers } }).lean().exec();
 
     // Flatten to only the saved flights
     const savedFlights: any[] = [];
+    const foundFlightNumbers = new Set<string>();
+
     for (const doc of flightsData) {
         for (const flight of doc.flights) {
             if (flightNumbers.includes(flight.flightNumber)) {
+                // Find the saved record to get the source
+                const savedRecord = saved.find(s => s.flightNumber === flight.flightNumber);
                 savedFlights.push({
                     ...flight,
                     origin: doc.origin,
                     destination: doc.destination,
                     date: doc.date,
-                    _id: flight._id || doc._id // for React key
+                    _id: flight._id || doc._id, // for React key
+                    source: savedRecord?.source || 'ryanair' // Include source from saved record
                 });
+                foundFlightNumbers.add(flight.flightNumber);
             }
         }
     }
+
+    // For flight numbers not found in FlightData (e.g., custom flights),
+    // use stored flightData if available
+    for (const savedRecord of saved) {
+      if (!foundFlightNumbers.has(savedRecord.flightNumber)) {
+        if (savedRecord.flightData) {
+          // Use stored flight data
+          savedFlights.push({
+            flightNumber: savedRecord.flightNumber,
+            ...savedRecord.flightData,
+            _id: savedRecord._id,
+            source: savedRecord.source || 'ryanair' // Include source
+          });
+        } else {
+          // Fallback to unknown if no data stored
+          savedFlights.push({
+            flightNumber: savedRecord.flightNumber,
+            origin: 'Unknown',
+            destination: 'Unknown',
+            duration: 'N/A',
+            _id: savedRecord._id,
+            source: savedRecord.source || 'ryanair', // Include source
+            isIncomplete: true
+          });
+        }
+      }
+    }
+
     return savedFlights;
 }
 

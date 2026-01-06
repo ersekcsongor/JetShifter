@@ -494,8 +494,22 @@ const handleSimulateDynamics = useCallback(async () => {
         }
       }
 
-      // Now save the flight for the user
-      await axios.post(`${API_URL}/save`, { email: userEmail, flightNumber: flight.flightNumber });
+      // Now save the flight for the user with full flight data
+      const flightDataToSave = {
+        origin: flight.origin,
+        destination: flight.destination,
+        departureTime: flight.time[0],
+        arrivalTime: flight.time[1],
+        duration: flight.duration,
+        flightNumber: flight.flightNumber
+      };
+
+      await axios.post(`${API_URL}/save`, {
+        email: userEmail,
+        flightNumber: flight.flightNumber,
+        flightData: flightDataToSave,
+        source: 'custom' // Mark as custom flight
+      });
       Alert.alert('Success', 'Flight saved!');
     } catch (error: any) {
       if (axios.isAxiosError(error) && error.response?.status === 409) {

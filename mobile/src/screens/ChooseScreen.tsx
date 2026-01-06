@@ -83,7 +83,7 @@ const ChooseScreen = () => {
         </TouchableOpacity>
 
         {/* Transatlantic Flights Card */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.transatlanticCard}
           onPress={() => navigation.navigate("TransatlanticFlightListScreen")}
           activeOpacity={0.8}
@@ -123,7 +123,7 @@ const ChooseScreen = () => {
               <Text style={styles.featureText}>Real-time schedules</Text>
             </View>
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Flight Number Search Card */}
         <TouchableOpacity

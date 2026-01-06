@@ -395,9 +395,13 @@ const UserDetailsScreen = ({ navigation }: Props) => {
               <View style={styles.imageWrapper}>
                 {userData.profileImage ? (
                   (() => {
-                    const imageUri = `${ENV.API_BASE_URL}${userData.profileImage}?v=${imageVersion}`;
+                    // Check if profileImage is already a full URL (Firebase Storage) or a relative path
+                    const isFullUrl = userData.profileImage.startsWith('http://') || userData.profileImage.startsWith('https://');
+                    const imageUri = isFullUrl
+                      ? `${userData.profileImage}?v=${imageVersion}`
+                      : `${ENV.API_BASE_URL}${userData.profileImage}?v=${imageVersion}`;
                     console.log('Profile Image URI:', imageUri);
-                    
+
                     return (
                       <Image
                         source={{ uri: imageUri }}

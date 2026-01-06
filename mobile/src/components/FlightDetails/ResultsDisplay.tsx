@@ -57,6 +57,10 @@ export const ResultsDisplay = ({
   const landingTime = departure.clone().add(switchingTimes.flightDurationHours, 'hours');
   const scheduleEnd = moment(switchingTimes.tf);
 
+  // Extend schedule end by 12 hours to allow for intervention recommendations (coffee/melatonin)
+  // that may fall slightly after the last switching point
+  const extendedScheduleEnd = scheduleEnd.clone().add(12, 'hours');
+
   // Calculate chronotype phase shift using PHARMACOLOGY_CONSTANTS
   const chronotypePhaseShift =
     chronotype === 'morning' ? PHARMACOLOGY_CONSTANTS.INTERVENTION.CHRONOTYPE_PHASE_SHIFT.MORNING :
@@ -136,9 +140,11 @@ export const ResultsDisplay = ({
     }
 
     // === KRONAUER MODEL-BASED CAFFEINE CALCULATION ===
-    console.log('☕ Coffee calculation:', {
-      useCoffee,
+    console.log('☕ Coffee calculation for sleep period:', {
+      currentDay: currentDay.format('YYYY-MM-DD'),
+      sleepStartTime: sleepStart.format('YYYY-MM-DD HH:mm'),
       sleepEndTime: sleepEnd.format('YYYY-MM-DD HH:mm'),
+      useCoffee,
       landingTime: landingTime.format('YYYY-MM-DD HH:mm'),
       sleepEndAfterLanding: sleepEnd.isAfter(landingTime),
       isAdvancing,
@@ -156,8 +162,14 @@ export const ResultsDisplay = ({
 
       console.log(`☕ Caffeine cutoff hours: ${cutoffHours}`);
 
-      // Calculate cutoff time for this sleep period
-      const avoidAfter = sleepStart.clone().subtract(cutoffHours, 'hours');
+      // Calculate cutoff time - avoid caffeine X hours before the NEXT sleep period
+      // (coffee consumed after waking should not interfere with tonight's sleep)
+      const nextSleepStart = sleepEnd.clone().hour(parseInt(sleepSchedule.bedtime.split(':')[0])).minute(parseInt(sleepSchedule.bedtime.split(':')[1]));
+      if (nextSleepStart.isBefore(sleepEnd)) {
+        nextSleepStart.add(1, 'day');
+      }
+      const avoidAfter = nextSleepStart.clone().subtract(cutoffHours, 'hours');
+      console.log(`☕ Next sleep start: ${nextSleepStart.format('YYYY-MM-DD HH:mm')}`);
       console.log(`☕ Avoid caffeine after: ${avoidAfter.format('YYYY-MM-DD HH:mm')}`);
 
       // Calculate caffeine times based on travel direction
@@ -168,9 +180,9 @@ export const ResultsDisplay = ({
         // For eastward travel, caffeine at wake time helps advance the clock
         const morningCaffeine = sleepEnd.clone();
         console.log(`☕ Morning caffeine time: ${morningCaffeine.format('YYYY-MM-DD HH:mm')}`);
-        console.log(`☕ Checks: afterLanding=${morningCaffeine.isAfter(landingTime)}, beforeScheduleEnd=${morningCaffeine.isBefore(scheduleEnd)}`);
+        console.log(`☕ Checks: afterLanding=${morningCaffeine.isAfter(landingTime)}, beforeScheduleEnd=${morningCaffeine.isBefore(extendedScheduleEnd)}`);
 
-        if (morningCaffeine.isAfter(landingTime) && morningCaffeine.isBefore(scheduleEnd)) {
+        if (morningCaffeine.isAfter(landingTime) && morningCaffeine.isBefore(extendedScheduleEnd)) {
           console.log('✓ Adding morning caffeine');
           recommendedTimes.push(morningCaffeine);
         }
@@ -178,11 +190,11 @@ export const ResultsDisplay = ({
         // Additional dose 3-4 hours after wake for sustained alertness
         const midMorningCaffeine = sleepEnd.clone().add(3.5, 'hours');
         console.log(`☕ Mid-morning caffeine time: ${midMorningCaffeine.format('YYYY-MM-DD HH:mm')}`);
-        console.log(`☕ Checks: afterLanding=${midMorningCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${midMorningCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${midMorningCaffeine.isBefore(scheduleEnd)}`);
+        console.log(`☕ Checks: afterLanding=${midMorningCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${midMorningCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${midMorningCaffeine.isBefore(extendedScheduleEnd)}`);
 
         if (midMorningCaffeine.isAfter(landingTime) &&
             midMorningCaffeine.isBefore(avoidAfter) &&
-            midMorningCaffeine.isBefore(scheduleEnd)) {
+            midMorningCaffeine.isBefore(extendedScheduleEnd)) {
           console.log('✓ Adding mid-morning caffeine');
           recommendedTimes.push(midMorningCaffeine);
         }
@@ -192,11 +204,11 @@ export const ResultsDisplay = ({
         // Use later in the day to extend wake period
         const afternoonCaffeine = sleepEnd.clone().add(8, 'hours');
         console.log(`☕ Afternoon caffeine time: ${afternoonCaffeine.format('YYYY-MM-DD HH:mm')}`);
-        console.log(`☕ Checks: afterLanding=${afternoonCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${afternoonCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${afternoonCaffeine.isBefore(scheduleEnd)}`);
+        console.log(`☕ Checks: afterLanding=${afternoonCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${afternoonCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${afternoonCaffeine.isBefore(extendedScheduleEnd)}`);
 
         if (afternoonCaffeine.isAfter(landingTime) &&
             afternoonCaffeine.isBefore(avoidAfter) &&
-            afternoonCaffeine.isBefore(scheduleEnd)) {
+            afternoonCaffeine.isBefore(extendedScheduleEnd)) {
           console.log('✓ Adding afternoon caffeine');
           recommendedTimes.push(afternoonCaffeine);
         }
@@ -435,20 +447,26 @@ export const ResultsDisplay = ({
                       const topPercent = (instantMinutes / (24 * 60)) * 100;
                       const heightPercent = 2; // Small height for instant recommendations
 
-                      let icon, iconColor, barColor;
+                      let icon: any;
+                      let iconColor: string;
+                      let barColor: string;
+
                       if (segment.isMelatonin) {
                         icon = 'medkit';
                         iconColor = '#ffffff';
-                        barColor = '#8b5cf6';
+                        barColor = '#8b5cf6'; // Purple for melatonin
                       } else if (segment.isCoffee) {
                         icon = 'cafe';
                         iconColor = '#ffffff';
-                        barColor = '#92400e';
+                        barColor = '#92400e'; // Dark brown for coffee
+                      } else {
+                        // Fallback in case neither flag is set (should not happen)
+                        return null;
                       }
 
                       const totalLanes = segment.totalLanes || 1;
                       const laneIndex = segment.lane || 0;
-                      const gapSize = 200; // Gap between bars in pixels
+                      const gapSize = 300; // Gap between bars in pixels
                       const totalGapWidth = (totalLanes - 1) * gapSize;
                       const availableWidth = 50 - totalGapWidth;
                       const barWidth = availableWidth / totalLanes;
@@ -716,13 +734,18 @@ const createResultsStyles = (isDarkMode: boolean = false) => StyleSheet.create({
   },
   legendContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'center',
     marginTop: 20,
-    gap: 20,
+    gap: 12,
+    paddingHorizontal: 10,
+    maxWidth: SCREEN_WIDTH - 40,
+    alignSelf: 'center',
   },
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginHorizontal: 4,
   },
   legendDot: {
     width: 12,

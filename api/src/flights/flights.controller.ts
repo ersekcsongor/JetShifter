@@ -42,11 +42,11 @@ export class FlightsController {
   }
 
   @Post('save')
-  async saveFlight(@Body() body: { email: string; flightNumber: string }) {
+  async saveFlight(@Body() body: { email: string; flightNumber: string; flightData?: any; source?: string }) {
     if (!body.email || !body.flightNumber) {
       throw new BadRequestException('Missing email or flightNumber');
     }
-    return this.flightsService.saveFlightForUser(body.email, body.flightNumber);
+    return this.flightsService.saveFlightForUser(body.email, body.flightNumber, body.flightData, body.source);
   }
 
   @Post('unsave')

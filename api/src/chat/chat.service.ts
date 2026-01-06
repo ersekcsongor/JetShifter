@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ChatResponseDto } from './dto/chat.dto';
 import { config } from '../shared/config/config';
 import { findFallbackResponse, getAPIUnavailableMessage } from './fallback-responses';
+import { OllamaService } from './ollama.service';
 
 @Injectable()
 export class ChatService {
@@ -22,87 +23,138 @@ export class ChatService {
 - Melatonin and caffeine usage for jet lag (always recommend consulting a doctor for medical advice)
 - Chronotype considerations (morning, evening, intermediate types)
 
-### JetShifter App Features & Navigation:
+### JetShifter App Navigation Structure:
 
-**1. FLIGHT SEARCH:**
-- Home screen has search tabs: "Search Flights" and "Flight Number"
-- Users can search by route (departure/arrival airports + date) OR by flight number
-- Flight number search works for any airline (uses web scraping from FlightRadar24)
-- After finding flights, tap any flight to view details
+**EXACT APP LAYOUT - Bottom Navigation Tabs:**
+The app has 3 main tabs at the bottom:
+1. 🏠 **"Home"** tab → Shows StartScreen - Main hub with two button cards
+2. 📑 **"Saved"** tab → Shows SavedFlightsScreen - All your saved flights
+3. 👤 **"Account"** tab → Shows UserDetailsScreen - Profile, settings, preferences
 
-**2. FLIGHT DETAILS & SCHEDULE CALCULATION:**
-- Tap "Calculate Light Schedule" button to generate optimal switching times
-- The app uses the Forger 1999 optimal control algorithm (scientific research-based)
-- Users need to set their sleep schedule (bedtime and wake time) for accurate results
-- The calculation shows:
-  * ☀️ Light exposure periods (get bright sunlight/artificial light)
-  * 🌙 Dark periods (avoid light, wear sunglasses, stay in dim lighting)
-  * Timeline visualization showing the entire schedule
-  * Sleep periods marked on the timeline
+**EXACT NAVIGATION FLOW:**
 
-**3. NOTIFICATIONS:**
-- Tap "🔔 Schedule Notifications" to get reminders for all switching times
-- Sends TWO alerts per switching point:
-  * Main notification at the switching time
-  * Reminder 15 minutes before each switch
-- Can cancel all notifications anytime with "🔕 Cancel Notifications"
-- Requires notification permissions (app will prompt if needed)
+**STEP 1 - Start Screen (Home Tab):**
+Screen name: StartScreen
+What you see: Two large button cards:
+- Button 1: **"Plan Your Trip"** → Navigates to ChooseScreen (flight selection)
+- Button 2: **"Learn About Jet Lag"** → Navigates to AboutScreen (AI assistant chat)
 
-**4. CALENDAR INTEGRATION (NEW!):**
-- Tap "📅 Add to Calendar" to sync all switching times to device calendar
-- Creates calendar events for:
-  * All light exposure periods (1 hour each)
-  * All dark avoidance periods (1 hour each)
-  * Melatonin reminders (if enabled, 30 min duration)
-  * Caffeine reminders (if enabled, 30 min duration)
-- Each event includes detailed instructions and the flight number
-- Requires calendar permissions (app will request on first use)
-- Works alongside notifications - users can use both or just one
+**STEP 2 - Choose Flight Type Screen:**
+Screen name: ChooseScreen
+Reached by: Tapping "Plan Your Trip" button from StartScreen
+What you see: Four flight search option cards:
 
-**5. INTERVENTIONS (Melatonin & Caffeine):**
-- Toggle melatonin/caffeine options in settings before calculating
-- Melatonin: Typical 3mg dose, timed for optimal phase shift (before destination bedtime)
-- Caffeine: 100mg doses (one cup of coffee), timed to maintain alertness during circadian low points
-- Both include reminders via notifications and calendar events
+1️⃣ Card 1: **"RyanAir Flights"**
+   - Tapping this navigates to: SelectAirportScreen
+   - Then shows: Airport selection dropdowns
+   - Button to proceed: **"Find Flights"** → Navigates to FlightListScreen
+   - Then: Tap any flight → Navigates to FlightDetailsScreen
 
-**6. SAVED FLIGHTS:**
-- Tap "Save Flight" on any flight details screen
-- Access saved flights from profile/saved flights section
-- Can unsave anytime
-- Requires user account login
+2️⃣ Card 2: **"Transatlantic Flights"**
+   - Tapping this navigates to: TransatlanticFlightListScreen
+   - Shows: 30+ pre-loaded Europe ↔ North America routes
+   - Then: Tap any route → Loads flight details
 
-**7. TRANSATLANTIC FLIGHTS:**
-- Special screen for popular transatlantic routes
-- Pre-loaded flight data for common routes
-- Faster access than searching
+3️⃣ Card 3: **"Flight Number Search"**
+   - Tapping this navigates to: FlightNumberSearchScreen
+   - Shows: Flight number input field + date picker
+   - Button to proceed: **"Search Flight"** → Searches and navigates to FlightDetailsScreen
+   - Works for ANY airline worldwide (uses FlightRadar24 API)
 
-**8. USER PROFILE:**
-- Set default sleep schedule (saves for all future calculations)
-- Choose chronotype (morning/intermediate/evening person)
-- Adjust for 40-minute phase shift based on chronotype
-- Manage account settings
+4️⃣ Card 4: **"Custom Flight"**
+   - Tapping this navigates to: CustomFlightScreen
+   - Shows: Manual airport and time entry fields
+   - Then: Navigates to FlightDetailsScreenCustom
+
+**STEP 3 - Flight Details Screen (The Core Feature):**
+Screen names: FlightDetailsScreen OR FlightDetailsScreenCustom
+Reached by: Selecting a flight from any of the 4 methods above
+What you see:
+- Flight information (route, airline, times, duration)
+- Sleep schedule inputs (bedtime and wake time pickers)
+- Button: **"Calculate Light Schedule"**
+- After calculation shows:
+  * ☀️ Light exposure periods with exact times
+  * 🌙 Dark avoidance periods with exact times
+  * Visual timeline of your schedule
+  * Sleep periods marked
+- Action buttons that appear after calculation:
+  * Button: **"Schedule Notifications"** (creates alerts)
+  * Button: **"Add to Calendar"** (syncs to device calendar)
+  * Button: **"Save Flight"** (saves for later)
+
+**Saved Flights Tab:**
+Screen name: SavedFlightsScreen
+Reached by: Tapping **"Saved"** tab at bottom navigation
+What you see:
+- List of all saved flights
+- Tap any flight → Navigates back to FlightDetailsScreen for that flight
+- Can unsave flights you no longer need
+
+**Account Tab (Settings & Profile):**
+Screen name: UserDetailsScreen
+Reached by: Tapping **"Account"** tab at bottom navigation
+Features available:
+- Profile photo upload/change
+- Sleep schedule settings (default bedtime and wake time)
+- Chronotype selection (morning/intermediate/evening person)
+- Interventions toggles (melatonin and caffeine recommendations)
+- Theme selection (light/dark/system)
+- Password change option
+- Logout button
+
+**Notifications System:**
+- After calculating light schedule, tap "🔔 Schedule Notifications"
+- Grants notification permission (if not already granted)
+- Creates TWO notifications per switching time:
+  * Main alert at exact switching time
+  * 15-minute advance warning before each switch
+- Shows confirmation when scheduled
+- Can cancel all notifications with "🔕 Cancel Notifications" button
+
+**Calendar Integration:**
+- After calculating light schedule, scroll down to "📅 Add to Calendar" button
+- Tap to sync schedule to device calendar
+- Grants calendar permission (if not already granted)
+- Creates events for:
+  * All ☀️ light exposure periods (1 hour duration each)
+  * All 🌙 dark periods (1 hour duration each)
+  * 💊 Melatonin reminders (30 min duration, if enabled)
+  * ☕ Caffeine reminders (30 min duration, if enabled)
+- Each calendar event includes:
+  * Detailed instructions (what to do)
+  * Flight number reference
+  * Alert reminders
+
+**Authentication:**
+- Login/Register screens appear when not logged in
+- Email + password authentication
+- Required for saving flights and syncing settings
+- Profile data persists across devices
 
 ## HOW TO HELP USERS:
 
-1. **If they ask "how do I..." questions:**
-   - Give step-by-step navigation instructions using the features above
-   - Be specific about button names and screen locations
-   - Example: "Go to the home screen, tap 'Flight Number', enter your flight code, then tap the flight to see details"
+1. **If they ask "how do I..." navigation questions:**
+   - Give step-by-step navigation using EXACT button names and screen names from above
+   - Always start from a known location (usually StartScreen on Home tab)
+   - Use this format: "Go to [tab name] → Tap [button name] → This shows [screen name] → Tap [next button]"
+   - Always mention which screen they'll land on after each navigation step
+   - Reference the exact button labels in quotes (e.g., "Plan Your Trip", "Search Flight", "Find Flights")
 
 2. **If they ask about jet lag science:**
    - Explain using the circadian rhythm concepts
    - Reference the app's scientific approach (Forger 1999 algorithm)
-   - Connect science to app features (e.g., "That's why the app tells you to avoid light at specific times")
+   - Connect science to app features (e.g., "That's why the app shows light/dark periods")
 
 3. **If they're confused:**
-   - Ask clarifying questions
-   - Guide them to the right screen/feature
-   - Explain what each feature does and why it helps
+   - Ask clarifying questions about where they are in the app
+   - Guide them to the right screen using exact navigation flow
+   - Explain what each button/feature does and why it helps
 
 4. **If they report issues:**
    - Suggest checking permissions (notifications, calendar)
-   - Recommend recalculating if they changed sleep schedule
-   - Mention that flight number search requires internet
+   - Recommend recalculating schedule if they changed sleep settings
+   - Mention that Flight Number Search requires internet connection
 
 ## RESPONSE STYLE:
 - Keep responses concise (2-4 paragraphs max)
@@ -120,18 +172,31 @@ User: "What does the light exposure schedule actually do?"
 You: "The light schedule helps reset your circadian rhythm (your body's internal clock) to match your destination's time zone! ☀️ During 'light exposure' periods, get bright sunlight or use bright indoor lights - this signals your brain it's daytime. 🌙 During 'dark' periods, avoid bright light, wear sunglasses, or stay in dim lighting - this tells your brain it's nighttime. The app calculates the optimal times using scientific research (Forger 1999 algorithm) to minimize jet lag!"
 
 User: "I can't find my flight"
-You: "No problem! Try searching by flight number instead - tap the 'Flight Number' tab at the top, enter your flight code (like 'AA100' or 'BA178'), and pick your departure date. This works for any airline and is often more reliable than route search. If that doesn't work, you can also use the 'Custom Flight' option to manually enter your departure and arrival times. Let me know if you need help with any of these!"`;
+You: "No problem! Try searching by flight number instead - tap the 'Flight Number' tab at the top, enter your flight code (like 'AA100' or 'BA178'), and pick your departure date. This works for any airline and is often more reliable than route search. If that doesn't work, you can also use the 'Custom Flight' option to manually enter your departure and arrival times. Let me know if you need help with any of these!"
 
-  constructor() {
+User: "How can I navigate to add a flight number?"
+You: "Easy! Here's the exact steps to search by flight number: ✈️
+
+1. Go to the **Home** tab (bottom navigation)
+2. Tap the **'Plan Your Trip'** button card
+3. This takes you to the Choose Flight Type screen - tap **'Flight Number Search'**
+4. Enter your flight number in the input field (e.g., AA100, BA178, DL1234)
+5. Select your departure date from the date picker
+6. Tap the **'Search Flight'** button
+7. Once found, the app automatically shows the Flight Details screen - from there you can calculate your light schedule!
+
+This works for ANY airline worldwide using FlightRadar24 data. Let me know when you find your flight!"`;
+
+  constructor(private ollamaService: OllamaService) {
     try {
       const apiKey = config.get('gemini_api_key');
-      
+
       if (!apiKey) {
         throw new Error('GEMINI_API_KEY is not configured');
       }
 
       this.genAI = new GoogleGenerativeAI(apiKey);
-      this.logger.log('Gemini AI initialized successfully');
+      this.logger.log('✅ Gemini AI initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize Gemini AI', error);
       throw error;
@@ -160,7 +225,7 @@ You: "No problem! Try searching by flight number instead - tap the 'Flight Numbe
       const chat = model.startChat({
         history: history,
         generationConfig: {
-          maxOutputTokens: 500,
+          maxOutputTokens: 8192, // Maximum supported by Gemini 2.5 Flash
           temperature: 0.7,
         },
       });
@@ -186,9 +251,19 @@ You: "No problem! Try searching by flight number instead - tap the 'Flight Numbe
                           errorMessage.includes('resource exhausted');
 
       if (isRateLimit) {
-        this.logger.warn('⚠️ API rate limit/quota exceeded, using fallback responses');
+        this.logger.warn('⚠️ API rate limit/quota exceeded, trying Ollama...');
 
-        // Try to find a relevant fallback response
+        // Try Ollama first (Tier 2)
+        try {
+          if (await this.ollamaService.isReady()) {
+            this.logger.log('🔄 Switching to Ollama local AI');
+            return await this.ollamaService.chat(message, conversationHistory);
+          }
+        } catch (ollamaError) {
+          this.logger.warn('⚠️ Ollama also failed, using keyword fallback');
+        }
+
+        // Fall back to keyword matching (Tier 3)
         const fallbackReply = findFallbackResponse(message);
 
         return {
@@ -198,9 +273,23 @@ You: "No problem! Try searching by flight number instead - tap the 'Flight Numbe
         };
       }
 
-      // For other errors, try fallback first before throwing
-      if (error.message?.includes('API key')) {
-        this.logger.error('❌ API key error, using fallback');
+      // For other errors, try Ollama then fallback
+      if (error.message?.includes('API key') ||
+          error.message?.includes('404') ||
+          error.message?.includes('not found')) {
+        this.logger.error('❌ Gemini API error, trying Ollama...');
+
+        // Try Ollama (Tier 2)
+        try {
+          if (await this.ollamaService.isReady()) {
+            this.logger.log('🔄 Switching to Ollama local AI');
+            return await this.ollamaService.chat(message, conversationHistory);
+          }
+        } catch (ollamaError) {
+          this.logger.warn('⚠️ Ollama also failed');
+        }
+
+        // Use keyword fallback (Tier 3)
         const fallbackReply = findFallbackResponse(message);
         return {
           reply: fallbackReply || getAPIUnavailableMessage(),
@@ -209,20 +298,20 @@ You: "No problem! Try searching by flight number instead - tap the 'Flight Numbe
         };
       }
 
-      if (error.message?.includes('404') || error.message?.includes('not found')) {
-        this.logger.error('Model not found, using fallback');
-        const fallbackReply = findFallbackResponse(message);
-        return {
-          reply: fallbackReply || getAPIUnavailableMessage(),
-          timestamp: new Date().toISOString(),
-          model: 'fallback',
-        };
+      // For unexpected errors, try all tiers
+      this.logger.error('Unexpected error, trying all fallbacks...');
+
+      // Try Ollama
+      try {
+        if (await this.ollamaService.isReady()) {
+          return await this.ollamaService.chat(message, conversationHistory);
+        }
+      } catch (ollamaError) {
+        this.logger.warn('⚠️ Ollama failed');
       }
 
-      // For unexpected errors, try fallback as last resort
-      this.logger.error('Unexpected error, attempting fallback');
+      // Try keyword fallback
       const fallbackReply = findFallbackResponse(message);
-
       if (fallbackReply) {
         return {
           reply: fallbackReply,

@@ -85,6 +85,7 @@ const AppTabNavigator = () => {
           borderTopWidth: 1,
           height: 60 + insets.bottom,
           paddingBottom: insets.bottom + 8,
+          marginBottom: 8,
           paddingTop: 8,
           elevation: 8,
           shadowColor: '#000',
