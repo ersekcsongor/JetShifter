@@ -99,9 +99,9 @@ export const PHARMACOLOGY_CONSTANTS = {
 };
 
   const ENV = {
-  API_BASE_URL: 'http://192.168.1.130:3000',  // LOCAL DEV - Use http:// not https://
+  API_BASE_URL: 'https://jetshifter-api.onrender.com',  // LOCAL DEV - Use http:// not https://
   // API_BASE_URL: 'https://jetshifter-api.onrender.com',  // PRODUCTION
-  // 'http://192.168.1.2:3000',  // LOCAL DEV - Use http:// not https://
+  // 'http://192.168.1.130:3000',  // LOCAL DEV - Use http:// not https://
 };
 
 export default ENV;
