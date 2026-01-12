@@ -530,7 +530,7 @@ const UserDetailsScreen = ({ navigation }: Props) => {
               </TouchableOpacity>
 
               {/* Test Local Notification Button */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.passwordButton}
                 onPress={handleTestNotification}
               >
@@ -540,10 +540,10 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                   </View>
                   <Text style={styles.passwordButtonText}>Test Local Notification</Text>
                 </View>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* Test Firebase Push Button */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.passwordButton}
                 onPress={handleTestFirebasePush}
               >
@@ -553,7 +553,7 @@ const UserDetailsScreen = ({ navigation }: Props) => {
                   </View>
                   <Text style={styles.passwordButtonText}>Test Firebase Push</Text>
                 </View>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* Logout Button */}
               <TouchableOpacity

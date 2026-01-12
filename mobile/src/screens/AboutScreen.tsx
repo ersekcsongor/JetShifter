@@ -162,7 +162,7 @@ const AboutScreen = ({ navigation }: { navigation: any }) => {
           onPress={() => navigation.goBack()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color="#000" />
+          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         
         <View style={styles.headerContent}>

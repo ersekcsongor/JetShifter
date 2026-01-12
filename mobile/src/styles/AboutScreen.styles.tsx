@@ -118,7 +118,7 @@ export const createThemedStyles = (colors: any) => StyleSheet.create({
     lineHeight: 22,
   },
   userMessageText: {
-    color: colors.primaryDark,
+    color: '#000000', // Black text for better readability on yellow background
   },
   aiMessageText: {
     color: colors.text,
@@ -128,8 +128,8 @@ export const createThemedStyles = (colors: any) => StyleSheet.create({
     marginTop: 4,
   },
   userMessageTime: {
-    color: colors.primaryDark,
-    opacity: 0.7,
+    color: '#000000', // Black text for better readability on yellow background
+    opacity: 0.6,
     textAlign: 'right',
   },
   aiMessageTime: {

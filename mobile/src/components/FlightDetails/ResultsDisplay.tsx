@@ -466,7 +466,7 @@ export const ResultsDisplay = ({
 
                       const totalLanes = segment.totalLanes || 1;
                       const laneIndex = segment.lane || 0;
-                      const gapSize = 300; // Gap between bars in pixels
+                      const gapSize = 185; // Gap between bars in pixels (reduced from 300 for better visual spacing)
                       const totalGapWidth = (totalLanes - 1) * gapSize;
                       const availableWidth = 50 - totalGapWidth;
                       const barWidth = availableWidth / totalLanes;

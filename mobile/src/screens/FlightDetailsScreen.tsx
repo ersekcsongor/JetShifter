@@ -87,6 +87,67 @@ const FlightDetailsScreen = ({ route }: Props) => {
   const API_URL = `${ENV.API_BASE_URL}/flights`;
   const userEmail = authState?.user?.email || '';
 
+  // Save schedule to AsyncStorage when it's calculated
+  useEffect(() => {
+    const saveScheduleToStorage = async () => {
+      if (switchingTimes && !loading && !isOptimizing && optimizationComplete) {
+        try {
+          const scheduleKey = `schedule_${flight.flightNumber}_${flight.origin}_${flight.destination}`;
+          const scheduleData = {
+            switchingTimes,
+            stateTrajectory,
+            coStateTrajectory,
+            controlPerturbations,
+            sleepSchedule,
+            useMelatonin,
+            useCoffee,
+            chronotype,
+            timestamp: Date.now(),
+          };
+          await AsyncStorage.setItem(scheduleKey, JSON.stringify(scheduleData));
+          console.log('✅ Schedule saved to AsyncStorage');
+        } catch (error) {
+          console.error('❌ Error saving schedule:', error);
+        }
+      }
+    };
+    saveScheduleToStorage();
+  }, [switchingTimes, optimizationComplete]);
+
+  // Load saved schedule from AsyncStorage on mount
+  useEffect(() => {
+    const loadSavedSchedule = async () => {
+      try {
+        const scheduleKey = `schedule_${flight.flightNumber}_${flight.origin}_${flight.destination}`;
+        const savedSchedule = await AsyncStorage.getItem(scheduleKey);
+
+        if (savedSchedule) {
+          const scheduleData = JSON.parse(savedSchedule);
+          console.log('📥 Loading saved schedule from AsyncStorage');
+
+          // Update state with saved schedule
+          updateState({
+            switchingTimes: scheduleData.switchingTimes,
+            stateTrajectory: scheduleData.stateTrajectory,
+            coStateTrajectory: scheduleData.coStateTrajectory,
+            controlPerturbations: scheduleData.controlPerturbations,
+            optimizationComplete: true,
+            loading: false,
+          });
+
+          // Update sleep schedule and preferences
+          setSleepSchedule(scheduleData.sleepSchedule);
+          setUseMelatonin(scheduleData.useMelatonin);
+          setUseCoffee(scheduleData.useCoffee);
+          setChronotype(scheduleData.chronotype);
+        }
+      } catch (error) {
+        console.error('❌ Error loading saved schedule:', error);
+      }
+    };
+    loadSavedSchedule();
+  }, [flight.flightNumber, flight.origin, flight.destination]);
+
   // Check if flight is already saved
   useEffect(() => {
     const checkIfFlightSaved = async () => {
@@ -529,6 +590,29 @@ const FlightDetailsScreen = ({ route }: Props) => {
     }
   };
 
+  const handleClearSchedule = async () => {
+    try {
+      const scheduleKey = `schedule_${flight.flightNumber}_${flight.origin}_${flight.destination}`;
+      await AsyncStorage.removeItem(scheduleKey);
+
+      // Reset state
+      updateState({
+        switchingTimes: undefined,
+        stateTrajectory: [],
+        coStateTrajectory: [],
+        controlPerturbations: [],
+        optimizationComplete: false,
+        loading: false,
+      });
+
+      Alert.alert('Schedule Cleared', 'The saved schedule has been removed. You can calculate a new one.');
+      console.log('🗑️ Schedule cleared from AsyncStorage');
+    } catch (error) {
+      console.error('❌ Error clearing schedule:', error);
+      Alert.alert('Error', 'Failed to clear schedule.');
+    }
+  };
+
   const handleAddToCalendar = async () => {
     try {
       if (!switchingTimes) {
@@ -659,6 +743,17 @@ const FlightDetailsScreen = ({ route }: Props) => {
         loading={loading || isOptimizing}
         timezonesReady={!!timezones.originTz && !!timezones.destTz}
       />
+
+      {switchingTimes && optimizationComplete && (
+        <TouchableOpacity
+          onPress={handleClearSchedule}
+          style={[styles.saveButton, { marginTop: 10, backgroundColor: colors.border }]}
+        >
+          <Text style={[styles.saveButtonText, { color: colors.text }]}>
+            🗑️ Clear & Recalculate Schedule
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {switchingTimes && (
         <>

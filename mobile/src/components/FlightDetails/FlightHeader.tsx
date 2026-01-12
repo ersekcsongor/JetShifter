@@ -133,7 +133,9 @@ export const FlightHeader = ({ flight, timezones }: FlightHeaderProps) => {
         <View style={styles.cityColumn}>
           <Text style={[styles.cityCode, { color: textColor }]}>{flight.destination}</Text>
           {!!destinationCountry && (
-            <Text style={[styles.cityName, { color: subtextColor }]}>{destinationCountry}</Text>
+            <Text style={[styles.cityName, { color: subtextColor }]} numberOfLines={2}>
+              {destinationCountry}
+            </Text>
           )}
           <Text style={[styles.timeText, { color: textColor }]}>
             {formatTimeInTimezone(flight.time[1], timezones?.destTz)}
@@ -188,8 +190,11 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   cityName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
+    textAlign: 'center',
+    marginBottom: 4,
+    paddingHorizontal: 4,
   },
   flightInfoCenter: {
     alignItems: 'center',
