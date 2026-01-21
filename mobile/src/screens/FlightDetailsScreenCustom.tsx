@@ -83,9 +83,35 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
   const API_URL = `${ENV.API_BASE_URL}/global-flights`;
   const userEmail = authState?.user?.email || '';
 
-  // Load sleep schedule from backend user profile
+  // Load sleep schedule from backend user profile or AsyncStorage (offline mode)
   useEffect(() => {
     const loadSleepSchedule = async () => {
+      // In offline mode, skip API call and use AsyncStorage directly
+      if (authState?.offlineMode || !authState?.token) {
+        try {
+          const savedBedTime = await AsyncStorage.getItem('userBedTime');
+          const savedWakeTime = await AsyncStorage.getItem('userWakeTime');
+          if (savedBedTime && savedWakeTime) {
+            setSleepSchedule({
+              bedtime: savedBedTime,
+              wakeupTime: savedWakeTime
+            });
+          }
+          // Load saved preferences from AsyncStorage
+          const savedMelatonin = await AsyncStorage.getItem('userMelatonin');
+          const savedCoffee = await AsyncStorage.getItem('userCoffee');
+          const savedChronotype = await AsyncStorage.getItem('userChronotype');
+          if (savedMelatonin !== null) setUseMelatonin(savedMelatonin === 'true');
+          if (savedCoffee !== null) setUseCoffee(savedCoffee === 'true');
+          if (savedChronotype && ['morning', 'evening', 'intermediate'].includes(savedChronotype)) {
+            setChronotype(savedChronotype as 'morning' | 'evening' | 'intermediate');
+          }
+        } catch (e) {
+          console.error('Error loading from AsyncStorage:', e);
+        }
+        return;
+      }
+
       try {
         // Try to load from backend first
         const resp = await axios.get(`${ENV.API_BASE_URL}/users/me`, {
@@ -106,14 +132,17 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
         // Load melatonin and coffee preferences
         if (resp.data.useMelatonin !== undefined) {
           setUseMelatonin(resp.data.useMelatonin);
+          await AsyncStorage.setItem('userMelatonin', String(resp.data.useMelatonin));
         }
         if (resp.data.useCoffee !== undefined) {
           setUseCoffee(resp.data.useCoffee);
+          await AsyncStorage.setItem('userCoffee', String(resp.data.useCoffee));
         }
 
         // Load chronotype
         if (resp.data.chronotype) {
           setChronotype(resp.data.chronotype);
+          await AsyncStorage.setItem('userChronotype', resp.data.chronotype);
         }
 
         if (!resp.data.bedtime || !resp.data.wakeupTime) {
@@ -145,39 +174,71 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
       }
     };
     loadSleepSchedule();
-  }, [authState.token]);
+  }, [authState?.token, authState?.offlineMode]);
+
+  // Fallback timezone map for offline mode
+  const fallbackTimezones: { [key: string]: string } = {
+    'JFK': 'America/New_York', 'LAX': 'America/Los_Angeles', 'LHR': 'Europe/London',
+    'CDG': 'Europe/Paris', 'FRA': 'Europe/Berlin', 'AMS': 'Europe/Amsterdam',
+    'DXB': 'Asia/Dubai', 'SIN': 'Asia/Singapore', 'HND': 'Asia/Tokyo', 'NRT': 'Asia/Tokyo',
+    'SYD': 'Australia/Sydney', 'HKG': 'Asia/Hong_Kong', 'BKK': 'Asia/Bangkok',
+    'ICN': 'Asia/Seoul', 'BUD': 'Europe/Budapest', 'VIE': 'Europe/Vienna',
+    'BCN': 'Europe/Madrid', 'MAD': 'Europe/Madrid', 'FCO': 'Europe/Rome', 'MXP': 'Europe/Rome',
+    'ORD': 'America/Chicago', 'MIA': 'America/New_York', 'SFO': 'America/Los_Angeles',
+    'YYZ': 'America/Toronto', 'PEK': 'Asia/Shanghai', 'PVG': 'Asia/Shanghai',
+    'DEL': 'Asia/Kolkata', 'BOM': 'Asia/Kolkata', 'CLJ': 'Europe/Bucharest', 'OTP': 'Europe/Bucharest',
+  };
 
   console.log('Flight details:', flight);
   useEffect(() => {
     const fetchTimezones = async () => {
+      // In offline mode, use fallback timezones
+      if (authState?.offlineMode) {
+        const originTz = fallbackTimezones[flight.origin] || 'UTC';
+        const destTz = fallbackTimezones[flight.destination] || 'UTC';
+        console.log('Using offline timezones:', originTz, destTz);
+        updateState({
+          timezones: { originTz, destTz },
+          loading: false
+        });
+        return;
+      }
+
       try {
         updateState({ loading: true });
         const [originRes, destRes] = await Promise.all([
           fetch(`${ENV.API_BASE_URL}/global-airports/getTimezoneByIataCode/${flight.origin}`),
           fetch(`${ENV.API_BASE_URL}/global-airports/getTimezoneByIataCode/${flight.destination}`)
         ]);
-            
+
         const originData = await originRes.json();
         const destData = await destRes.json();
-      
+
         console.log('Origin timezone:', originData);
         console.log('Destination timezone:', destData);
-        
+
         updateState({
           timezones: {
-            originTz: originData.timeZone,
-            destTz: destData.timeZone
+            originTz: originData.timeZone || fallbackTimezones[flight.origin] || 'UTC',
+            destTz: destData.timeZone || fallbackTimezones[flight.destination] || 'UTC'
           }
         });
       } catch (error) {
-        console.error('Failed to fetch timezones:', error);
+        console.error('Failed to fetch timezones, using fallback:', error);
+        // Use fallback on error
+        updateState({
+          timezones: {
+            originTz: fallbackTimezones[flight.origin] || 'UTC',
+            destTz: fallbackTimezones[flight.destination] || 'UTC'
+          }
+        });
       } finally {
         updateState({ loading: false });
       }
     };
-    
+
     fetchTimezones();
-  }, [flight]);
+  }, [flight, authState?.offlineMode]);
 
   const [calculationTime, setCalculationTime] = useState<number | null>(null);
 

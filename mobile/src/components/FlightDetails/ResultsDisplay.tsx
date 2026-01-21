@@ -37,6 +37,7 @@ type Props = {
   useMelatonin?: boolean;
   useCoffee?: boolean;
   chronotype?: 'morning' | 'evening' | 'intermediate';
+  showPreFlightSchedule?: boolean;
 };
 
 export const ResultsDisplay = ({
@@ -45,6 +46,7 @@ export const ResultsDisplay = ({
   useMelatonin = false,
   useCoffee = false,
   chronotype = 'intermediate',
+  showPreFlightSchedule = false,
 }: Props) => {
   const { effectiveTheme } = useTheme();
   const isDarkMode = effectiveTheme === 'dark';
@@ -56,6 +58,9 @@ export const ResultsDisplay = ({
   const departure = moment(switchingTimes.t0);
   const landingTime = departure.clone().add(switchingTimes.flightDurationHours, 'hours');
   const scheduleEnd = moment(switchingTimes.tf);
+
+  // Pre-flight schedule: 1-2 days before departure
+  const preFlightStart = showPreFlightSchedule ? departure.clone().subtract(2, 'days') : null;
 
   // Extend schedule end by 12 hours to allow for intervention recommendations (coffee/melatonin)
   // that may fall slightly after the last switching point
@@ -73,6 +78,99 @@ export const ResultsDisplay = ({
   // Create a flat timeline of all activities sorted by time
   const allActivities: any[] = [];
 
+  // === PRE-FLIGHT SCHEDULE (1-2 days before departure) ===
+  if (showPreFlightSchedule && preFlightStart) {
+    const isAdvancingFlight = switchingTimes.timezoneDiff > 0; // Eastbound = advance
+    const hoursToShift = Math.abs(switchingTimes.timezoneDiff);
+
+    // Calculate adjusted sleep times for pre-flight days
+    // Eastbound: Go to bed earlier, wake up earlier
+    // Westbound: Go to bed later, wake up later
+    const shiftPerDay = Math.min(1, hoursToShift / 2); // Max 1 hour shift per day
+
+    for (let daysBefore = 2; daysBefore >= 1; daysBefore--) {
+      const preFlightDay = departure.clone().subtract(daysBefore, 'days').startOf('day');
+      const shiftAmount = shiftPerDay * (3 - daysBefore); // Day 2: 1x shift, Day 1: 2x shift
+
+      // Parse normal sleep times
+      const normalBedHour = parseInt(sleepSchedule.bedtime.split(':')[0]);
+      const normalBedMin = parseInt(sleepSchedule.bedtime.split(':')[1]);
+      const normalWakeHour = parseInt(sleepSchedule.wakeupTime.split(':')[0]);
+      const normalWakeMin = parseInt(sleepSchedule.wakeupTime.split(':')[1]);
+
+      // Calculate adjusted sleep times
+      let adjustedBedtime = preFlightDay.clone().hour(normalBedHour).minute(normalBedMin);
+      let adjustedWakeTime = preFlightDay.clone().add(1, 'day').hour(normalWakeHour).minute(normalWakeMin);
+
+      if (isAdvancingFlight) {
+        // Eastbound: sleep earlier
+        adjustedBedtime.subtract(shiftAmount, 'hours');
+        adjustedWakeTime.subtract(shiftAmount, 'hours');
+      } else {
+        // Westbound: sleep later
+        adjustedBedtime.add(shiftAmount, 'hours');
+        adjustedWakeTime.add(shiftAmount, 'hours');
+      }
+
+      // Add pre-flight sleep period
+      allActivities.push({
+        time: adjustedBedtime,
+        type: 'sleep',
+        endTime: adjustedWakeTime,
+        isSleep: true,
+        isPreFlight: true,
+      });
+
+      // Add light exposure recommendation for pre-flight
+      if (isAdvancingFlight) {
+        // Eastbound: Get bright light in the morning
+        const morningLightTime = adjustedWakeTime.clone();
+        allActivities.push({
+          time: morningLightTime,
+          type: 'light',
+          isSwitch: true,
+          isPreFlight: true,
+        });
+        // Avoid light in the evening
+        const eveningDarkTime = adjustedBedtime.clone().subtract(2, 'hours');
+        allActivities.push({
+          time: eveningDarkTime,
+          type: 'dark',
+          isSwitch: true,
+          isPreFlight: true,
+        });
+      } else {
+        // Westbound: Get bright light in the evening
+        const eveningLightTime = adjustedBedtime.clone().subtract(3, 'hours');
+        allActivities.push({
+          time: eveningLightTime,
+          type: 'light',
+          isSwitch: true,
+          isPreFlight: true,
+        });
+        // Avoid light in the morning
+        const morningDarkTime = adjustedWakeTime.clone();
+        allActivities.push({
+          time: morningDarkTime,
+          type: 'dark',
+          isSwitch: true,
+          isPreFlight: true,
+        });
+      }
+
+      // Add melatonin for pre-flight if enabled
+      if (useMelatonin) {
+        const melatoninTime = adjustedBedtime.clone().subtract(30, 'minutes');
+        allActivities.push({
+          time: melatoninTime,
+          type: 'melatonin',
+          isMelatonin: true,
+          isPreFlight: true,
+        });
+      }
+    }
+  }
+
   // Add all switching points with chronotype-adjusted timing
   // Light exposure timing is shifted based on circadian phase
   switchingTimes.switchingPoints?.forEach((point) => {
@@ -85,14 +183,22 @@ export const ResultsDisplay = ({
   });
 
   // Generate sleep periods for each day (using user's stated sleep times)
+  console.log(`🛏️ User sleep schedule from props: bedtime=${sleepSchedule.bedtime}, wakeup=${sleepSchedule.wakeupTime}`);
+
   let currentDay = landingTime.clone().startOf('day');
   while (currentDay.isBefore(scheduleEnd)) {
     const sleepStart = currentDay.clone().hour(parseInt(sleepSchedule.bedtime.split(':')[0])).minute(parseInt(sleepSchedule.bedtime.split(':')[1]));
-    const sleepEnd = sleepStart.clone().hour(parseInt(sleepSchedule.wakeupTime.split(':')[0])).minute(parseInt(sleepSchedule.wakeupTime.split(':')[1]));
 
-    if (sleepEnd.isBefore(sleepStart)) {
-      sleepEnd.add(1, 'day');
+    // Create sleepEnd starting from the NEXT day, then set the wakeup time
+    // This handles the case where bedtime (22:00) is PM and wakeup (06:00) is AM
+    const sleepEnd = currentDay.clone().add(1, 'day').hour(parseInt(sleepSchedule.wakeupTime.split(':')[0])).minute(parseInt(sleepSchedule.wakeupTime.split(':')[1]));
+
+    // Only adjust if wakeup time is actually after bedtime on the same day (rare case like 01:00 bedtime, 09:00 wakeup)
+    if (parseInt(sleepSchedule.wakeupTime.split(':')[0]) > parseInt(sleepSchedule.bedtime.split(':')[0])) {
+      sleepEnd.subtract(1, 'day');
     }
+
+    console.log(`🛏️ Day ${currentDay.format('YYYY-MM-DD')}: Sleep ${sleepStart.format('HH:mm')} -> Wake ${sleepEnd.format('YYYY-MM-DD HH:mm')}`);
 
     if (sleepStart.isAfter(landingTime)) {
       allActivities.push({
@@ -172,29 +278,56 @@ export const ResultsDisplay = ({
       console.log(`☕ Next sleep start: ${nextSleepStart.format('YYYY-MM-DD HH:mm')}`);
       console.log(`☕ Avoid caffeine after: ${avoidAfter.format('YYYY-MM-DD HH:mm')}`);
 
+      // Calculate actual sleep duration from user's schedule (not hardcoded 8 hours)
+      const userSleepDurationHours = sleepEnd.diff(sleepStart, 'hours', true);
+
+      // Calculate nextSleepEnd using user's actual sleep duration
+      const nextSleepEnd = nextSleepStart.clone().add(userSleepDurationHours, 'hours');
+
+      // Helper function to check if a time falls during sleep
+      // Sleep period spans from sleepStart to sleepEnd (which is on the next day if wake time < bed time)
+      const isDuringSleep = (time: moment.Moment): boolean => {
+        // Check if time is between sleepStart and sleepEnd (current sleep period)
+        if (time.isSameOrAfter(sleepStart) && time.isBefore(sleepEnd)) {
+          console.log(`☕ isDuringSleep: ${time.format('HH:mm')} is during current sleep (${sleepStart.format('HH:mm')}-${sleepEnd.format('HH:mm')})`);
+          return true;
+        }
+        // Also check the next sleep period using user's actual sleep duration
+        if (time.isSameOrAfter(nextSleepStart) && time.isBefore(nextSleepEnd)) {
+          console.log(`☕ isDuringSleep: ${time.format('HH:mm')} is during next sleep (${nextSleepStart.format('HH:mm')}-${nextSleepEnd.format('HH:mm')})`);
+          return true;
+        }
+        return false;
+      };
+
+      console.log(`☕ Sleep period: ${sleepStart.format('YYYY-MM-DD HH:mm')} to ${sleepEnd.format('YYYY-MM-DD HH:mm')} (${userSleepDurationHours.toFixed(1)}h)`);
+
       // Calculate caffeine times based on travel direction
       const recommendedTimes: moment.Moment[] = [];
 
       if (isAdvancing) {
         console.log('☕ Eastbound flight - calculating morning caffeine times');
-        // For eastward travel, caffeine at wake time helps advance the clock
-        const morningCaffeine = sleepEnd.clone();
+        // For eastward travel, caffeine 30 minutes after wake helps advance the clock
+        const morningCaffeine = sleepEnd.clone().add(30, 'minutes');
+        const morningDuringSleep = isDuringSleep(morningCaffeine);
         console.log(`☕ Morning caffeine time: ${morningCaffeine.format('YYYY-MM-DD HH:mm')}`);
-        console.log(`☕ Checks: afterLanding=${morningCaffeine.isAfter(landingTime)}, beforeScheduleEnd=${morningCaffeine.isBefore(extendedScheduleEnd)}`);
+        console.log(`☕ Checks: afterLanding=${morningCaffeine.isAfter(landingTime)}, beforeScheduleEnd=${morningCaffeine.isBefore(extendedScheduleEnd)}, duringSleep=${morningDuringSleep}`);
 
-        if (morningCaffeine.isAfter(landingTime) && morningCaffeine.isBefore(extendedScheduleEnd)) {
+        if (morningCaffeine.isAfter(landingTime) && morningCaffeine.isBefore(extendedScheduleEnd) && !morningDuringSleep) {
           console.log('✓ Adding morning caffeine');
           recommendedTimes.push(morningCaffeine);
         }
 
         // Additional dose 3-4 hours after wake for sustained alertness
-        const midMorningCaffeine = sleepEnd.clone().add(3.5, 'hours');
+        const midMorningCaffeine = sleepEnd.clone().add(4, 'hours');
+        const midMorningDuringSleep = isDuringSleep(midMorningCaffeine);
         console.log(`☕ Mid-morning caffeine time: ${midMorningCaffeine.format('YYYY-MM-DD HH:mm')}`);
-        console.log(`☕ Checks: afterLanding=${midMorningCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${midMorningCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${midMorningCaffeine.isBefore(extendedScheduleEnd)}`);
+        console.log(`☕ Checks: afterLanding=${midMorningCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${midMorningCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${midMorningCaffeine.isBefore(extendedScheduleEnd)}, duringSleep=${midMorningDuringSleep}`);
 
         if (midMorningCaffeine.isAfter(landingTime) &&
             midMorningCaffeine.isBefore(avoidAfter) &&
-            midMorningCaffeine.isBefore(extendedScheduleEnd)) {
+            midMorningCaffeine.isBefore(extendedScheduleEnd) &&
+            !midMorningDuringSleep) {
           console.log('✓ Adding mid-morning caffeine');
           recommendedTimes.push(midMorningCaffeine);
         }
@@ -203,12 +336,14 @@ export const ResultsDisplay = ({
         // For westward travel, caffeine helps delay the clock
         // Use later in the day to extend wake period
         const afternoonCaffeine = sleepEnd.clone().add(8, 'hours');
+        const afternoonDuringSleep = isDuringSleep(afternoonCaffeine);
         console.log(`☕ Afternoon caffeine time: ${afternoonCaffeine.format('YYYY-MM-DD HH:mm')}`);
-        console.log(`☕ Checks: afterLanding=${afternoonCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${afternoonCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${afternoonCaffeine.isBefore(extendedScheduleEnd)}`);
+        console.log(`☕ Checks: afterLanding=${afternoonCaffeine.isAfter(landingTime)}, beforeAvoidAfter=${afternoonCaffeine.isBefore(avoidAfter)}, beforeScheduleEnd=${afternoonCaffeine.isBefore(extendedScheduleEnd)}, duringSleep=${afternoonDuringSleep}`);
 
         if (afternoonCaffeine.isAfter(landingTime) &&
             afternoonCaffeine.isBefore(avoidAfter) &&
-            afternoonCaffeine.isBefore(extendedScheduleEnd)) {
+            afternoonCaffeine.isBefore(extendedScheduleEnd) &&
+            !afternoonDuringSleep) {
           console.log('✓ Adding afternoon caffeine');
           recommendedTimes.push(afternoonCaffeine);
         }
@@ -464,13 +599,22 @@ export const ResultsDisplay = ({
                         return null;
                       }
 
-                      const totalLanes = segment.totalLanes || 1;
-                      const laneIndex = segment.lane || 0;
-                      const gapSize = 185; // Gap between bars in pixels (reduced from 300 for better visual spacing)
-                      const totalGapWidth = (totalLanes - 1) * gapSize;
-                      const availableWidth = 50 - totalGapWidth;
-                      const barWidth = availableWidth / totalLanes;
-                      const leftOffset = (laneIndex * (barWidth + gapSize)) - 25;
+                      // Fixed width for instant recommendations (melatonin/coffee)
+                      // Position them outside the main timeline bar (which is 50px wide centered)
+                      const fixedBarWidth = 28; // Same width for both melatonin and coffee
+                      const mainBarHalfWidth = 25; // Half of the 50px main bar width
+                      const gapFromMainBar = 16; // Gap between main bar and instant recommendation
+
+                      // Melatonin = left side (outside main bar), Coffee = right side (outside main bar)
+                      let leftOffset;
+                      if (segment.isMelatonin) {
+                        // Position to the left of the main bar
+                        leftOffset = -mainBarHalfWidth - gapFromMainBar - fixedBarWidth;
+                      } else {
+                        // Coffee - position to the right of the main bar
+                        leftOffset = mainBarHalfWidth + gapFromMainBar + 40;
+                      }
+                      const barWidth = fixedBarWidth;
                       return (
                         <View
                           key={segIndex}

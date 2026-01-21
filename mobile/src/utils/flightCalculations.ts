@@ -123,16 +123,18 @@ export const optimizeCircadianSchedule = (
       // Parse dates with timezones
       const departure = moment.tz(flight.time[0], originTz);
       const arrival = moment.tz(flight.time[1], destTz);
-      const endDate = arrival.clone().add(1, 'day'); // Add one day after arrival
 
       if (!departure.isValid() || !arrival.isValid()) {
         throw new Error('Invalid date format');
       }
-  
-      const flightDurationHours = arrival.diff(departure, 'hours', true);
-      const totalDurationHours = endDate.diff(departure, 'hours', true); // Total duration including next day
 
       const timezoneDiff = arrival.utcOffset() - departure.utcOffset();
+
+      // Schedule covers flight + 1 day after landing (for in-flight and immediate post-landing adjustment)
+      const endDate = arrival.clone().add(1, 'day');
+
+      const flightDurationHours = arrival.diff(departure, 'hours', true);
+      const totalDurationHours = endDate.diff(departure, 'hours', true); // Total duration including adjustment period
       const direction = timezoneDiff > 0 ? 'eastbound' : 'westbound';
   
       // Calculate sleep window in origin timezone

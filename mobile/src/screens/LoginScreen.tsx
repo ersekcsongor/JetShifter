@@ -24,7 +24,7 @@ type LoginScreenProps = {
 export default function LoginScreen({ navigation }: LoginScreenProps) {
   const { control, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login } = useAuth();
+  const { login, enterOfflineMode } = useAuth();
   const { colors, effectiveTheme } = useTheme();
   const isDarkMode = effectiveTheme === 'dark';
   const styles = createThemedStyles(colors, isDarkMode);
@@ -162,6 +162,15 @@ export default function LoginScreen({ navigation }: LoginScreenProps) {
           <Text style={styles.signupLink}>Sign Up</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Offline Mode Button */}
+      <TouchableOpacity
+        style={styles.offlineButton}
+        onPress={enterOfflineMode}
+      >
+        <Ionicons name="airplane-outline" size={20} color={iconColor} style={{ marginRight: 8 }} />
+        <Text style={styles.offlineButtonText}>Continue Offline</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }

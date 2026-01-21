@@ -139,6 +139,24 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
     alignItems: 'center',
     backgroundColor: isDarkMode ? '#1a1a1a' : '#f5f5f5',
   },
+
+  // Offline Mode Button
+  offlineButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: isDarkMode ? '#404040' : '#d0d0d0',
+    borderStyle: 'dashed',
+  },
+  offlineButtonText: {
+    color: isDarkMode ? '#a0a0a0' : '#666666',
+    fontSize: 16,
+    fontWeight: '500',
+  },
 });
 
 export default createThemedStyles;

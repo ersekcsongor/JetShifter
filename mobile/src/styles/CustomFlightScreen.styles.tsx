@@ -232,6 +232,75 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
     fontSize: 16,
     fontWeight: '600',
   },
+
+  // Offline Mode Banner
+  offlineBanner: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: isDarkMode ? '#2a2a2a' : '#e8e8e8',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: isDarkMode ? '#404040' : '#d0d0d0',
+    borderStyle: 'dashed',
+  },
+
+  offlineBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  offlineBannerText: {
+    color: isDarkMode ? '#a0a0a0' : '#666666',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+
+  exitOfflineButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: isDarkMode ? '#404040' : '#d0d0d0',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+
+  exitOfflineButtonText: {
+    color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+
+  // Settings Row Styles
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: isDarkMode ? '#404040' : '#d0d0d0',
+  },
+
+  settingLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  settingLabel: {
+    color: isDarkMode ? '#ffffff' : '#1a1a1a',
+    fontSize: 16,
+    marginLeft: 12,
+  },
+
+  settingValue: {
+    color: isDarkMode ? '#a0a0a0' : '#666666',
+    fontSize: 16,
+    fontWeight: '500',
+  },
 });
 
 export default createThemedStyles;

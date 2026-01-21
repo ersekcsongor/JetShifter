@@ -116,7 +116,7 @@ export class GoogleFlightsScraper {
             if (departureTime && arrivalTime && duration) {
               results.push({
                 airline,
-                flightNumber: `${airline.split(' ')[0]}-${Date.now()}`, // Generate temporary flight number
+                flightNumber: `${airline.split(' ')[0]}-${Date.now()}`, 
                 departureTime,
                 arrivalTime,
                 duration,

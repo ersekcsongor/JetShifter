@@ -62,6 +62,7 @@ const FlightDetailsScreen = ({ route }: Props) => {
   const [isFlightSaved, setIsFlightSaved] = useState(false);
   const [checkingSaveStatus, setCheckingSaveStatus] = useState(true);
   const [notificationsScheduled, setNotificationsScheduled] = useState(false);
+  const [showPreFlightSchedule, setShowPreFlightSchedule] = useState(false);
   const { permissionsGranted } = useNotifications();
 
   const {
@@ -757,6 +758,30 @@ const FlightDetailsScreen = ({ route }: Props) => {
 
       {switchingTimes && (
         <>
+          {/* Pre-flight Schedule Toggle */}
+          <TouchableOpacity
+            onPress={() => setShowPreFlightSchedule(!showPreFlightSchedule)}
+            style={[styles.saveButton, {
+              marginBottom: 16,
+              backgroundColor: showPreFlightSchedule ? colors.primary : colors.border
+            }]}
+          >
+            <Text style={[styles.saveButtonText, { color: showPreFlightSchedule ? '#000' : colors.text }]}>
+              {showPreFlightSchedule ? '✓ Pre-Flight Schedule Enabled' : '📅 Show Pre-Flight Schedule'}
+            </Text>
+          </TouchableOpacity>
+          {showPreFlightSchedule && (
+            <Text style={{
+              textAlign: 'center',
+              marginBottom: 16,
+              color: colors.textSecondary,
+              fontSize: 12,
+              paddingHorizontal: 20
+            }}>
+              Start adjusting your sleep 1-2 days before departure for faster jet lag recovery
+            </Text>
+          )}
+
           <ResultsDisplay
             switchingTimes={updatedSwitchingTimes || switchingTimes}
             stateTrajectory={stateTrajectory}
@@ -774,6 +799,7 @@ const FlightDetailsScreen = ({ route }: Props) => {
             useMelatonin={useMelatonin}
             useCoffee={useCoffee}
             chronotype={chronotype}
+            showPreFlightSchedule={showPreFlightSchedule}
           />
 
           {/* Notification Scheduling Buttons */}

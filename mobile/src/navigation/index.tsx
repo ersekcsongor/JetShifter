@@ -31,6 +31,11 @@ export type AuthStackParamList = {
   Register: undefined;
 };
 
+export type OfflineStackParamList = {
+  CustomFlightScreen: undefined;
+  FlightDetailsScreenCustom: { flight: Flight };
+};
+
 export type AppStackParamList = {
   MainTabs: undefined;
   StartScreen: undefined;
@@ -51,12 +56,14 @@ export type AppStackParamList = {
 export type RootStackParamList = {
   Auth: { screen: keyof AuthStackParamList };
   App: { screen: keyof AppStackParamList };
+  Offline: { screen: keyof OfflineStackParamList };
 };
 
 // Create navigators
 const RootStack = createStackNavigator<RootStackParamList>();
 const AuthStack = createStackNavigator<AuthStackParamList>();
 const AppStack = createStackNavigator<AppStackParamList>();
+const OfflineStack = createStackNavigator<OfflineStackParamList>();
 const Tab = createBottomTabNavigator();
 
 // Auth Stack Navigator
@@ -65,6 +72,14 @@ const AuthNavigator = () => (
     <AuthStack.Screen name="Login" component={LoginScreen} />
     <AuthStack.Screen name="Register" component={RegisterScreen} />
   </AuthStack.Navigator>
+);
+
+// Offline Stack Navigator (limited access without login)
+const OfflineNavigator = () => (
+  <OfflineStack.Navigator screenOptions={{ headerShown: false }}>
+    <OfflineStack.Screen name="CustomFlightScreen" component={CustomFlightScreen} />
+    <OfflineStack.Screen name="FlightDetailsScreenCustom" component={FlightDetailsScreenCustom} />
+  </OfflineStack.Navigator>
 );
 
 // App Tab Navigator
@@ -154,14 +169,21 @@ const MainNavigator = () => {
     );
   }
 
+  // Determine which navigator to show
+  const getNavigator = () => {
+    if (authState?.authenticated) {
+      return <RootStack.Screen name="App" component={AppNavigator} />;
+    }
+    if (authState?.offlineMode) {
+      return <RootStack.Screen name="Offline" component={OfflineNavigator} />;
+    }
+    return <RootStack.Screen name="Auth" component={AuthNavigator} />;
+  };
+
   return (
     <NavigationContainer>
       <RootStack.Navigator screenOptions={{ headerShown: false }}>
-        {authState?.authenticated ? (
-          <RootStack.Screen name="App" component={AppNavigator} />
-        ) : (
-          <RootStack.Screen name="Auth" component={AuthNavigator} />
-        )}
+        {getNavigator()}
       </RootStack.Navigator>
     </NavigationContainer>
   );

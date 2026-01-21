@@ -4,14 +4,17 @@ import axios from 'axios';
 import ENV from '~/utils/constants';
 
 interface AuthContextType {
-  authState: { 
-    token: string | null; 
+  authState: {
+    token: string | null;
     authenticated: boolean | null;
     user: { email: string } | null;
+    offlineMode: boolean;
   };
   register: (email: string, password: string) => Promise<any>;
   login: (email: string, password: string) => Promise<any>;
   logout: () => Promise<void>;
+  enterOfflineMode: () => void;
+  exitOfflineMode: () => void;
   isLoading: boolean;
 }
 interface AuthProviderProps {
@@ -25,10 +28,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     token: string | null;
     authenticated: boolean | null;
     user: { email: string } | null;
+    offlineMode: boolean;
   }>({
     token: null,
     authenticated: null,
-    user: null
+    user: null,
+    offlineMode: false,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,7 +47,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           console.log('401 error - logging out user');
           await SecureStore.deleteItemAsync('JWT_TOKEN');
           axios.defaults.headers.common['Authorization'] = '';
-          setAuthState({ token: null, authenticated: false, user: null });
+          setAuthState({ token: null, authenticated: false, user: null, offlineMode: false });
         }
         return Promise.reject(error);
       }
@@ -63,20 +68,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           // Verify token is still valid by making a test request
           try {
             const response = await axios.get(`${ENV.API_BASE_URL}/users/me`);
-            setAuthState({ token, authenticated: true, user: { email: response.data.email } });
+            setAuthState({ token, authenticated: true, user: { email: response.data.email }, offlineMode: false });
           } catch (error: any) {
             // Token is invalid or expired
             console.log('Token expired or invalid, logging out');
             await SecureStore.deleteItemAsync('JWT_TOKEN');
             axios.defaults.headers.common['Authorization'] = '';
-            setAuthState({ token: null, authenticated: false, user: null });
+            setAuthState({ token: null, authenticated: false, user: null, offlineMode: false });
           }
         } else {
-          setAuthState({ token: null, authenticated: false, user: null });
+          setAuthState({ token: null, authenticated: false, user: null, offlineMode: false });
         }
       } catch (error) {
         console.error('Error loading token:', error);
-        setAuthState({ token: null, authenticated: false, user: null });
+        setAuthState({ token: null, authenticated: false, user: null, offlineMode: false });
       } finally {
         setIsLoading(false);
       }
@@ -124,10 +129,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       console.log('User data:', userResponse.data);
 
-      setAuthState({ 
-        token: response.data.access_token, 
+      setAuthState({
+        token: response.data.access_token,
         authenticated: true,
-        user: userResponse.data
+        user: userResponse.data,
+        offlineMode: false,
       });
       
       await SecureStore.setItemAsync('JWT_TOKEN', response.data.access_token);
@@ -151,10 +157,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = async () => {
     await SecureStore.deleteItemAsync('JWT_TOKEN');
     axios.defaults.headers.common['Authorization'] = '';
-    setAuthState({ 
-      token: null, 
+    setAuthState({
+      token: null,
       authenticated: false,
-      user: null
+      user: null,
+      offlineMode: false,
+    });
+  };
+
+  const enterOfflineMode = () => {
+    console.log('Entering offline mode');
+    setAuthState({
+      token: null,
+      authenticated: false,
+      user: null,
+      offlineMode: true,
+    });
+  };
+
+  const exitOfflineMode = () => {
+    console.log('Exiting offline mode');
+    setAuthState({
+      token: null,
+      authenticated: false,
+      user: null,
+      offlineMode: false,
     });
   };
 
@@ -165,6 +192,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         register: register,
         login: login,
         logout: logout,
+        enterOfflineMode,
+        exitOfflineMode,
         isLoading,
       }}
     >

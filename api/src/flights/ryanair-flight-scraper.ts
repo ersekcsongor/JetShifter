@@ -49,7 +49,6 @@ export class RyanairFlightScraper {
       // PRIORITY 1: Always try the original user-entered flight number first
       // This is what works on FlightRadar24's website (e.g., "DE1572")
       flightCodes.push(flightNumber);
-      console.log(`✓ Priority 1: Original flight number: ${flightNumber}`);
 
       if (data.results && data.results.length > 0) {
         const result = data.results[0];
@@ -60,29 +59,24 @@ export class RyanairFlightScraper {
           codes.forEach((code: string) => {
             if (code && !flightCodes.includes(code)) {
               flightCodes.push(code);
-              console.log(`✓ Priority 2: From label: ${code}`);
             }
           });
         }
 
         // Priority 3: Use the 'id' field as a fallback
         if (result.id && !flightCodes.includes(result.id)) {
-          console.log(`✓ Priority 3: API id field: ${result.id}`);
           flightCodes.push(result.id);
         }
 
         // Priority 4: Add detail fields if not already included
         if (result.detail?.flight && !flightCodes.includes(result.detail.flight)) {
           flightCodes.push(result.detail.flight);
-          console.log(`✓ Priority 4: Detail flight: ${result.detail.flight}`);
         }
         if (result.detail?.callsign && !flightCodes.includes(result.detail.callsign)) {
           flightCodes.push(result.detail.callsign);
-          console.log(`✓ Priority 4: Detail callsign: ${result.detail.callsign}`);
         }
       }
 
-      console.log(`📋 Flight codes to try (in priority order): ${flightCodes.join(', ')}`);
       return flightCodes;
     } catch (error) {
       console.error('❌ Error fetching alternate flight codes:', error);
