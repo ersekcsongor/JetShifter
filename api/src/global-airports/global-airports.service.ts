@@ -18,7 +18,7 @@ export class GlobalAirportsService {
     }
   }
 
-  async getAllGlobalAirports(): Promise<GlobalAirportsModel[]> {
+  async getAllGlobalAirports() {
     return this.globalAirportModel.find()
       .select('iataCode name countryCode cityCode timeZone countryName -_id')
       .lean()

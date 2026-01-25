@@ -90,7 +90,7 @@ export class GlobalFlightsService {
     }
   }
 
-  async unsaveFlightForUser(email: string, flightNumber: string) {
+  async unsaveFlightForUser(email: string, flightNumber: string): Promise<{ deletedCount?: number }> {
     const result = await this.savedFlightModel.deleteOne({ email, flightNumber });
     return result;
   }

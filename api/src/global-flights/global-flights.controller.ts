@@ -41,7 +41,7 @@ export class GlobalFlightsController {
   }
 
   @Post('unsave')
-  async unsaveFlight(@Body() body: { email: string; flightNumber: string }) {
+  async unsaveFlight(@Body() body: { email: string; flightNumber: string }): Promise<{ deletedCount?: number }> {
     return this.flightsService.unsaveFlightForUser(body.email, body.flightNumber);
   }
 
