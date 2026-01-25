@@ -384,7 +384,7 @@ export class FlightsService {
     }
   }
 
-  async unsaveFlightForUser(email: string, flightNumber: string) {
+  async unsaveFlightForUser(email: string, flightNumber: string): Promise<{ deletedCount?: number }> {
     console.log('Deleting:', { email, flightNumber });
     const result = await this.savedFlightModel.deleteOne({ email, flightNumber });
     console.log('Delete result:', result);
