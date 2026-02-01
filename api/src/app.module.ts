@@ -8,11 +8,8 @@ import { SharedModule } from './shared/shared.module';
 import { AirportsModule } from './airports/airports.module';
 import { FlightsModule } from './flights/flights.module';
 import { AuthModule } from './auth/auth.module';
-import { GlobalAirportsModule } from './global-airports/global-airports.module';
-import { GlobalFlightsModule } from './global-flights/global-flights.module';
 import { ChatModule } from './chat/chat.module';
 import { NotificationsModule } from './notifications/notifications.module';
-import { TransatlanticFlightsModule } from './transatlantic-flights/transatlantic-flights.module';
 import { HealthController } from './health/health.controller';
 const YAML_CONFIG_FILENAME = '.env.yml';
 
@@ -24,7 +21,7 @@ if (fs.existsSync(YAML_CONFIG_FILENAME)) {
 
 @Module({
   imports: [
-    SharedModule,AirportsModule,FlightsModule,AuthModule,UsersModule,GlobalAirportsModule,GlobalFlightsModule, ChatModule, NotificationsModule, TransatlanticFlightsModule,
+    SharedModule,AirportsModule,FlightsModule,AuthModule,UsersModule, ChatModule, NotificationsModule,
   ],
   controllers: [HealthController],
 })

@@ -1,30 +1,43 @@
-import { Prop ,Schema, SchemaFactory} from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+
 @Schema()
 export class AirportsModel extends Document {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   iataCode: string;
 
   @Prop({ required: true })
   name: string;
-  
+
   @Prop({ required: true })
   countryCode: string;
 
-  @Prop({ required: true })
-  cityCode: string;
+  @Prop()
+  cityCode?: string;
 
-  @Prop({required: true})
+  @Prop({ required: true })
   timeZone: string;
 
-  @Prop({required: true})
-  latitude: number;
+  // Optional fields - only available for some airports
+  @Prop()
+  countryName?: string;
 
-  @Prop({required: true})
-  longitude: number;
+  @Prop()
+  latitude?: number;
 
-  @Prop({ type: [String], default: [] }) // Add the routes field
-  routes: string[];
+  @Prop()
+  longitude?: number;
+
+  // Ryanair-specific fields
+  @Prop({ type: [String], default: [] })
+  ryanairRoutes: string[];
+
+  @Prop({ default: false })
+  isRyanairAirport: boolean;
 }
 
 export const AirportsSchema = SchemaFactory.createForClass(AirportsModel);
+
+// Create index for faster lookups
+AirportsSchema.index({ iataCode: 1 }, { unique: true });
+AirportsSchema.index({ isRyanairAirport: 1 });

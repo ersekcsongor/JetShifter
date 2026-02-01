@@ -11,8 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '~/contexts/ThemeContext';
 import { createThemedStyles } from '~/styles/SavedFlightsScreen.styles';
 
-const API_URL = `${ENV.API_BASE_URL}/flights`; // Ryanair
-const API_URL2 = `${ENV.API_BASE_URL}/global-flights`; // Custom
+const API_URL = `${ENV.API_BASE_URL}/flights`;
 
 // Extended type for saved flights that may have additional fields from backend
 type SavedFlight = Flight & {
@@ -74,11 +73,7 @@ const SavedFlightsScreen = () => {
 
   const unsaveFlight = async (flightNumber: string, source: 'ryanair' | 'custom') => {
     try {
-      if (source === 'ryanair') {
-        await axios.post(`${API_URL}/unsave`, { email, flightNumber });
-      } else {
-        await axios.post(`${API_URL2}/unsave`, { email, flightNumber });
-      }
+      await axios.post(`${API_URL}/unsave`, { email, flightNumber });
       setFlights(flights.filter(f => f.flightNumber !== flightNumber || f.source !== source));
     } catch (err) {
       Alert.alert('Error', 'Failed to unsave flight');

@@ -21,7 +21,6 @@ import SavedFlightsScreen from '~/screens/SavedFlightsScreen';
 import ChooseScreen from '~/screens/ChooseScreen';
 import CustomFlightScreen from '~/screens/CustomFlightScreen';
 import FlightDetailsScreenCustom from '~/screens/FlightDetailsScreenCustom';
-import TransatlanticFlightListScreen from '~/screens/TransatlanticFlightListScreen';
 import FlightNumberSearchScreen from '~/screens/FlightNumberSearchScreen';
 
 
@@ -42,7 +41,6 @@ export type AppStackParamList = {
   AboutScreen: undefined;
   ChooseScreen: undefined; // <-- Add this line
   SelectAirportScreen: undefined;
-  TransatlanticFlightListScreen: undefined;
   FlightNumberSearchScreen: undefined;
   FlightListScreen: { departure: string; arrival: string; startDate: string };
   FlightDetailsScreen: { flight: Flight };
@@ -141,7 +139,6 @@ const AppNavigator = () => (
   <AppStack.Navigator screenOptions={{ headerShown: false }}>
     <AppStack.Screen name="MainTabs" component={AppTabNavigator} />
     <AppStack.Screen name="SelectAirportScreen" component={SelectAirportScreen} />
-    <AppStack.Screen name="TransatlanticFlightListScreen" component={TransatlanticFlightListScreen} />
     <AppStack.Screen name="FlightNumberSearchScreen" component={FlightNumberSearchScreen} />
     <AppStack.Screen name="FlightListScreen" component={FlightListScreen} />
     <AppStack.Screen name="FlightDetailsScreen" component={FlightDetailsScreen} />

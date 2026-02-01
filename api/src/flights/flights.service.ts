@@ -185,7 +185,7 @@ export class FlightsService {
     let totalRoutes = 0;
 
     for (const originAirport of airports) {
-      const destinations = originAirport.routes.map(route =>
+      const destinations = originAirport.ryanairRoutes.map(route =>
         route.split(':')[1]
       );
 
@@ -247,7 +247,7 @@ export class FlightsService {
 
     for (const date of dates) {
       for (const originAirport of airports) {
-        const destinations = originAirport.routes.map(route =>
+        const destinations = originAirport.ryanairRoutes.map(route =>
           route.split(':')[1]
         );
 

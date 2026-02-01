@@ -250,20 +250,7 @@ const FlightDetailsScreen = ({ route }: Props) => {
           console.log(`Fetching timezone for ${iataCode}...`);
 
           try {
-            // Try transatlantic endpoint first
-            const transatlanticRes = await fetch(`${ENV.API_BASE_URL}/transatlantic-flights/timezone/${iataCode}`);
-            if (transatlanticRes.ok) {
-              const data = await transatlanticRes.json();
-              console.log(`✓ Got timezone for ${iataCode} from transatlantic: ${data.timeZone}`);
-              return data.timeZone;
-            }
-            console.log(`Transatlantic endpoint failed for ${iataCode}, trying regular airports...`);
-          } catch (e) {
-            console.log(`Transatlantic endpoint error for ${iataCode}:`, e);
-          }
-
-          try {
-            // Fallback to regular airports endpoint
+            // Try regular airports endpoint
             const airportsRes = await fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${iataCode}`);
             if (airportsRes.ok) {
               const data = await airportsRes.json();
@@ -273,19 +260,6 @@ const FlightDetailsScreen = ({ route }: Props) => {
             console.log(`Regular airports endpoint failed for ${iataCode}, status: ${airportsRes.status}`);
           } catch (e) {
             console.log(`Regular airports endpoint error for ${iataCode}:`, e);
-          }
-
-          // Last resort: try global-airports endpoint
-          try {
-            const globalRes = await fetch(`${ENV.API_BASE_URL}/global-airports/getTimezoneByIataCode/${iataCode}`);
-            if (globalRes.ok) {
-              const data = await globalRes.json();
-              console.log(`✓ Got timezone for ${iataCode} from global-airports: ${data.timeZone}`);
-              return data.timeZone;
-            }
-            console.log(`Global airports endpoint failed for ${iataCode}, status: ${globalRes.status}`);
-          } catch (e) {
-            console.log(`Global airports endpoint error for ${iataCode}:`, e);
           }
 
           // Fallback: hardcoded timezone map for common airports not in DB

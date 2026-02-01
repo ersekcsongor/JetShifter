@@ -80,7 +80,7 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
     updateState
   } = useFlightDetailsState();
 
-  const API_URL = `${ENV.API_BASE_URL}/global-flights`;
+  const API_URL = `${ENV.API_BASE_URL}/flights`;
   const userEmail = authState?.user?.email || '';
 
   // Load sleep schedule from backend user profile or AsyncStorage (offline mode)
@@ -207,8 +207,8 @@ const FlightDetailsScreenCustom = ({ route }: Props) => {
       try {
         updateState({ loading: true });
         const [originRes, destRes] = await Promise.all([
-          fetch(`${ENV.API_BASE_URL}/global-airports/getTimezoneByIataCode/${flight.origin}`),
-          fetch(`${ENV.API_BASE_URL}/global-airports/getTimezoneByIataCode/${flight.destination}`)
+          fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${flight.origin}`),
+          fetch(`${ENV.API_BASE_URL}/airports/getTimezoneByIataCode/${flight.destination}`)
         ]);
 
         const originData = await originRes.json();
@@ -539,23 +539,7 @@ const handleSimulateDynamics = useCallback(async () => {
         return;
       }
 
-      // Always try to add the flight to the global DB first
-      try {
-        await axios.post(`${API_URL}/add`, {
-          flightNumber: flight.flightNumber,
-          origin: flight.origin,
-          destination: flight.destination,
-          time: flight.time,
-          duration: flight.duration,
-        });
-      } catch (addError: any) {
-        // Ignore error if flight already exists (e.g., 409 conflict)
-        if (!(axios.isAxiosError(addError) && addError.response?.status === 409)) {
-          console.error('Add flight error:', addError);
-        }
-      }
-
-      // Now save the flight for the user with full flight data
+      // Save the flight for the user with full flight data
       const flightDataToSave = {
         origin: flight.origin,
         destination: flight.destination,

@@ -143,7 +143,7 @@ const CustomFlightScreen = () => {
       }
 
       try {
-        const response = await axios.get(`${ENV.API_BASE_URL}/global-airports/getAll`);
+        const response = await axios.get(`${ENV.API_BASE_URL}/airports/getAll`);
         const data = response.data;
         setAirports(data);
         if (data.length > 0) {

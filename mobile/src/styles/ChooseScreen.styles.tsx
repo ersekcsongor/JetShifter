@@ -51,18 +51,6 @@ export const createThemedStyles = (colors: any, isDarkMode: boolean = false) => 
     elevation: 4,
   },
 
-  // Transatlantic Card
-  transatlanticCard: {
-    backgroundColor: isDarkMode ? '#2a2a2a' : '#e8e8e8',
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: isDarkMode ? 0.25 : 0.09,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-
   // Flight Number Search Card
   flightNumberCard: {
     backgroundColor: isDarkMode ? '#2a2a2a' : '#e8e8e8',
